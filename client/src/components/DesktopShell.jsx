@@ -222,7 +222,6 @@ export default function DesktopShell({ children }) {
   // state manually. (Without this, Drift's end:false prefix-matched every rack
   // sub-page and showed active everywhere.)
   const onRackRoot  = location.pathname === `/results/${rackId}`;
-  const isDriftView = onRackRoot && location.hash === '#drift';
   // Preserve the ?group signal across the rack's sub-pages so a two-rack scan
   // keeps its side-by-side / toggle view while navigating. Single scans have no
   // ?group, so they stay single everywhere.
@@ -235,12 +234,16 @@ export default function DesktopShell({ children }) {
   // The rack's own pages. Ports is gone - the Network page reads the switches
   // themselves over SNMP, which is what Ports tried to do over SSH from a
   // server that could never reach them.
+  // The rack's four steps first, in the order the phone's tab bar has them, then
+  // the two screens that are not steps. Drift is the check against the record at
+  // its own address; the Timeline that used to sit here under #drift is a section
+  // of the Network page now.
   const rackLinks = rackId ? [
-    { to: `/results/${rackId}${gq}`,           label: 'Overview', icon: <OverviewIcon />, end: true,  active: onRackRoot && !isDriftView },
+    { to: `/results/${rackId}${gq}`,           label: 'Overview', icon: <OverviewIcon />, end: true,  active: onRackRoot },
     { to: `/results/${rackId}/network${gq}`,   label: 'Network',  icon: <NetworkIcon />,  end: false },
     { to: `/results/${rackId}/report${gq}`,    label: 'Report',   icon: <OverviewIcon />, end: false },
+    { to: `/results/${rackId}/drift${gq}`,     label: 'Drift',    icon: <DriftIcon />,    end: false },
     { to: `/results/${rackId}/topology${gq}`,  label: 'Topology', icon: <TopologyIcon />, end: false },
-    { to: `/results/${rackId}${gq}#drift`,     label: 'Drift',    icon: <DriftIcon />,    end: false, active: isDriftView },
     { to: `/switch-info/${rackId}${gq}`,       label: 'Switches', icon: <SwitchesIcon />, end: false },
   ] : [];
 

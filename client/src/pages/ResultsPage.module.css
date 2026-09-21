@@ -282,6 +282,13 @@
   position: relative; overflow: hidden;
   background: #000000;
   z-index: 1;
+  /* A framed photograph, inset on the same 14px gutter as everything under it,
+     rather than a full-bleed slab running edge to edge into the panel below.
+     The rack and its boxes are drawn exactly as before; only the container
+     changed. */
+  margin: 8px 14px 0;
+  border: 1px solid #EFEFEF;
+  border-radius: 16px;
 }
 
 /* Overview sizing: until a device is picked, the rack image takes most of the
@@ -293,18 +300,19 @@
    technically - but scrolling a 33px window reads as "the page isn't showing".
    `flex: 0 1` lets the image give ground, and the panel's min-height below
    guarantees it. */
-/* Straight after a scan the photograph is evidence, not the subject: the
-   useful thing on screen is WHAT WAS FOUND. So the image takes a third of the
-   screen and the list of devices takes the rest. 74vh left one line of content
-   under it and made a page of real information look like a photo viewer.
-   Picking a device restores the old proportions, because then the picture is
-   what you are working in. */
-.results[data-device="none"] .heroWrap { flex: 1 1 auto; min-height: 0; }
-/* Nothing under the photo but two buttons, so the panel is exactly as tall as
-   they are and every remaining pixel goes to the rack. It used to claim half
-   the screen and hold a row of buttons in the top of it, leaving a white
-   field beneath them. */
-.results[data-device="none"] .sheet    { flex: 0 0 auto; min-height: 0; overflow: visible; }
+/* Straight after a scan the photograph is evidence, not the subject: the useful
+   thing on screen is what was found. The frame takes a little over a third of
+   the screen - enough to read a rack at a glance and pinch into - and the
+   findings and the ways on take the rest. It used to take every pixel the panel
+   below did not, which made a page of real information look like a photo
+   viewer with two buttons under it. Picking a device gives the picture more
+   room again, because then it is what you are working in. */
+/* The frame takes what the findings and the ways on do not need, up to a little
+   over a third of the screen. Bounded, so it can never go back to being the
+   whole page; greedy under that, so there is never a band of empty white under
+   the buttons either. */
+.results[data-device="none"] .heroWrap { flex: 1 1 auto; min-height: 140px; max-height: 38vh; }
+.results[data-device="none"] .sheet    { flex: 0 1 auto; min-height: 0; }
 .results[data-device="sel"]  .heroWrap { flex: 0 1 44vh; min-height: 0; }
 .results[data-device="sel"]  .sheet    { flex: 1 1 auto; min-height: 200px; }
 
@@ -438,59 +446,22 @@
 }
 
 /* Animated scan line */
-.scanLine {
-  position: absolute; left: 0; right: 0; height: 1px; z-index: 3;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(0,0,0,0.2) 20%,
-    rgba(0,0,0,0.7) 50%,
-    rgba(0,0,0,0.2) 80%,
-    transparent 100%);
-  animation: scanDown 4s cubic-bezier(.4,0,.6,1) infinite;
-}
-@keyframes scanDown {
-  0%   { top: 0%;   opacity: 0; }
-  5%   { opacity: 0.9; }
-  90%  { opacity: 0.5; }
-  100% { top: 100%; opacity: 0; }
-}
-
-/* Corner HUD brackets */
-.hc {
-  position: absolute; z-index: 4;
-  width: 16px; height: 16px;
-  border-color: rgba(0,0,0,0.6);
-  border-style: solid;
-}
-.hcTL { top: 10px; left: 10px;  border-width: 1.5px 0 0 1.5px; }
-.hcTR { top: 10px; right: 10px; border-width: 1.5px 1.5px 0 0; }
-.hcBL { bottom: 28px; left: 10px;  border-width: 0 0 1.5px 1.5px; }
-.hcBR { bottom: 28px; right: 10px; border-width: 0 1.5px 1.5px 0; }
-
-/* Bottom gradient fade */
-.heroFade {
-  position: absolute; bottom: 0; left: 0; right: 0; height: 90px; z-index: 2;
-  background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.55) 50%, var(--bg) 100%);
-  pointer-events: none;
-}
-
-/* Info badge floating on image */
+/* The mark on the frame: this photograph has been read. Top left, static, out
+   of the way of the rack. */
 .heroBadge {
-  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+  position: absolute; top: 10px; left: 10px;
   z-index: 5;
-  display: inline-flex; align-items: center; gap: 8px;
+  display: inline-flex; align-items: center; gap: 7px;
   background: rgba(0,0,0,0.82);
   backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(0,0,0,0.22);
-  border-radius: 100px; padding: 5px 14px;
+  border-radius: 100px; padding: 4px 11px;
   white-space: nowrap;
 }
 .heroBadgeDot {
   width: 5px; height: 5px; border-radius: 50%;
-  background: var(--c1); box-shadow: 0 0 8px var(--c1);
-  animation: pulse 2s ease infinite;
+  background: var(--c1);
 }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
 .heroBadgeTxt {
   font-family: var(--mono); font-size: .6rem; font-weight: 700;
   color: rgba(0,0,0,0.7); letter-spacing: .1em;
@@ -522,6 +493,39 @@
   box-shadow: 0 0 12px rgba(0,0,0,0.28);
   flex-shrink: 0;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   WHAT THE SCAN FOUND - the rack's own numbers, above the ways on.
+
+   A label above each value, all the same size, all on one grid, so the row
+   reads as one set of findings rather than a sentence. Same shape as the facts
+   on the Network page, for the same reason.
+══════════════════════════════════════════════════════════════ */
+.rackFacts {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: 10px 14px;
+  margin: 2px 0 0;
+  padding: 12px 14px;
+  background: #ffffff;
+  border: 1px solid #EFEFEF;
+  border-radius: 14px;
+}
+.rackFact { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rackFactLabel {
+  font-size: .62rem; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: #757575;
+  /* Two lines' worth, always: "Against the records" wraps where "Devices" does
+     not, and without this the values in one row stop lining up. */
+  min-height: 26px;
+}
+.rackFactVal {
+  font-size: .86rem; font-weight: 650; color: #121212;
+  letter-spacing: -0.01em; overflow-wrap: anywhere;
+}
+.rackFactMono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 
 /* ══════════════════════════════════════════════════════════════
    ACTION SHEET (below hero)
@@ -3549,124 +3553,6 @@
 
 .prHidden { display: none !important; }
 
-/* Port label - plain text below hero image, no container */
-/* ── Port-located info section: white-focused, black accent ── */
-.prLabelLine {
-  text-align: center;
-  font-family: var(--mono);
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  color: #000000;
-  padding: 8px 16px 10px;
-  text-shadow: none;
-  word-break: break-all;
-}
-
-.prDash {
-  display: flex; align-items: stretch; gap: 12px;
-  padding: 6px 16px 18px;
-  color: #000000;
-}
-.prPortTile {
-  position: relative;
-  flex-shrink: 0;
-  width: 82px;
-  min-height: 82px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 2px;
-  padding: 8px 6px;
-  border-radius: 16px;
-  background: #000000;
-  border: 1px solid #000000;
-  box-shadow:
-    var(--shadow-soft, 0 8px 30px rgba(0,0,0,0.06)),
-    inset 0 1px 0 rgba(255,255,255,0.12);
-  overflow: hidden;
-}
-.prPortTile::before { display: none; }
-.prPortGlow { display: none; }
-.prPortLabel {
-  font-family: var(--mono);
-  font-size: .6rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  color: rgba(255,255,255,0.75);
-  position: relative;
-  z-index: 1;
-}
-.prPortNum {
-  font-family: var(--mono);
-  font-size: 2.1rem;
-  font-weight: 800;
-  line-height: 1;
-  color: #ffffff;
-  letter-spacing: 0.02em;
-  text-shadow: none;
-  position: relative;
-  z-index: 1;
-}
-.prMetrics {
-  flex: 1; min-width: 0;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  column-gap: 14px;
-  row-gap: 8px;
-  align-content: center;
-}
-.prMetric {
-  position: relative;
-  display: flex; flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  padding: 2px 0 2px 10px;
-  background: transparent;
-  border: none;
-}
-.prMetric::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 3px; bottom: 3px;
-  width: 2px; border-radius: 2px;
-  background: #000000;
-  box-shadow: none;
-}
-.prMetric:hover { background: transparent; border: none; }
-.prMetricLabel {
-  font-size: .58rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #999999;
-}
-.prMetricVal {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: .84rem;
-  font-weight: 600;
-  color: #000000;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.prMetricStatus .prMetricVal { color: #000000; }
-.prMetricDot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: #000000;
-  box-shadow: none;
-  flex-shrink: 0;
-}
-.prMetricConf {
-  font-family: var(--mono);
-  font-size: .62rem;
-  font-weight: 600;
-  color: #525252;
-  padding: 1px 5px;
-  border-radius: 4px;
-  background: #f0f0f0;
-  letter-spacing: 0.02em;
-}
-
 /* "Your correction" badge - marks a value that came from the user's own
    correction (active learning), so it isn't mistaken for a model result. */
 .userTag {
@@ -3687,275 +3573,93 @@
   vertical-align: middle;
 }
 .userTag svg { flex-shrink: 0; }
-.prMetricSwatch {
+/* ══════════════════════════════════════════════════════════════════════
+   The located port - one answer, one list of facts, then the actions.
+
+   This screen used to mix a black port tile, a two column metric grid, a dark
+   end-device panel with four colours of chip, three sizes of caption and four
+   spacings. Everything below is one row, one label style and one alignment, so
+   a number's meaning is always in the same place next to it.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* The answer. The only large type on the screen. */
+.pAnswer {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 12px 16px 14px;
+}
+.pAnswerPort {
+  font-family: var(--mono);
+  font-size: 1.75rem; font-weight: 800; line-height: 1.05;
+  letter-spacing: -0.01em; color: #121212;
+}
+.pAnswerWhere {
+  font-size: .82rem; font-weight: 600; color: #121212;
+  overflow-wrap: anywhere;
+}
+.pAnswerState {
+  display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-top: 5px;
+  font-size: .82rem; font-weight: 650; color: #121212;
+}
+.pAnswerDot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: #121212; flex: none;
+}
+.pAnswerDotEmpty { background: #ffffff; border: 1.5px solid #c6c6c6; }
+.pAnswerAlso { font-size: .78rem; color: #474747; }
+
+/* A group of facts, and the line that names it. */
+.pBlock {
+  padding: 12px 16px 2px;
+  border-top: 1px solid #EFEFEF;
+}
+.pBlockHead {
+  margin: 0 0 2px;
+  font-size: .68rem; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: #757575;
+}
+/* The same heading where it stands outside a block, over a row of controls. */
+.pBlockHeadLoose { margin: 16px 16px 6px; }
+
+.pList { display: flex; flex-direction: column; }
+.pRow {
+  display: flex; align-items: baseline; gap: 14px;
+  padding: 9px 0;
+  border-top: 1px solid #F4F4F4;
+}
+.pRow:first-child { border-top: 0; }
+.pKey {
+  flex: 0 0 42%;
+  font-size: .76rem; font-weight: 600; color: #757575;
+}
+.pVal {
+  flex: 1 1 auto; min-width: 0;
+  display: inline-flex; align-items: center; justify-content: flex-end;
+  gap: 6px; flex-wrap: wrap;
+  font-size: .82rem; font-weight: 650; color: #121212;
+  text-align: right; overflow-wrap: anywhere;
+}
+.pValMono { font-family: var(--mono); font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
+.pSwatch {
   width: 12px; height: 12px; border-radius: 50%;
-  background: #f0f0f0;
-  border: 1px solid #c6c6c6;
-  flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,0.18);
+  flex: none;
 }
-@media (max-width: 380px) {
-  .prMetrics { grid-template-columns: 1fr; }
-  .prPortTile { width: 68px; min-height: 68px; }
-  .prPortNum { font-size: 1.7rem; }
-}
-
-/* Legacy flat-line layout (kept for fallback) */
-.prLine {
-  display: flex; flex-wrap: wrap; align-items: baseline;
-  gap: 6px 16px;
-  padding: 2px 18px 16px;
-  color: rgba(255,255,255,0.88);
-}
-.prLine > * + * { position: relative; }
-.prLine > * + *::before {
-  content: '';
-  position: absolute;
-  left: -10px; top: 50%;
-  width: 3px; height: 3px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.22);
-  transform: translateY(-50%);
-}
-.prLinePort {
-  font-family: var(--mono);
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: #ffffff;
-  line-height: 1;
-  letter-spacing: 0.02em;
-  text-shadow: 0 0 12px color-mix(in srgb, var(--sc, #000000) 40%, transparent);
-}
-.prLineStatus {
-  display: inline-flex; align-items: center; gap: 6px;
-  color: var(--sc, #c6c6c6);
-  font-weight: 700;
-  font-size: .84rem;
-  letter-spacing: 0.01em;
-}
-.prLineDot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--sc, #c6c6c6);
-  box-shadow: 0 0 9px var(--sc, #c6c6c6);
-  flex-shrink: 0;
-}
-.prLineItem {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.82);
-  font-size: .82rem;
-}
-.prLineConf {
-  font-family: var(--mono);
-  font-size: .6rem;
-  font-weight: 500;
-  color: rgba(255,255,255,0.4);
-}
-.prLineSwatch {
-  width: 10px; height: 10px; border-radius: 50%;
-  background: rgba(255,255,255,0.15);
-  border: 1px solid rgba(255,255,255,0.25);
-  flex-shrink: 0;
-}
-
-/* End device inline line */
-.prEnd {
-  display: flex; align-items: flex-start; gap: 8px;
-  padding: 6px 16px 10px;
-  margin: 0 14px 12px;
-  font-size: .82rem;
-  min-height: 40px;
-  background: transparent;
-  border: none;
-}
-.prEndStack {
-  flex: 1; min-width: 0;
-  display: flex; flex-direction: column; align-items: flex-start;
-  gap: 2px;
-}
-.prEndTop {
-  display: flex; align-items: baseline; gap: 8px;
-  flex-wrap: wrap;
-}
-.prEndLabel {
-  color: rgba(255,255,255,0.4);
-  font-size: .7rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  flex-shrink: 0;
-}
-
-/* ── "Linked endpoint" card - neutral surface, green "live" accent ── */
-.prEndCreative {
-  flex: 1; min-width: 0;
-  display: flex; align-items: flex-start; gap: 12px;
-  position: relative;
-  padding: 12px 14px 12px 16px;
-  border-radius: 12px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.10);
-  box-shadow: 0 2px 10px rgba(0,0,0,0.18);
-}
-.prEndCreative::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px; border-radius: 12px 0 0 12px;
-  background: #16a34a;
-}
-.prEndIcon {
-  position: relative;
-  flex-shrink: 0;
-  width: 34px; height: 34px;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 10px;
-  color: #16a34a;
-  background: rgba(22,163,74,0.12);
-  border: 1px solid rgba(22,163,74,0.30);
-}
-.prEndLiveDot {
-  position: absolute;
-  top: -2px; right: -2px;
-  width: 8px; height: 8px; border-radius: 50%;
-  background: #16a34a;
-  box-shadow: 0 0 0 2px var(--md-surface, #181818), 0 0 8px rgba(22,163,74,0.7);
-  animation: prEndLivePulse 1.6s ease-out infinite;
-}
-@keyframes prEndLivePulse {
-  0%   { box-shadow: 0 0 0 2px var(--md-surface, #181818), 0 0 0 0 rgba(22,163,74,0.55); }
-  70%  { box-shadow: 0 0 0 2px var(--md-surface, #181818), 0 0 0 6px rgba(22,163,74,0); }
-  100% { box-shadow: 0 0 0 2px var(--md-surface, #181818), 0 0 0 0 rgba(22,163,74,0); }
-}
-.prEndBody {
-  flex: 1; min-width: 0;
-  display: flex; flex-direction: column; gap: 4px;
-}
-.prEndHead {
+.pNote {
   display: flex; align-items: center; gap: 8px;
+  margin: 4px 0 2px;
+  font-size: .8rem; color: #474747;
 }
-.prEndTag {
-  display: inline-flex; align-items: center; gap: 4px;
-  font-family: var(--mono);
-  font-size: .58rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  padding: 2px 8px;
-  border-radius: 999px;
-  color: #4ade80;
-  background: rgba(22,163,74,0.16);
-  border: 1px solid rgba(22,163,74,0.38);
+.pAction {
+  margin: 8px 0 4px;
+  min-height: 40px; padding: 0 14px;
+  border-radius: 10px;
+  background: #121212; border: 1px solid #121212; color: #ffffff;
+  font-family: var(--font); font-size: .8rem; font-weight: 650;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
-.prEndTag::before {
-  content: ''; width: 5px; height: 5px; border-radius: 50%;
-  background: #16a34a;
-  box-shadow: 0 0 6px rgba(22,163,74,0.8);
-}
-.prEndChips {
-  display: flex; flex-wrap: wrap; gap: 6px;
-  margin-top: 4px;
-}
-.prEndChip {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 3px 8px;
-  border-radius: 999px;
-  font-family: var(--mono);
-  font-size: .7rem;
-  color: rgba(0,0,0,0.88);
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-}
-.prEndChipKey {
-  font-size: .6rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.4);
-}
-.prEndChipVal { color: #ffffff; letter-spacing: 0.02em; }
-.prEndChip_mac {
-  color: #c6c6c6;
-  background: color-mix(in srgb, #000000 12%, rgba(0,0,0,0.6));
-  border-color: rgba(0,0,0,0.3);
-}
-.prEndChip_mac .prEndChipKey { color: rgba(0,0,0,0.8); }
-.prEndChip_mac .prEndChipVal { color: #ffffff; }
-.prEndChip_ttl {
-  color: #474747;
-  background: color-mix(in srgb, #1c1c1c 10%, rgba(0,0,0,0.6));
-  border-color: rgba(0,0,0,0.28);
-}
-.prEndChip_ttl .prEndChipKey { color: rgba(0,0,0,0.85); }
-.prEndChip_ttl .prEndChipVal { color: #f3f3f3; }
-.prEndChip_vlan {
-  color: #dedede;
-  background: color-mix(in srgb, #2a78d6 22%, rgba(0,0,0,0.5));
-  border-color: color-mix(in srgb, #2a78d6 40%, transparent);
-}
-.prEndChip_vlan .prEndChipKey { color: color-mix(in srgb, #2a78d6 55%, #ffffff); }
-.prEndChip_vlan .prEndChipVal { color: #f3f3f3; }
-.prEndChip_ip {
-  color: #e6e6e6;
-  background: color-mix(in srgb, #16a34a 20%, rgba(0,0,0,0.5));
-  border-color: color-mix(in srgb, #16a34a 40%, transparent);
-}
-.prEndChip_ip .prEndChipKey { color: color-mix(in srgb, #16a34a 55%, #ffffff); }
-.prEndChip_ip .prEndChipVal { color: #ffffff; }
-.prEndPulse {
-  width: 10px; height: 10px; border-radius: 50%;
-  background: var(--ac, #000000);
-  box-shadow: 0 0 0 0 color-mix(in srgb, var(--ac, #000000) 60%, transparent);
-  animation: prEndPulseAnim 1.4s ease-out infinite;
-  flex-shrink: 0;
-}
-@keyframes prEndPulseAnim {
-  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ac, #000000) 60%, transparent); }
-  70%  { box-shadow: 0 0 0 10px color-mix(in srgb, var(--ac, #000000) 0%, transparent); }
-  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ac, #000000) 0%, transparent); }
-}
-.prEndArrow { color: var(--ac, #000000); flex-shrink: 0; }
-.prEndName {
-  color: #ffffff;
-  font-family: var(--mono);
-  letter-spacing: -0.01em;
-  font-weight: 800;
-  font-size: .98rem;
-  line-height: 1.2;
-  /* Long unbreakable tokens (MAC / FQDN) were overflowing and pushing the reset
-     button off-screen - shrink + ellipsis inside the flex row instead. */
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.prEndDim {
-  color: rgba(255,255,255,0.5);
-  font-family: var(--mono);
-  font-size: .76rem;
-  letter-spacing: 0.01em;
-}
-.prEndReset, .prEndAction {
-  margin-left: auto;
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 4px 10px;
-  border-radius: 8px;
-  font-size: .72rem;
-  color: rgba(255,255,255,0.75);
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.12);
-  cursor: pointer;
-  transition: background .15s ease, border-color .15s ease;
-}
-.prEndAction:hover {
-  background: color-mix(in srgb, var(--ac, #000000) 15%, rgba(255,255,255,0.04));
-  border-color: color-mix(in srgb, var(--ac, #000000) 45%, transparent);
-  color: #ffffff;
-}
-.prEndReset {
-  padding: 4px 6px;
-  color: rgba(255,255,255,0.4);
-}
-.prEndReset:hover { color: rgba(255,255,255,0.8); }
 
-/* Console pill */
 .prConsoleBtn {
   display: flex; align-items: center; gap: 8px;
   margin: 0 16px 14px;
@@ -4303,21 +4007,6 @@
   background: rgba(0,0,0,0.14);
 }
 
-/* HUD corner brackets - muted indigo on light */
-:global([data-theme='light']) .hc {
-  border-color: rgba(0,0,0,0.45);
-}
-
-/* Scan line - keep visible but indigo-tinted */
-:global([data-theme='light']) .scanLine {
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(0,0,0,0.20) 20%,
-    rgba(0,0,0,0.65) 50%,
-    rgba(0,0,0,0.20) 80%,
-    transparent 100%);
-}
-
 /* Port image hint pill (over photo) */
 :global([data-theme='light']) .portImgHint {
   background: rgba(255, 255, 255, 0.85);
@@ -4356,10 +4045,6 @@
 :global([data-theme='light']) .cacheBadgeCached { color: #1c1c1c; }
 :global([data-theme='light']) .cacheBadgeLive   { color: #000000; }
 
-/* Hero fade - fade to light bg */
-:global([data-theme='light']) .heroFade {
-  background: linear-gradient(to bottom, transparent 0%, rgba(255, 255, 255,0.55) 50%, var(--bg) 100%);
-}
 :global([data-theme='light']) .heroBadge {
   background: rgba(255, 255, 255, 0.85);
   border-color: #c6c6c6;
@@ -4954,107 +4639,6 @@
 }
 :global([data-theme='light']) .sessionPillDev {
   color: #121212;
-}
-
-/* prDash and prMetric - white-focused, black accent (no colored glows) */
-:global([data-theme='light']) .prDash { color: #000000; }
-:global([data-theme='light']) .prLabelLine {
-  color: #000000;
-  text-shadow: none;
-}
-:global([data-theme='light']) .prPortTile {
-  background: #000000;
-  border: 1px solid #000000;
-  box-shadow:
-    var(--shadow-soft, 0 8px 30px rgba(0,0,0,0.06)),
-    inset 0 1px 0 rgba(255,255,255,0.12);
-}
-:global([data-theme='light']) .prPortTile::before { display: none; }
-:global([data-theme='light']) .prPortGlow { display: none; }
-:global([data-theme='light']) .prPortLabel { color: rgba(255,255,255,0.75); opacity: 1; }
-:global([data-theme='light']) .prPortNum {
-  color: #ffffff;
-  text-shadow: none;
-}
-:global([data-theme='light']) .prMetric::before {
-  background: #000000;
-  box-shadow: none;
-}
-:global([data-theme='light']) .prMetricLabel {
-  color: var(--md-on-surface);
-  opacity: 0.6;
-}
-:global([data-theme='light']) .prMetricVal { color: var(--md-on-surface); }
-:global([data-theme='light']) .prMetricStatus .prMetricVal { color: var(--md-on-surface); }
-:global([data-theme='light']) .prMetricDot {
-  background: var(--md-on-surface);
-  box-shadow: none;
-}
-:global([data-theme='light']) .prMetricConf {
-  color: var(--md-on-surface);
-  background: var(--md-surface-container-high);
-  opacity: 0.85;
-}
-:global([data-theme='light']) .prMetricSwatch {
-  background: var(--md-surface-container-high);
-  border: 1px solid var(--md-outline-variant);
-}
-
-/* prEnd (linked endpoint) */
-:global([data-theme='light']) .prEnd {
-  color: #1c1c1c;
-}
-:global([data-theme='light']) .prEndDim { color: #474747; }
-:global([data-theme='light']) .prEndCreative {
-  background: #ffffff;
-  border: 1px solid #ececec;
-  box-shadow: 0 3px 12px rgba(0,0,0,0.07);
-}
-:global([data-theme='light']) .prEndIcon {
-  color: #16a34a;
-  background: rgba(22,163,74,0.10);
-  border-color: rgba(22,163,74,0.28);
-}
-:global([data-theme='light']) .prEndLiveDot {
-  box-shadow: 0 0 0 2px #ffffff, 0 0 8px rgba(22,163,74,0.6);
-}
-:global([data-theme='light']) .prEndLabel { color: #565656; }
-:global([data-theme='light']) .prEndTag {
-  background: rgba(22,163,74,0.12);
-  color: #15803d;
-  border-color: rgba(22,163,74,0.38);
-}
-:global([data-theme='light']) .prEndName { color: #171717; }
-:global([data-theme='light']) .prEndChip {
-  background: rgba(0,0,0,0.05);
-  border: 1px solid rgba(0,0,0,0.14);
-  color: #3c3c3c;
-}
-:global([data-theme='light']) .prEndChipKey { color: #6d6d6d; }
-:global([data-theme='light']) .prEndChipVal { color: #171717; }
-:global([data-theme='light']) .prEndChip_mac { background: rgba(0,0,0,0.06); }
-:global([data-theme='light']) .prEndChip_mac .prEndChipKey,
-:global([data-theme='light']) .prEndChip_mac .prEndChipVal { color: #171717; }
-:global([data-theme='light']) .prEndChip_vlan {
-  background: color-mix(in srgb, #2a78d6 12%, #ffffff);
-  border-color: color-mix(in srgb, #2a78d6 32%, transparent); color: #1a4f95;
-}
-:global([data-theme='light']) .prEndChip_vlan .prEndChipKey { color: #2a78d6; }
-:global([data-theme='light']) .prEndChip_vlan .prEndChipVal { color: #1a4f95; }
-:global([data-theme='light']) .prEndChip_ip {
-  background: color-mix(in srgb, #16a34a 12%, #ffffff);
-  border-color: color-mix(in srgb, #16a34a 32%, transparent); color: #14612e;
-}
-:global([data-theme='light']) .prEndChip_ip .prEndChipKey { color: #16a34a; }
-:global([data-theme='light']) .prEndChip_ip .prEndChipVal { color: #14612e; }
-:global([data-theme='light']) .prEndAction {
-  background: rgba(0,0,0,0.08);
-  border: 1px solid rgba(0,0,0,0.30);
-  color: #000000;
-}
-:global([data-theme='light']) .prEndAction:hover {
-  background: rgba(0,0,0,0.14);
-  border-color: rgba(0,0,0,0.45);
 }
 
 /* prFb (feedback card) */

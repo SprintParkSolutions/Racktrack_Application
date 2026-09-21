@@ -1,18 +1,39 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import { BackIcon } from '../components/BackButton.jsx';
 import PlacePicker from '../components/PlacePicker.jsx';
+import { PortHistoryContent } from './PortHistoryPage.jsx';
 import { getJSON, setJSON } from '../utils/safeStorage';
 import { apiUrl, authFetch } from '../utils/api';
 import { testLogin, readSwitch, toServerReading, canReadSwitches } from '../utils/snmpClient';
 import { settleAdvice, unclearMatch } from '../utils/matchEvidence';
 import styles from './SwitchTestPage.module.css';
 
-// Switch test - the phone talking to a switch directly, over SNMP.
+// Network - what the switches in this rack are reporting, and how that compares
+// with what the photograph shows.
 //
-// This screen exists to answer one question: can the handset reach a managed
-// switch on the network it is standing on? Every previous attempt went
+// The page is read top to bottom and answers in that order:
+//
+//   This rack          how many switches it has, how many have been read, when
+//                      the last reading was taken, and the totals across them.
+//   Switches           one line each: what it is, where it answers, how many
+//                      ports are up. Tapping one chooses it.
+//   The chosen switch  its make, model, management address and counts; then its
+//                      ports one by one; then the ports where the photograph and
+//                      the switch do not agree; then where it sits in the rack;
+//                      then everything else the switch said.
+//   Timeline           the other half of the page, on its own segment: what has
+//                      changed on these ports over time.
+//
+// Nothing here is measured twice. The reading comes from this phone over SNMP,
+// the photograph's side of the comparison comes from the rack's own scan as the
+// server reconciles it, and the two are lined up socket by socket only where
+// they carry the same number of sockets - see comparePorts.
+//
+// The phone talks to the switch directly. This screen began as the answer to one
+// question: can the handset reach a managed switch on the network it is standing
+// on? Every previous attempt went
 // phone → our server → switch, and the server sits in a data centre with no
 // route to a private address inside somebody's building. Here the phone sends
 // the packets itself.
@@ -194,6 +215,9 @@ function fromServerReading(body) {
     neighbours: neigh,
     attached,
     gaps: d.gaps || [],
+    // When the reading was taken, whoever took it. The phone's own reading
+    // carries readAt; the server's record calls the same thing collectedAt.
+    readAt: body?.collectedAt || d.collectedAt || null,
     counts: {
       ports: ifaces.length,
       up: ifaces.filter((i) => i.up).length,
@@ -278,8 +302,100 @@ const labelled = (sockets) => sockets.filter((i) => i.descr);
 const neighbourOn = (r, name) =>
   (r.neighbours || []).find((n) => n.localPort && String(n.localPort) === String(name)) || null;
 
+/** The number a port's name ends in: Gi1/0/3 is port 3. */
+export const trailingNumber = (name) => {
+  const m = /(\d+)\s*$/.exec(String(name ?? ''));
+  return m ? Number(m[1]) : null;
+};
+
+/** How long ago, in the words a person would use. */
+export function agoText(iso) {
+  if (!iso) return null;
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return null;
+  const mins = Math.round(ms / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 48) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  return `${Math.round(hours / 24)} days ago`;
+}
+
+/**
+ * The photograph against the reading, socket by socket.
+ *
+ * Two witnesses. The camera saw the front of the box and says whether a socket
+ * holds a cable; the switch was read over SNMP and says whether the port is up.
+ * A socket holding a cable whose port is down, or an empty socket whose port is
+ * up, is a disagreement worth a person's time. A socket the camera could not
+ * read is not a finding.
+ *
+ * LINING THEM UP. Socket n is the port whose name ends in n, and only when the
+ * two sides carry the same number of sockets. Where they do not, this says so
+ * and claims nothing: a wrong pairing would turn one miscounted socket into a
+ * column of false alarms, so there is no best guess. The same rule the server's
+ * own port check applies, so the two can never contradict each other.
+ *
+ * `sockets` are the camera's, as the rack's scan carries them ({ n, status,
+ * uplink }); `ports` are the sockets on the front of the box from the reading.
+ */
+export function comparePorts(sockets = [], ports = []) {
+  const cabled = sockets.filter((sk) => sk.status === 'connected').length;
+  const emptyInPhoto = sockets.filter((sk) => sk.status === 'empty').length;
+  const unreadable = sockets.filter((sk) => sk.status !== 'connected' && sk.status !== 'empty').length;
+  const out = { linedUp: false, cabled, emptyInPhoto, unreadable, rows: [], disagree: [] };
+  if (!sockets.length || sockets.length !== ports.length) return out;
+
+  // A number two ports share (Gi1/0/1 and Te1/1/1) answers for neither.
+  const byNumber = new Map();
+  const twice = new Set();
+  for (const port of ports) {
+    const n = trailingNumber(port.name);
+    if (n === null) continue;
+    if (byNumber.has(n)) twice.add(n);
+    byNumber.set(n, port);
+  }
+  for (const n of twice) byNumber.delete(n);
+  if (!byNumber.size) return out;
+
+  out.linedUp = true;
+  out.rows = sockets.map((sk, i) => {
+    const n = Number.isFinite(sk.n) ? sk.n : i + 1;
+    const port = byNumber.get(n) || null;
+    const camera = sk.status === 'connected' ? 'cabled' : sk.status === 'empty' ? 'empty' : 'unknown';
+    const state = !port ? 'unknown' : port.up ? 'up' : 'down';
+    const disagrees = camera !== 'unknown' && state !== 'unknown' && (state === 'up') !== (camera === 'cabled');
+    return {
+      n,
+      name: port ? port.name : null,
+      index: port ? port.index : null,
+      camera,
+      sfp: Boolean(sk.uplink),
+      state,
+      disagrees,
+      why: !disagrees ? null : camera === 'cabled'
+        ? 'The photo shows a cable. The switch says the port is down.'
+        : 'The photo shows an empty socket. The switch says the port is up.',
+    };
+  });
+  out.disagree = out.rows.filter((r) => r.disagrees);
+  return out;
+}
+
+/** One labelled number, the same shape wherever facts are shown. */
+function Fact({ label, value, warn = false }) {
+  if (value === null || value === undefined || value === '') return null;
+  return (
+    <div className={styles.fact}>
+      <span className={styles.factLabel}>{label}</span>
+      <span className={`${styles.factVal} ${warn ? styles.factWarn : ''}`}>{value}</span>
+    </div>
+  );
+}
+
 export default function SwitchTestPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { rackId } = useParams();
 
   const [switches, setSwitches] = useState([]);
@@ -313,6 +429,27 @@ export default function SwitchTestPage() {
   const [formErr, setFormErr] = useState(null);
   const [matchNote, setMatchNote] = useState(null);
 
+  // Which half of the page is up. The Timeline used to be a tab of the rack's
+  // bar; the bar is four tabs now and what changed on these ports is a view of
+  // this page, because these are the ports it is about. An older link to it
+  // arrives as #timeline.
+  const [view, setView] = useState(() => (
+    (location.hash || '').replace(/^#/, '').toLowerCase() === 'timeline' ? 'timeline' : 'switches'
+  ));
+  useEffect(() => {
+    const h = (location.hash || '').replace(/^#/, '').toLowerCase();
+    if (h === 'timeline' || h === 'drift') setView('timeline');
+  }, [location.hash]);
+
+  // The switch being looked at. One at a time: the whole of a 52 port switch is
+  // more than a phone screen holds, and four of them stacked is what made this
+  // page unreadable.
+  const [chosen, setChosen] = useState(null);
+
+  // What the server has filed for this rack, for the one thing the phone cannot
+  // know: when a switch was last read by somebody else's handset.
+  const [filed, setFiled] = useState([]);
+
   // The switches and what they last said, from the one list, folding in
   // anything an older build filed per rack.
   useEffect(() => {
@@ -327,9 +464,20 @@ export default function SwitchTestPage() {
     if (Object.keys(results).length) setJSON(RESULTS, results);
   }, [results]);
 
+  // Always a switch in view, and never one that has been removed.
+  useEffect(() => {
+    setChosen((c) => (c != null && switches.some((x) => x.id === c) ? c : (switches[0]?.id ?? null)));
+  }, [switches]);
+
   /** Ask the server where each read switch sits, and what it proposes. */
   const loadPlaces = useCallback(async () => {
     if (!rackId) return;
+    try {
+      // What the server holds for this rack. Only its collection times are used
+      // here; the list a person works with is the one on this phone.
+      const held = await authFetch(apiUrl(`/api/nb/switches?rackId=${encodeURIComponent(rackId)}`));
+      if (held.ok) setFiled(await held.json());
+    } catch { /* the times simply stay unknown */ }
     try {
       const a = await authFetch(apiUrl(`/api/nb/scans/adopt/${encodeURIComponent(rackId)}`), { method: 'POST' });
       if (!a.ok) return;
@@ -549,6 +697,7 @@ export default function SwitchTestPage() {
   };
 
   const doTest = async (sw) => {
+    setChosen(sw.id);
     setBusy(sw.id); setStep(viaServer ? 'Asking the server to say hello' : 'Saying hello'); clearFor(sw.id);
     try {
       const info = viaServer ? fromServerReading(await serverRead(sw, 'test')) : await testLogin(sw);
@@ -561,6 +710,9 @@ export default function SwitchTestPage() {
   };
 
   const doRead = async (sw) => {
+    // What is being read is what is on screen, so the progress, the reading and
+    // any refusal are all where the person is looking.
+    setChosen(sw.id);
     setBusy(sw.id); setStep('Starting'); clearFor(sw.id);
     stopRef.current.delete(sw.id);
     // A full read is a dozen conversations with the switch, each with its own
@@ -780,6 +932,475 @@ export default function SwitchTestPage() {
     </section>
   );
 
+  // ── What the page knows, gathered once ───────────────────────────────────
+  //
+  // Every number below comes from one of three places and nowhere else: the
+  // switch list on this phone, the reading each switch last gave, and the rack's
+  // own scan as the server reconciles it (which carries the photograph's sockets
+  // and which box each switch was matched to).
+
+  /** The last reading of a switch, when it was a full one. */
+  const readingOf = (sw) => (results[sw.id]?.kind === 'full' ? results[sw.id] : null);
+
+  /** The server's record for this switch on this rack, if it has one. */
+  const recordOf = (sw) => filed.find((f) => f.host === sw.host && Number(f.port) === Number(sw.port)) || null;
+
+  /** When this switch was last read, by this phone or by anybody. */
+  const readAtOf = (sw) => readingOf(sw)?.readAt || recordOf(sw)?.collected?.at || null;
+
+  /** The box on the photograph this switch has been matched to. */
+  const boxOf = (sw) => {
+    const serverId = serverIdFor(sw, rackId);
+    const uid = serverId ? match[serverId] : null;
+    return uid ? (places?.devices || []).find((d) => d.uid === uid) || null : null;
+  };
+
+  /** The whole comparison for one switch: its sockets, the photo's, and the verdict. */
+  const lookOf = (sw) => {
+    const r = readingOf(sw);
+    const sockets = socketsOf(r);
+    const box = boxOf(sw);
+    return {
+      reading: r,
+      sockets,
+      up: sockets.filter((i) => i.up).length,
+      box,
+      cmp: comparePorts(box?.sockets || [], sockets),
+    };
+  };
+
+  const looks = switches.map((sw) => ({ sw, ...lookOf(sw) }));
+  const readCount = looks.filter((l) => l.reading).length;
+  const lastReadAt = switches
+    .map(readAtOf)
+    .filter(Boolean)
+    .sort()
+    .slice(-1)[0] || null;
+  const totalPorts = looks.reduce((n, l) => n + l.sockets.length, 0);
+  const totalUp = looks.reduce((n, l) => n + l.up, 0);
+  const totalCabled = looks.reduce((n, l) => n + (l.box ? l.cmp.cabled : 0), 0);
+  const anyBox = looks.some((l) => l.box);
+  const totalDisagree = looks.reduce((n, l) => n + l.cmp.disagree.length, 0);
+  const anyLinedUp = looks.some((l) => l.cmp.linedUp);
+
+  const chosenLook = looks.find((l) => l.sw.id === chosen) || null;
+
+  /** The way the reading went, for the rail down the left of a card. */
+  const stateOf = (sw) => (busy === sw.id ? 'busy'
+    : errors[sw.id] ? 'bad'
+      : results[sw.id]?.kind === 'full' ? 'good'
+        : results[sw.id] ? 'ok' : 'idle');
+
+  /** Read again, Edit, Copy, Remove. Housekeeping, not content. */
+  const renderMenu = (sw) => (
+    <div className={styles.menuWrap}>
+      <button
+        type="button"
+        className={styles.kebab}
+        aria-label={`Actions for ${sw.label}`}
+        aria-expanded={menuFor === sw.id}
+        disabled={busy === sw.id}
+        onClick={() => setMenuFor(menuFor === sw.id ? null : sw.id)}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <circle cx="12" cy="5" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="12" cy="19" r="1.8" />
+        </svg>
+      </button>
+      {menuFor === sw.id && (
+        <>
+          <button
+            type="button" tabIndex={-1} aria-hidden="true"
+            className={styles.menuScrim} onClick={() => setMenuFor(null)}
+          />
+          <div className={styles.menu} role="menu">
+            <button type="button" role="menuitem"
+              onClick={() => { setMenuFor(null); doRead(sw); }}>
+              {results[sw.id] || errors[sw.id] ? 'Read this switch again' : 'Read this switch'}
+            </button>
+            <button type="button" role="menuitem"
+              onClick={() => { setMenuFor(null); openEdit(sw); }}>
+              Edit its address
+            </button>
+            {(results[sw.id] || errors[sw.id]) && (
+              <button type="button" role="menuitem"
+                onClick={() => { setMenuFor(null); copyResult(sw); }}>
+                Copy the reading
+              </button>
+            )}
+            <button type="button" role="menuitem" className={styles.menuBad}
+              onClick={() => { setMenuFor(null); remove(sw); }}>
+              Remove this switch
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+
+  // ── The chosen switch, port by port and in detail ────────────────────────
+  const renderChosen = (look) => {
+    const { sw, reading: r, sockets, up, box, cmp } = look;
+    const err = errors[sw.id];
+    const working = busy === sw.id;
+    const editing = form && form.id === sw.id;
+    const serverId = serverIdFor(sw, rackId);
+    const open = Boolean(more[sw.id]);
+    const tapped = r ? sockets.find((i) => i.index === pin[sw.id]) : null;
+    const tappedRow = tapped ? cmp.rows.find((row) => row.index === tapped.index) : null;
+    const sfpCount = cmp.rows.filter((row) => row.sfp).length;
+    const at = Number(box?.position);
+    const shelf = Number.isFinite(at) && at > 0 ? `Shelf U${at}` : null;
+    const readAt = readAtOf(sw);
+
+    return (
+      <>
+        <section className={styles.panel} data-state={stateOf(sw)}>
+          <div className={styles.bandHead}>
+            <h2>{sw.label}</h2>
+            {renderMenu(sw)}
+          </div>
+
+          <div className={styles.facts}>
+            <Fact label="Make" value={r?.vendor || (r ? 'not stated' : null)} />
+            <Fact label="Model" value={r?.model || r?.sysName || (r ? 'not stated' : null)} />
+            <Fact label="Management address"
+              value={Number(sw.port) === 161 ? sw.host : `${sw.host}:${sw.port}`} />
+            <Fact label="Reads as" value={sw.version === 'v3' ? 'SNMP v3' : 'SNMP v2c'} />
+            <Fact label="Ports" value={r ? sockets.length : null} />
+            <Fact label="Ports up" value={r ? up : null} />
+            <Fact label="Ports free" value={r ? sockets.length - up : null} />
+            <Fact label="Cabled in the photo" value={box ? cmp.cabled : null} />
+            <Fact label="SFP ports in the photo" value={cmp.linedUp ? sfpCount : null} />
+            <Fact label="Ports that disagree"
+              value={cmp.linedUp ? cmp.disagree.length : null}
+              warn={cmp.disagree.length > 0} />
+            <Fact label="Where it sits" value={shelf} />
+            <Fact label="Serial number" value={r?.serial} />
+            <Fact label="Firmware" value={r?.firmware} />
+            <Fact label="Devices it has seen" value={r?.attached?.length || null} />
+            <Fact label="Running" value={r?.uptime != null ? uptimeText(r.uptime)?.replace(/^up /, '') : null} />
+            <Fact label="Last read" value={readAt ? agoText(readAt) : (r ? null : 'not read yet')} />
+          </div>
+
+          {/* Edit opens under the switch it edits. */}
+          {editing && renderForm()}
+
+          {working && (
+            <p className={styles.working}>
+              <span className={styles.spinner} />
+              <span className={styles.workingStep}>{step || 'Working'}…</span>
+              <button
+                type="button"
+                className={styles.stop}
+                onClick={() => { stopRef.current.add(sw.id); setStep('Stopping'); }}
+              >
+                Stop
+              </button>
+            </p>
+          )}
+
+          {err && !editing && (
+            <div className={styles.bad}>
+              <p>{err.message}</p>
+              {err.hint && <p className={styles.hint}>{err.hint}</p>}
+              {/* A switch added before v3 existed is stored as v2c and will
+                  never answer a community string. Name the likely cause
+                  rather than leaving "did not answer" to be puzzled over. */}
+              {sw.version !== 'v3' && /did not answer/i.test(err.message || '') && (
+                <p className={styles.hint}>
+                  This switch is saved as <b>v2c</b>. A switch set up for SNMPv3
+                  does not answer a community string.
+                </p>
+              )}
+            </div>
+          )}
+
+          {!r && !err && !working && !editing && (
+            <button type="button" className={styles.primary} onClick={() => doRead(sw)}>
+              Read this switch
+            </button>
+          )}
+
+          {/* A reading the server has not been told about is not in the report,
+              and the report is where this goes. Say so, and offer the retry. */}
+          {rackId && r && !r.filed && !editing && (
+            <p className={styles.unfiled}>
+              Not in the report yet{r.filedWhy ? ` - ${r.filedWhy}` : ''}
+              <button type="button" onClick={() => doRead(sw)}>Read it and file it</button>
+            </p>
+          )}
+        </section>
+
+        {/* ── Port by port ──
+            Every socket on the front of the box, two rows, fitted to the width
+            of the screen however many there are. Lit means the switch says the
+            port is up; a marked socket is one the photograph disagrees with, or
+            one the photograph read as an SFP cage. Tap one for its own line. */}
+        {r && sockets.length > 0 && !editing && (
+          <section className={styles.panel}>
+            <div className={styles.bandHead}>
+              <h2>Ports</h2>
+              <span>{up} up, {sockets.length - up} free</span>
+            </div>
+            <div className={styles.plate}>
+              <div
+                className={styles.pins}
+                style={{ '--cols': Math.ceil(sockets.length / 2) }}
+                aria-label="Ports"
+              >
+                {sockets.map((i) => {
+                  const row = cmp.rows.find((x) => x.index === i.index) || null;
+                  return (
+                    <button
+                      type="button"
+                      key={i.index}
+                      aria-label={`Port ${i.name}, ${i.up ? 'up' : 'free'}${row?.disagrees ? ', disagrees with the photo' : ''}${row?.sfp ? ', SFP' : ''}`}
+                      aria-pressed={pin[sw.id] === i.index}
+                      className={[
+                        styles.pinCell,
+                        i.up ? styles.pinUp : '',
+                        row?.sfp ? styles.pinSfp : '',
+                        row?.disagrees ? styles.pinBad : '',
+                        pin[sw.id] === i.index ? styles.pinOn : '',
+                      ].filter(Boolean).join(' ')}
+                      onClick={() => setPin((m) => ({ ...m, [sw.id]: m[sw.id] === i.index ? null : i.index }))}
+                    >
+                      {portNum(i.name)}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <p className={styles.plateNote}>
+                {tapped ? (
+                  <>
+                    <b>Port {portNum(tapped.name)}</b>
+                    {' · '}{tapped.up ? 'up' : 'free'}
+                    {tapped.speedMbps ? ` · ${speedText(tapped.speedMbps)}` : ''}
+                    {tapped.duplex ? ` · ${tapped.duplex} duplex` : ''}
+                    {tappedRow?.sfp ? ' · SFP in the photo' : ''}
+                    {tappedRow && tappedRow.camera !== 'unknown'
+                      ? ` · photo shows ${tappedRow.camera === 'cabled' ? 'a cable' : 'an empty socket'}`
+                      : ''}
+                    {tapped.descr ? ` · named ${tapped.descr}` : ''}
+                    {neighbourOn(r, tapped.name) ? ` · to ${neighbourOn(r, tapped.name).sysName}` : ''}
+                    {tapped.attached
+                      ? ` · ${tapped.attached} device${tapped.attached === 1 ? '' : 's'} seen`
+                      : ''}
+                  </>
+                ) : (
+                  <>
+                    <span className={styles.key}><i className={styles.keyUp} />up</span>
+                    <span className={styles.key}><i className={styles.keyDown} />free</span>
+                    {cmp.linedUp && sfpCount > 0 && (
+                      <span className={styles.key}><i className={styles.keySfp} />SFP</span>
+                    )}
+                    {cmp.disagree.length > 0 && (
+                      <span className={styles.key}><i className={styles.keyBad} />disagrees</span>
+                    )}
+                    <span className={styles.keyHint}>tap a port</span>
+                  </>
+                )}
+              </p>
+            </div>
+
+            {/* What the photograph is worth for this box, in one line. */}
+            {box && !cmp.linedUp && (
+              <p className={styles.proposal}>
+                The photograph shows {cmp.cabled + cmp.emptyInPhoto + cmp.unreadable} socket
+                {cmp.cabled + cmp.emptyInPhoto + cmp.unreadable === 1 ? '' : 's'} on this box and the
+                switch reports {sockets.length}, so the two cannot be lined up port by port.
+              </p>
+            )}
+            {!box && places?.devices?.length > 0 && (
+              <p className={styles.proposal}>
+                Say which box in the rack this switch is, below, and the photograph
+                can be compared with it port by port.
+              </p>
+            )}
+          </section>
+        )}
+
+        {/* ── Where the two do not agree ── */}
+        {r && cmp.disagree.length > 0 && !editing && (
+          <section className={styles.panel}>
+            <div className={styles.bandHead}>
+              <h2>Ports that disagree</h2>
+              <span>{cmp.disagree.length} of {cmp.rows.length}</span>
+            </div>
+            <ul className={styles.nbrRows}>
+              {cmp.disagree.map((row) => (
+                <li key={row.n}>
+                  <span className={styles.nbrName}>{row.why}</span>
+                  <span className={styles.nbrWhere}>Port {row.n}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {/* ── Where this switch sits ──
+            The camera found the boxes; this says which box this switch is - from
+            the list, or off the photograph. */}
+        {r && serverId && places?.devices?.length > 0 && !editing && (
+          <section className={styles.panel}>
+            <div className={styles.bandHead}><h2>Where it sits in the rack</h2></div>
+            <PlacePicker
+              devices={places.devices}
+              image={places.image}
+              rackLabel={places.rackName || rackId}
+              value={match[serverId] ?? ''}
+              name={sw.label}
+              suggestion={(places.switches || []).find((x) => x.id === serverId)?.autoMatch || null}
+              written={Boolean((places.switches || []).find((x) => x.id === serverId)?.written)}
+              confirming={confirming === serverId}
+              onConfirm={(uid) => confirmPlace(serverId, uid)}
+              takenBy={Object.fromEntries(
+                Object.entries(match)
+                  .filter(([id, uid]) => uid && id !== String(serverId))
+                  .map(([id, uid]) => [uid, (places.switches || []).find((x) => String(x.id) === id)?.label || 'another switch']),
+              )}
+              onChange={(uid) => setMatch((m) => {
+                // One box holds one switch, so pointing this one at a box
+                // another switch holds moves it rather than making a pair the
+                // server has to refuse.
+                const next = { ...m, [serverId]: uid };
+                if (uid) {
+                  for (const other of Object.keys(next)) {
+                    if (String(other) !== String(serverId) && next[other] === uid) next[other] = '';
+                  }
+                }
+                return next;
+              })}
+            />
+            {/* Nothing has been stored for this rack yet, so what is showing is
+                the server's proposal. Say so where it shows, rather than letting
+                it read as a place somebody chose. */}
+            {places.suggested && (match[serverId]
+              ? <p className={styles.proposal}>Suggested. Save places to keep it.</p>
+              : <p className={styles.proposal}>{settleAdvice(reasonFor(places, serverId), false)}</p>
+            )}
+          </section>
+        )}
+
+        {/* ── Everything else the switch said ──
+            One line of it by default. The ports above already say which are up;
+            the detail is a tap away for whoever came for it. */}
+        {r && !editing && (
+          <section className={styles.panel}>
+            <button
+              type="button"
+              className={styles.moreBtn}
+              aria-expanded={open}
+              onClick={() => setMore((m) => ({ ...m, [sw.id]: !m[sw.id] }))}
+            >
+              <span className={styles.moreSum}>
+                What else this switch said
+                {r.attached?.length
+                  ? ` · ${r.attached.length} device${r.attached.length === 1 ? '' : 's'} seen`
+                  : ''}
+                {r.neighbours?.length ? ` · ${r.neighbours.length} named neighbour${r.neighbours.length === 1 ? '' : 's'}` : ''}
+              </span>
+              <span className={styles.moreLink}>{open ? 'Less' : 'More'}</span>
+            </button>
+
+            {open && (
+              <div className={styles.data}>
+                {/* What is running, by speed. Fourteen rows of "1 Gb" is a
+                    register, not a report: it says the same thing fourteen
+                    times and buries the three ports that differ. */}
+                <div className={styles.dataHead}>
+                  <h3>Ports in use, by speed</h3>
+                  <span className={styles.dataCount}>{up}</span>
+                </div>
+                {up === 0 ? (
+                  <p className={styles.none}>All {sockets.length} ports are free.</p>
+                ) : (
+                  <div className={styles.speeds}>
+                    {speedGroups(sockets).map((g) => (
+                      <div className={styles.speedRow} key={g.label}>
+                        <span className={styles.speedTag}>{g.label}</span>
+                        <span className={styles.speedPorts}>
+                          {g.ports.map((i) => portNum(i.name)).join('  ')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className={styles.dataHead}>
+                  <h3>Neighbours that named themselves</h3>
+                  <span className={styles.dataCount}>{r.neighbours.length}</span>
+                </div>
+                {r.neighbours.length === 0 ? (
+                  <p className={styles.none}>No end device named itself to this switch.</p>
+                ) : (
+                  <ul className={styles.nbrRows}>
+                    {r.neighbours.map((n, k) => (
+                      <li key={k}>
+                        <span className={styles.nbrName}>{n.sysName}</span>
+                        <span className={styles.nbrWhere}>
+                          {n.localPort || ' - '}{n.port ? ` to ${n.port}` : ''}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {/* Everything the switch has learned the address of, and the
+                    port it learned it on. A neighbour naming itself is a
+                    courtesy the far end has to offer; this is the switch's own
+                    bookkeeping, so it sees the laptops and cameras that
+                    announce nothing. */}
+                {r.attached?.length > 0 && (
+                  <>
+                    <div className={styles.dataHead}>
+                      <h3>Devices seen on these ports</h3>
+                      <span className={styles.dataCount}>{r.attached.length}</span>
+                    </div>
+                    <ul className={styles.nbrRows}>
+                      {[...r.attached]
+                        .sort((a, b) => String(a.port).localeCompare(String(b.port), undefined, { numeric: true }))
+                        .map((d) => (
+                          <li key={`${d.mac}-${d.ifIndex}`}>
+                            <span className={styles.nbrName}>{d.ip || d.mac}</span>
+                            <span className={styles.nbrWhere}>
+                              {d.ip ? `${d.mac} · ` : ''}{d.port}
+                            </span>
+                          </li>
+                        ))}
+                    </ul>
+                  </>
+                )}
+
+                {labelled(sockets).length > 0 && (
+                  <>
+                    <div className={styles.dataHead}><h3>Ports somebody has named</h3></div>
+                    <ul className={styles.nbrRows}>
+                      {labelled(sockets).map((i) => (
+                        <li key={i.index}>
+                          <span className={styles.nbrName}>{i.descr}</span>
+                          <span className={styles.nbrWhere}>{i.name}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+
+                {!r.model && r.sysDescr && (
+                  <>
+                    <div className={styles.dataHead}><h3>What it calls itself</h3></div>
+                    <p className={styles.descr}>{r.sysDescr}</p>
+                  </>
+                )}
+              </div>
+            )}
+          </section>
+        )}
+      </>
+    );
+  };
+
   return (
     <div className={`page page-full ${styles.page}`}>
       <header className={styles.header}>
@@ -795,14 +1416,42 @@ export default function SwitchTestPage() {
         <ThemeToggle />
       </header>
 
+      {/* Two halves of one page: the switches as they are now, and what has
+          changed on their ports over time. */}
+      <div className={styles.viewSeg} role="tablist" aria-label="What to show">
+        <button
+          type="button" role="tab" aria-selected={view === 'switches'}
+          className={`${styles.viewBtn} ${view === 'switches' ? styles.viewOn : ''}`}
+          onClick={() => setView('switches')}
+        >
+          Switches
+        </button>
+        <button
+          type="button" role="tab" aria-selected={view === 'timeline'}
+          className={`${styles.viewBtn} ${view === 'timeline' ? styles.viewOn : ''}`}
+          onClick={() => setView('timeline')}
+        >
+          Timeline
+        </button>
+      </div>
+
       <div className={styles.scroll}>
         {/* The phone does the reading, so say so before anyone presses a button
             they cannot use. Only ever shown in a browser. */}
-        {viaServer && (
+        {viaServer && view === 'switches' && (
           <p className={styles.notice}>
             <b>The server is reading these switches.</b> A browser cannot reach them directly.
           </p>
         )}
+
+        {view === 'timeline' ? (
+          <section className={styles.panel}>
+            <div className={styles.bandHead}>
+              <h2>What changed on these ports</h2>
+            </div>
+            <PortHistoryContent rackId={rackId} />
+          </section>
+        ) : (<>
 
         {switches.length === 0 && !form && (
           <div className={styles.empty}>
@@ -816,400 +1465,108 @@ export default function SwitchTestPage() {
           </div>
         )}
 
+        {/* ── This rack ──
+            The whole rack in one band, so the first thing on the screen answers
+            how much of it has been read and how far the photograph and the
+            switches are apart. */}
+        {switches.length > 0 && (
+          <section className={styles.panel}>
+            <div className={styles.bandHead}><h2>This rack</h2></div>
+            <div className={styles.facts}>
+              <Fact label="Switches" value={switches.length} />
+              <Fact label="Read" value={`${readCount} of ${switches.length}`} />
+              <Fact label="Last read" value={lastReadAt ? agoText(lastReadAt) : 'not read yet'} />
+              <Fact label="Ports reported" value={readCount ? totalPorts : null} />
+              <Fact label="Ports up" value={readCount ? totalUp : null} />
+              <Fact label="Cabled in the photo" value={anyBox ? totalCabled : null} />
+              <Fact label="Ports that disagree"
+                value={anyLinedUp ? totalDisagree : null}
+                warn={totalDisagree > 0} />
+            </div>
+            {readCount < switches.length && (
+              <p className={styles.proposal}>
+                {switches.length - readCount === 1
+                  ? 'One switch has not been read yet. Choose it below and read it.'
+                  : `${switches.length - readCount} switches have not been read yet. Choose one below and read it.`}
+              </p>
+            )}
+          </section>
+        )}
+
         {/* ── The switches ──
-            Each one is a band across the full width of the screen, parted from
-            the next by a hairline and marked down its left edge by how it went.
-            Nothing floats and nothing nests: the reading IS the row. */}
-        {switches.map((sw, idx) => {
-          const r = results[sw.id];
-          const err = errors[sw.id];
-          const working = busy === sw.id;
-          const editing = form && form.id === sw.id;
-          const state = working ? 'busy' : err ? 'bad' : r?.kind === 'full' ? 'good' : r ? 'ok' : 'idle';
-
-          // What the faceplate has to say about the port someone tapped.
-          const tapped = r?.kind === 'full'
-            ? (r.interfaces || []).find((i) => i.index === pin[sw.id]) : null;
-
-          // The sockets on the front of the box. The switch also reports its
-          // VLAN interfaces and its loopback; they are not ports and drawing
-          // them on a faceplate says the box has sockets it does not have.
-          const sockets = r?.kind === 'full' ? socketsOf(r) : [];
-          const upCount = sockets.filter((i) => i.up).length;
-
-          const open = Boolean(more[sw.id]);
-
-          return (
-            <section key={sw.id} className={styles.row} data-state={state}>
-              <div className={styles.rowTop}>
-                <div className={styles.who}>
-                  <h2><span className={styles.num} aria-hidden="true">{idx + 1}</span>{sw.label}</h2>
-                  {r && (
-                    <p className={styles.model}>
-                      {r.vendor && <span className={styles.make}>{r.vendor}</span>}
-                      {r.model || r.sysName || 'model not stated'}
-                    </p>
-                  )}
-                  <p className={styles.meta}>
-                    {[
-                      Number(sw.port) === 161 ? sw.host : `${sw.host}:${sw.port}`,
-                      r?.uptime != null ? uptimeText(r.uptime) : null,
-                      r?.serial ? `serial ${r.serial}` : null,
-                    ].filter(Boolean).join(' · ')}
-                  </p>
-                </div>
-
-                {/* The one number worth reading from arm's length. */}
-                {r?.kind === 'full' ? (
-                  <div className={styles.count}>
-                    <b>{upCount}<i>/</i>{sockets.length}</b>
-                    <span>ports up</span>
-                  </div>
-                ) : (
-                  <span className={styles.state}>
-                    {working ? 'Reading' : err ? 'No answer' : r ? 'Answered' : 'Not read'}
-                  </span>
-                )}
-
-                {/* Read again, Edit, Copy, Remove. Housekeeping, not content:
-                    it belongs at the switch's name, not strung across the foot
-                    of everything the switch had to say. */}
-                <div className={styles.menuWrap}>
+            One line each. Whichever is chosen is the one shown in full below,
+            because a phone screen holds one switch at a time. */}
+        {switches.length > 0 && (
+          <>
+            <h2 className={styles.sectionHead}>Switches on this rack</h2>
+            <div className={styles.pick}>
+              {looks.map(({ sw, reading: r, sockets, up, cmp }, idx) => {
+                const on = sw.id === chosen;
+                const readAt = readAtOf(sw);
+                return (
                   <button
                     type="button"
-                    className={styles.kebab}
-                    aria-label={`Actions for ${sw.label}`}
-                    aria-expanded={menuFor === sw.id}
-                    disabled={working}
-                    onClick={() => setMenuFor(menuFor === sw.id ? null : sw.id)}
+                    key={sw.id}
+                    aria-pressed={on}
+                    className={`${styles.pickRow} ${on ? styles.pickOn : ''}`}
+                    data-state={stateOf(sw)}
+                    onClick={() => { setChosen(sw.id); setMenuFor(null); }}
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                      <circle cx="12" cy="5" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="12" cy="19" r="1.8" />
-                    </svg>
-                  </button>
-                  {menuFor === sw.id && (
-                    <>
-                      <button
-                        type="button" tabIndex={-1} aria-hidden="true"
-                        className={styles.menuScrim} onClick={() => setMenuFor(null)}
-                      />
-                      <div className={styles.menu} role="menu">
-                        <button type="button" role="menuitem"
-                          onClick={() => { setMenuFor(null); doRead(sw); }}>
-                          {r || err ? 'Read again' : 'Read this switch'}
-                        </button>
-                        <button type="button" role="menuitem"
-                          onClick={() => { setMenuFor(null); openEdit(sw); }}>
-                          Edit
-                        </button>
-                        {(r || err) && (
-                          <button type="button" role="menuitem"
-                            onClick={() => { setMenuFor(null); copyResult(sw); }}>
-                            Copy result
-                          </button>
-                        )}
-                        <button type="button" role="menuitem" className={styles.menuBad}
-                          onClick={() => { setMenuFor(null); remove(sw); }}>
-                          Remove
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Edit opens here, under the switch it edits. */}
-              {editing && renderForm()}
-
-              {working && (
-                <p className={styles.working}>
-                  <span className={styles.spinner} />
-                  <span className={styles.workingStep}>{step || 'Working'}…</span>
-                  <button
-                    type="button"
-                    className={styles.stop}
-                    onClick={() => { stopRef.current.add(sw.id); setStep('Stopping'); }}
-                  >
-                    Stop
-                  </button>
-                </p>
-              )}
-
-              {/* ── The faceplate ──
-                  Every port on the switch, two rows, fitted to the width of
-                  the screen however many there are - the shape of the front of
-                  the box. Lit means up. Tap one and the line underneath says
-                  which it is and what is on it. */}
-              {r?.kind === 'full' && sockets.length > 0 && !editing && (
-                <div className={styles.plate}>
-                  <div
-                    className={styles.pins}
-                    style={{ '--cols': Math.ceil(sockets.length / 2) }}
-                    role="list"
-                    aria-label="Ports"
-                  >
-                    {sockets.map((i) => (
-                      <button
-                        type="button"
-                        key={i.index}
-                        role="listitem"
-                        aria-label={`Port ${i.name}, ${i.up ? 'up' : 'down'}`}
-                        aria-pressed={pin[sw.id] === i.index}
-                        className={`${styles.pinCell} ${i.up ? styles.pinUp : ''} ${pin[sw.id] === i.index ? styles.pinOn : ''}`}
-                        onClick={() => setPin((m) => ({ ...m, [sw.id]: m[sw.id] === i.index ? null : i.index }))}
-                      >
-                        {portNum(i.name)}
-                      </button>
-                    ))}
-                  </div>
-
-                  <p className={styles.plateNote}>
-                    {tapped ? (
-                      <>
-                        <b>{tapped.name}</b>
-                        {' · '}{tapped.up ? 'up' : 'down'}
-                        {tapped.speedMbps ? ` · ${speedText(tapped.speedMbps)}` : ''}
-                        {tapped.duplex ? ` · ${tapped.duplex} duplex` : ''}
-                        {tapped.descr ? ` · ${tapped.descr}` : ''}
-                        {neighbourOn(r, tapped.name) ? ` · to ${neighbourOn(r, tapped.name).sysName}` : ''}
-                        {tapped.attached
-                          ? ` · ${tapped.attached} device${tapped.attached === 1 ? '' : 's'} seen`
+                    <span className={styles.num} aria-hidden="true">{idx + 1}</span>
+                    <span className={styles.pickWho}>
+                      <span className={styles.pickName}>{sw.label}</span>
+                      <span className={styles.pickWhat}>
+                        {[
+                          r ? [r.vendor, r.model || r.sysName].filter(Boolean).join(' ') || 'make and model not stated' : null,
+                          Number(sw.port) === 161 ? sw.host : `${sw.host}:${sw.port}`,
+                        ].filter(Boolean).join(' · ')}
+                      </span>
+                      <span className={styles.pickWhen}>
+                        {busy === sw.id ? (step || 'Reading') + '…'
+                          : errors[sw.id] ? 'It did not answer'
+                            : readAt ? `Last read ${agoText(readAt)}`
+                              : 'Not read yet'}
+                        {cmp.disagree.length > 0
+                          ? ` · ${cmp.disagree.length} port${cmp.disagree.length === 1 ? '' : 's'} disagree`
                           : ''}
-                      </>
-                    ) : (
-                      <>
-                        <span className={styles.key}><i className={styles.keyUp} />up</span>
-                        <span className={styles.key}><i className={styles.keyDown} />down</span>
-                        <span className={styles.keyHint}>tap a port</span>
-                      </>
-                    )}
-                  </p>
-                </div>
-              )}
-
-              {err && !editing && (
-                <div className={styles.bad}>
-                  <p>{err.message}</p>
-                  {err.hint && <p className={styles.hint}>{err.hint}</p>}
-                  {/* A switch added before v3 existed is stored as v2c and will
-                      never answer a community string. Name the likely cause
-                      rather than leaving "did not answer" to be puzzled over. */}
-                  {sw.version !== 'v3' && /did not answer/i.test(err.message || '') && (
-                    <p className={styles.hint}>
-                      This switch is saved as <b>v2c</b>. A switch set up for SNMPv3
-                      does not answer a community string.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* A reading the server has not been told about is not in the
-                  report, and the report is where this goes. Say so where the
-                  reading is, and offer the retry. */}
-              {rackId && r?.kind === 'full' && !r.filed && !editing && (
-                <p className={styles.unfiled}>
-                  Not in the report yet{r.filedWhy ? ` - ${r.filedWhy}` : ''}
-                  <button type="button" onClick={() => doRead(sw)}>Read and file it</button>
-                </p>
-              )}
-
-              {/* Where this switch sits, once it has been read and the rack has
-                  places to offer. The camera found the boxes; this says which
-                  box this switch is - from the list, or off the photo. */}
-              {r?.kind === 'full' && serverIdFor(sw, rackId) && places?.devices?.length > 0 && !editing && (
-                <>
-                  <PlacePicker
-                    devices={places.devices}
-                    image={places.image}
-                    rackLabel={places.rackName || rackId}
-                    value={match[serverIdFor(sw, rackId)] ?? ''}
-                    name={sw.label}
-                    suggestion={(places.switches || []).find((x) => x.id === serverIdFor(sw, rackId))?.autoMatch || null}
-                    written={Boolean((places.switches || []).find((x) => x.id === serverIdFor(sw, rackId))?.written)}
-                    confirming={confirming === serverIdFor(sw, rackId)}
-                    onConfirm={(uid) => confirmPlace(serverIdFor(sw, rackId), uid)}
-                    takenBy={Object.fromEntries(
-                      Object.entries(match)
-                        .filter(([id, uid]) => uid && id !== String(serverIdFor(sw, rackId)))
-                        .map(([id, uid]) => [uid, (places.switches || []).find((x) => String(x.id) === id)?.label || 'another switch']),
-                    )}
-                    onChange={(uid) => setMatch((m) => {
-                      // One box holds one switch, so pointing this one at a box
-                      // another switch holds moves it rather than making a pair the
-                      // server has to refuse. The Review screen has always done
-                      // this; this picker only labelled the clash and then posted it.
-                      const next = { ...m, [serverIdFor(sw, rackId)]: uid };
-                      if (uid) {
-                        for (const other of Object.keys(next)) {
-                          if (String(other) !== String(serverIdFor(sw, rackId)) && next[other] === uid) next[other] = '';
-                        }
-                      }
-                      return next;
-                    })}
-                  />
-                  {/* Nothing has been stored for this rack yet, so what is
-                      showing is the server's proposal. Say so where it shows,
-                      rather than letting it read as a place somebody chose.
-                      Where the photo could not tell two boxes apart there is no
-                      proposal to keep, so it says what would settle it. */}
-                  {places.suggested && (match[serverIdFor(sw, rackId)]
-                    ? (
-                      <p className={styles.proposal}>
-                        Suggested. Save places to keep it.
-                      </p>
-                    )
-                    : (
-                      <p className={styles.proposal}>
-                        {settleAdvice(reasonFor(places, serverIdFor(sw, rackId)), false)}
-                      </p>
-                    ))}
-                </>
-              )}
-
-              {/* ── What the switch actually said ──
-                  One line of it by default. The faceplate above already says
-                  which ports are up; the detail is a tap away for whoever came
-                  for it. */}
-              {r?.kind === 'full' && !editing && (
-                <div className={styles.data}>
-                  <button
-                    type="button"
-                    className={styles.moreBtn}
-                    aria-expanded={open}
-                    onClick={() => setMore((m) => ({ ...m, [sw.id]: !m[sw.id] }))}
-                  >
-                    <span className={styles.moreSum}>
-                      {upCount} in use · {sockets.length - upCount} free
-                      {r.attached?.length
-                        ? ` · ${r.attached.length} device${r.attached.length === 1 ? '' : 's'} seen`
-                        : ''}
+                      </span>
                     </span>
-                    <span className={styles.moreLink}>{open ? 'Less' : 'Read more'}</span>
+                    {r ? (
+                      <span className={styles.count}>
+                        <b>{up}<i>/</i>{sockets.length}</b>
+                        <span>ports up</span>
+                      </span>
+                    ) : (
+                      <span className={styles.state}>
+                        {busy === sw.id ? 'Reading' : errors[sw.id] ? 'No answer' : results[sw.id] ? 'Answered' : 'Not read'}
+                      </span>
+                    )}
                   </button>
-
-                  {open && (
-                    <>
-                      {/* What is running, by speed. Fourteen rows of
-                          "no description · 1 Gb" is a register, not a report:
-                          it says the same thing fourteen times and buries the
-                          three ports that differ. Two lines say it instead,
-                          and the ports that carry a name or a neighbour get
-                          their own line below because they carry something. */}
-                      <div className={styles.dataHead}>
-                        <h3>In use</h3>
-                        <span className={styles.dataCount}>{upCount}</span>
-                      </div>
-                      {upCount === 0 ? (
-                        <p className={styles.none}>All {sockets.length} ports are down.</p>
-                      ) : (
-                        <div className={styles.speeds}>
-                          {speedGroups(sockets).map((g) => (
-                            <div className={styles.speedRow} key={g.label}>
-                              <span className={styles.speedTag}>{g.label}</span>
-                              <span className={styles.speedPorts}>
-                                {g.ports.map((i) => portNum(i.name)).join('  ')}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      <div className={styles.dataHead}>
-                        <h3>Connected to</h3>
-                        <span className={styles.dataCount}>{r.neighbours.length}</span>
-                      </div>
-                      {r.neighbours.length === 0 ? (
-                        <p className={styles.none}>No end devices.</p>
-                      ) : (
-                        <ul className={styles.nbrRows}>
-                          {r.neighbours.map((n, k) => (
-                            <li key={k}>
-                              <span className={styles.nbrName}>{n.sysName}</span>
-                              <span className={styles.nbrWhere}>
-                                {n.localPort || ' - '}{n.port ? ` → ${n.port}` : ''}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-
-                      {/* Everything the switch has learned the address of, and
-                          the port it learned it on. LLDP is a courtesy the far
-                          end has to offer; this is the switch's own bookkeeping,
-                          so it sees the laptops and cameras that announce
-                          nothing. */}
-                      {r.attached?.length > 0 && (
-                        <>
-                          <div className={styles.dataHead}>
-                            <h3>Plugged in</h3>
-                            <span className={styles.dataCount}>{r.attached.length}</span>
-                          </div>
-                          <ul className={styles.nbrRows}>
-                            {[...r.attached]
-                              .sort((a, b) => String(a.port).localeCompare(String(b.port), undefined, { numeric: true }))
-                              .map((d) => (
-                                <li key={`${d.mac}-${d.ifIndex}`}>
-                                  <span className={styles.nbrName}>{d.ip || d.mac}</span>
-                                  <span className={styles.nbrWhere}>
-                                    {d.ip ? `${d.mac} · ` : ''}{d.port}
-                                  </span>
-                                </li>
-                              ))}
-                          </ul>
-                        </>
-                      )}
-
-                      {labelled(sockets).length > 0 && (
-                        <>
-                          <div className={styles.dataHead}><h3>Labelled</h3></div>
-                          <ul className={styles.nbrRows}>
-                            {labelled(sockets).map((i) => (
-                              <li key={i.index}>
-                                <span className={styles.nbrName}>{i.descr}</span>
-                                <span className={styles.nbrWhere}>{i.name}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </>
-                      )}
-
-                      {!r.model && r.sysDescr && (
-                        <>
-                          <div className={styles.dataHead}><h3>What it calls itself</h3></div>
-                          <p className={styles.descr}>{r.sysDescr}</p>
-                        </>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-
-            </section>
-          );
-        })}
+                );
+              })}
+            </div>
+          </>
+        )}
 
         {/* ── Add ──
             The form opens at the button, so it is on screen the moment it exists. */}
         {form && !form.id ? renderForm() : switches.length > 0 && !form && (
           <button type="button" className={styles.addMore} onClick={() => setForm(BLANK)}>
-            <span aria-hidden="true">+</span> Add another switch
+            Add another switch
           </button>
         )}
 
-        {/* Save the places, then go on to the report. Only once something has
-            been read and the rack has boxes to put it in. */}
-        {/* The way on is always there once a switch has been read. Save places
-            needs boxes to put the switches in; Go to report does not - it
-            waited on the rack's places loading, and when that call was slow or
-            failed the page had no way forward at all. */}
-        {!form && Object.values(results).some((x) => x?.kind === 'full') && (
+        {/* ── The chosen switch, in full ── */}
+        {chosenLook && renderChosen(chosenLook)}
+
+        {/* Save the places, then go on to the report. The way on is always there
+            once a switch has been read; Save places needs boxes to put the
+            switches in, and Go to report does not. */}
+        {!form && looks.some((l) => l.reading) && (
           <div className={styles.finish}>
             {matchNote && (
               <p className={matchNote.ok ? styles.finishOk : styles.finishBad}>{matchNote.text}</p>
             )}
-            {/* Every card already says "Suggested. Save places to keep it.", and the
-                Save places button is the next thing on the screen. Saying it a third
-                time over the whole list taught nobody anything. */}
             <div className={styles.actions}>
               {places?.devices?.length > 0 && (
                 <button type="button" className={styles.secondary} disabled={savingMatch} onClick={() => savePlaces()}>
@@ -1227,6 +1584,7 @@ export default function SwitchTestPage() {
             </div>
           </div>
         )}
+        </>)}
       </div>
     </div>
   );

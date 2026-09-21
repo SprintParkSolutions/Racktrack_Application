@@ -8,7 +8,6 @@ import CmdbApprovalModal from '../components/CmdbApprovalModal.jsx';
 import BackButton from '../components/BackButton.jsx';
 import ScanTabBar from '../components/ScanTabBar.jsx';
 import ReportViewer from '../components/ReportViewer.jsx';
-import { getRackFlow, setRackFlow } from '../utils/rackFlow';
 import { useIsDesktop } from '../hooks/useIsDesktop';
 import RackTabs from '../components/RackTabs.jsx';
 import StandardFeedback from '../components/StandardFeedback.jsx';
@@ -16,7 +15,6 @@ import { PortsContent } from './PortsPage.jsx';
 import { TopologyContent } from './TopologyPage.jsx';
 import { NetdiscoContent } from './NetdiscoPage.jsx';
 import { SwitchInfoContent } from './SwitchInformationPage.jsx';
-import { PortHistoryContent } from './PortHistoryPage.jsx';
 import AssetImg from '../components/AssetImg';
 import { useSmartBack } from '../hooks/useSmartBack';
 import { useTour } from '../TourContext.jsx';
@@ -849,6 +847,71 @@ const HIDDEN_DEVICE_TYPES = new Set(['Empty', 'Closed Unit', 'Unidentified']);
 // Small badge shown next to a value that came from a USER correction (active
 // learning), not the model's own output - so a tester doesn't mistake their
 // own confirmed value for a model mistake.
+/** When something happened, in the words a person would use. */
+function whenText(iso) {
+  if (!iso) return null;
+  const then = new Date(iso).getTime();
+  if (!Number.isFinite(then)) return null;
+  const mins = Math.round((Date.now() - then) / 60000);
+  if (mins < 0) return null;
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 48) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  const days = Math.round(hours / 24);
+  if (days < 30) return `${days} days ago`;
+  try { return new Date(iso).toLocaleDateString(); } catch { return null; }
+}
+
+/**
+ * What the records say about this rack, in one phrase.
+ *
+ * The same five answers the rack identity gives; the header already says "read,
+ * not confirmed" for one of them, and this states all five in the same place as
+ * the rest of the rack's facts.
+ */
+const RECORD_SAID = {
+  matched: 'Matched',
+  suggested: 'Read, not confirmed',
+  ambiguous: 'More than one match',
+  new: 'Not in the records',
+  unknown: 'Could not be read',
+};
+
+/** One labelled number about the whole rack, on the Overview. */
+function RackFact({ label, value, mono = false }) {
+  if (value === null || value === undefined || value === '') return null;
+  return (
+    <div className={styles.rackFact}>
+      <span className={styles.rackFactLabel}>{label}</span>
+      <span className={`${styles.rackFactVal} ${mono ? styles.rackFactMono : ''}`}>{value}</span>
+    </div>
+  );
+}
+
+/**
+ * One labelled fact on the located-port screen.
+ *
+ * Every fact on that screen is this row and nothing else: the label on the left
+ * in one size and colour, the value on the right in one size and colour, a
+ * hairline between each. The screen used to mix a tile, a two column metric
+ * grid, a chip strip and three kinds of caption, so no two numbers on it were
+ * presented the same way and none of them said what it was.
+ */
+function PortFact({ label, value, mono = false, swatch = null, extra = null }) {
+  if (value === null || value === undefined || value === '') return null;
+  return (
+    <div className={styles.pRow}>
+      <span className={styles.pKey}>{label}</span>
+      <span className={`${styles.pVal} ${mono ? styles.pValMono : ''}`}>
+        {swatch && <span className={styles.pSwatch} style={{ background: swatch }} />}
+        {value}
+        {extra}
+      </span>
+    </div>
+  );
+}
+
 function UserTag({ label = 'Your correction' }) {
   return (
     <span
@@ -1271,7 +1334,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // view instead of the default overview tab.
   const _initialTabFromHash = (() => {
     const h = (location.hash || '').replace(/^#/, '').toLowerCase();
-    return ['overview', 'topology', 'drift'].includes(h) ? h : 'overview';
+    return ['overview', 'topology', 'switches'].includes(h) ? h : 'overview';
   })();
   const [tab,         setTab]         = useState(_initialTabFromHash);
   // Once the user leaves the ticket-drift alert (picks another tab or dismisses
@@ -1303,19 +1366,13 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     // Network is the live switches, read from this phone over SNMP. It is a
     // page of its own rather than a tab of this one, because reading a switch
     // is work with its own state - credentials, a reading, where it sits in
-    // the rack - not another view of the photograph.
-    // Drift is the check against the record, which is a page of its own too.
-    // The tab used to open the older port-history view kept inside this page,
-    // so the same word led to two different screens depending on where it was
-    // tapped, and the bar never lit up on the one people meant.
-    // Timeline is the in-page view that carried the name Drift before: the
-    // port history and the switches read for this rack. Its state key is still
-    // 'drift', which the hash and the back stack already know.
-    // Result is this page in its port mode: the Overview tab under the name it
-    // has while a port is being looked up.
+    // the rack - not another view of the photograph. So are Report and Drift.
+    //
+    // Topology and Switches are not tabs. They are views of this page, opened
+    // from the two links on Overview, and the bar keeps Overview lit while one
+    // of them is up.
     if (newTab === 'result') newTab = 'overview';
-    if (newTab === 'timeline') newTab = 'drift';
-    else if (newTab === 'network' || newTab === 'report' || newTab === 'drift') {
+    if (newTab === 'network' || newTab === 'report' || newTab === 'drift') {
       // urlRackId first: it is the id in the address bar and is set before the
       // scan result has loaded, whereas `rackId` comes out of that result.
       navigate(`/results/${encodeURIComponent(urlRackId || rackId || scanId)}/${newTab}`);
@@ -1326,7 +1383,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       return newTab;
     });
     // Leaving the port-detail sub-view whenever the user picks a tab - // otherwise the `phase === 'port'` early return below swallows the
-    // new tab's content (notably the drift tab, which would render blank).
+    // new tab's content.
     setPhase('detect');
   };
   // Header back button:
@@ -1355,11 +1412,11 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       // too), and nothing under it may step back in the same press.
       if (reportOpen) return;
       if (phase === 'port') { e.preventDefault(); leavePortView(); return; }
-      // A tab of the port flow (Switches, Topology, Timeline) steps back to its
-      // Result first; Back on Result is what leaves the flow. The other way
-      // round left the person on Switches under a bar that has no Switches.
-      if (portMode && tab === 'overview') { e.preventDefault(); leavePortFlow(); return; }
-      if (tab !== 'overview') { e.preventDefault(); handleHeaderBack(); }
+      // Topology and Switches are views of Overview, so Back steps out of them
+      // first and only then leaves the rack. The port lookup does the same: its
+      // own Back closes the picker and puts the two choices back.
+      if (tab !== 'overview') { e.preventDefault(); handleHeaderBack(); return; }
+      if (portMode) { e.preventDefault(); leavePortFlow(); }
     };
     window.addEventListener('rt:back', onBack);
     return () => window.removeEventListener('rt:back', onBack);
@@ -1390,14 +1447,21 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     setTab('overview');
     setPhase('detect');
   };
-  // React to subsequent hash changes too - e.g. user clicks Drift in the
-  // sidebar while already on the rack page, no remount happens.
+  // React to subsequent hash changes too - e.g. a sidebar link tapped while
+  // already on the rack page, where no remount happens.
   useEffect(() => {
     const h = (location.hash || '').replace(/^#/, '').toLowerCase();
+    // The Timeline used to be this page under the hash #drift. It is a section
+    // of the Network page now, so an older link or bookmark lands there.
+    if (h === 'drift' || h === 'timeline') {
+      navigate(`/results/${encodeURIComponent(urlRackId || rackId || scanId)}/network#timeline`,
+        { replace: true });
+      return;
+    }
     // An empty / unknown hash means the plain rack root → the Overview tab.
-    // Without this fallback, navigating Drift (#drift) → Overview (no hash)
-    // left `tab` stuck on 'drift' because empty wasn't a recognised value.
-    const next = ['overview', 'topology', 'drift'].includes(h)
+    // Without this fallback, leaving a hashed view for Overview (no hash) left
+    // `tab` stuck where it was, because empty was not a recognised value.
+    const next = ['overview', 'topology', 'switches'].includes(h)
       ? h : 'overview';
     setTab(curr => {
       if (curr !== next) tabHistoryRef.current.push(curr);
@@ -1407,6 +1471,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     // Otherwise an earlier `phase === 'port'` early-return path would keep
     // showing the port-detail view and swallow the tab content.
     setPhase('detect');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.hash]);
   const [resultImg,   setResultImg]   = useState(null);
   const [portInfo,    setPortInfo]    = useState(null);
@@ -1471,21 +1536,17 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // <select>, so the open/closed state is ours to hold - see the note where it
   // is rendered.
   const [deviceListOpen, setDeviceListOpen] = useState(false);
-  // Which of the two things the person chose to do with this rack. Until they
-  // choose, the page is the photograph and the choice - nothing else.
-  // It is also which of the rack's two tab bars is up - Analyse the network, or
-  // Look up a port - and Network is a page of its own in both, so the choice is
-  // remembered for this rack (utils/rackFlow) and picked up again on the way
-  // back. A rack drawn inside another page (two racks side by side) has no bar.
-  const [portMode, setPortMode] = useState(() => !embeddedProp && getRackFlow(urlRackId) === 'port');
-  useEffect(() => { setPortMode(!embeddedProp && getRackFlow(urlRackId) === 'port'); }, [urlRackId, embeddedProp]);
-  const enterPortFlow = () => {
-    setRackFlow(urlRackId || rackId || scanId, 'port');
-    setPortMode(true); setDeviceListOpen(true);
-  };
-  // That screen's own Back: out of the port flow, back to the two choices.
+  // Whether the person is looking up a port on this rack. It is a view of this
+  // page - the photograph, the device picker and the located port - entered by
+  // the "Look up a port" button on Overview and left by that view's own Back.
+  // It used to be remembered in the session store because it also chose which
+  // of two tab bars was up; there is one bar now, so it is plain page state.
+  // A rack drawn inside another page (two racks side by side) has no bar.
+  const [portMode, setPortMode] = useState(false);
+  useEffect(() => { setPortMode(false); }, [urlRackId]);
+  const enterPortFlow = () => { setPortMode(true); setDeviceListOpen(true); };
+  // That screen's own Back: out of the port lookup, back to the two choices.
   const leavePortFlow = () => {
-    setRackFlow(urlRackId || rackId || scanId, 'analyse');
     setPortMode(false); setDeviceListOpen(false); setSelectedIdx(null);
   };
   const [shareStatus, setShareStatus] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'error'
@@ -3395,8 +3456,6 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
 
   if (phase === 'port') {
     const rc = selectedDevice ? getColor(selectedDevice.class_name) : DEFAULT_COLOR;
-    const resultLabel = buildPortLabel(selectedLabel, selectedDevice?.class_name, portNum);
-    const isConn = portInfo?.status === 'connected';
     const connectorVal = portInfo?.cable_connector || cableInfo?.display;
     const colorVal = portInfo?.cable_color || cableInfo?.colorName;
     return (
@@ -3407,8 +3466,6 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             located port meant going back first. Picking a tab leaves the view. */}
         {!isDesktop && !embeddedProp && (
           <ScanTabBar
-            rackId={rackId}
-            flow={portMode ? 'port' : 'analyse'}
             activeTab="overview"
             onTabChange={(key) => { leavePortView(); handleTabChange(key); }}
           />
@@ -3866,102 +3923,91 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                   style={zoomStyle}
                   draggable="false" />
                 <span className={styles.portImgHint}>{hint}</span>
-                {portTimings?.total_ms != null && (
-                  <span className={`${styles.timingBadge} ${styles.heroTiming}`} title="Time from device+port submit to result">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                    </svg>
-                    Done in {fmtMs(portTimings.total_ms)}
-                  </span>
+              </div>
+            );
+          })()}
+
+          {/* ── The answer ──
+              Which port, on which device, and what is in it. One statement, at
+              the top, in the one place a person looks first. */}
+          {(() => {
+            const s = portInfo?.status;
+            const stateText = s === 'connected' ? 'A cable is plugged in'
+              : s === 'empty' ? 'The socket is empty'
+                : 'The photograph could not tell';
+            const shelf = formatUnitsRange(selectedDevice?.units || []);
+            const where = [
+              selectedLabel,
+              selectedDevice?.class_name,
+              shelf ? `shelf ${shelf}` : null,
+            ].filter(Boolean).join(' · ');
+            return (
+              <div className={styles.pAnswer}>
+                <span className={styles.pAnswerPort}>Port {portNum}</span>
+                {where && <span className={styles.pAnswerWhere}>{where}</span>}
+                <span className={styles.pAnswerState}>
+                  <span className={`${styles.pAnswerDot} ${s === 'connected' ? '' : styles.pAnswerDotEmpty}`} />
+                  {stateText}
+                  {portInfo?._port_shift && <UserTag label="Renumbered" />}
+                </span>
+                {neighborStatus === 'ok' && neighbor?.found && (
+                  <span className={styles.pAnswerAlso}>A device is answering on this port.</span>
                 )}
               </div>
             );
           })()}
 
-          {/* Port label - plain text, no container, below hero image */}
-          <div className={styles.prLabelLine} style={{ '--ac': rc }}>
-            {resultLabel}
+          {/* ── What was found ──
+              Every fact in one list, one label style, one alignment. */}
+          <div className={styles.pBlock}>
+            <h3 className={styles.pBlockHead}>What was found</h3>
+            <div className={styles.pList}>
+              <PortFact label="Device name" value={selectedLabel} mono />
+              <PortFact
+                label="Device type"
+                value={selectedDevice?.class_name}
+                extra={selectedDevice?.class_name_source === 'user_corrected' ? <UserTag /> : null}
+              />
+              <PortFact label="Where it sits" value={formatUnitsRange(selectedDevice?.units || [])} mono />
+              <PortFact
+                label="Ports on this device"
+                value={selectedDevice?.port_count > 0 ? selectedDevice.port_count : null}
+                mono
+              />
+              <PortFact
+                label="Socket"
+                value={portInfo?.status === 'connected' ? 'Cable plugged in'
+                  : portInfo?.status === 'empty' ? 'Empty' : 'Not clear from the photograph'}
+              />
+              <PortFact
+                label="Port type"
+                value={portInfo?.port_type ? prettyPortType(portInfo.port_type) : null}
+                extra={portInfo?._port_type_user ? <UserTag /> : null}
+              />
+              <PortFact label="Cable" value={connectorVal} />
+              <PortFact
+                label="Cable colour"
+                value={colorVal}
+                swatch={colorVal ? cableColorCSS(colorVal) : null}
+                extra={portInfo?._cable_color_model ? <UserTag /> : null}
+              />
+              <PortFact
+                label="Confidence in the port"
+                value={portInfo?.confidence != null ? fmtPct(portInfo.confidence) : null}
+                mono
+              />
+              <PortFact
+                label="Confidence in the cable"
+                value={portInfo?.cable_confidence != null ? fmtPct(portInfo.cable_confidence) : null}
+                mono
+              />
+              <PortFact
+                label="Time to find it"
+                value={portTimings?.total_ms != null ? fmtMs(portTimings.total_ms) : null}
+                mono
+              />
+            </div>
           </div>
-
-          {/* Port verdict - telemetry-style dashboard */}
-          {(() => {
-            const s = portInfo?.status;
-            const isOn = s === 'connected';
-            const isEmpty = s === 'empty';
-            const statusText = isOn ? 'Connected' : isEmpty ? 'Empty' : 'Unknown';
-            const statusColor = isOn ? '#1c1c1c' : isEmpty ? '#c6c6c6' : '#474747';
-            return (
-              <div className={styles.prDash} style={{ '--sc': statusColor, '--ac': rc }}>
-                <div className={styles.prPortTile}>
-                  <span className={styles.prPortLabel}>PORT</span>
-                  <span className={styles.prPortNum}>{portNum}</span>
-                  {portInfo?._port_shift && <UserTag label="Renumbered" />}
-                  <span className={styles.prPortGlow} aria-hidden />
-                </div>
-                <div className={styles.prMetrics}>
-                  <div className={`${styles.prMetric} ${styles.prMetricStatus}`}>
-                    <span className={styles.prMetricLabel}>Status</span>
-                    <span className={styles.prMetricVal}>
-                      <span className={styles.prMetricDot} />
-                      {statusText}
-                    </span>
-                  </div>
-                  <div className={styles.prMetric}>
-                    <span className={styles.prMetricLabel}>Device</span>
-                    <span className={styles.prMetricVal}>
-                      {selectedDevice?.class_name || '-'}
-                      {selectedDevice?.class_name_source === 'user_corrected'
-                        ? <UserTag />
-                        : (selectedDevice?.confidence != null && (
-                            <span className={styles.prMetricConf}>{fmtPct(selectedDevice.confidence)}</span>
-                          ))}
-                    </span>
-                  </div>
-                  {connectorVal && (
-                    <div className={styles.prMetric}>
-                      <span className={styles.prMetricLabel}>Cable</span>
-                      <span className={styles.prMetricVal}>
-                        {connectorVal}
-                        {portInfo?.cable_confidence != null && (
-                          <span className={styles.prMetricConf}>{fmtPct(portInfo.cable_confidence)}</span>
-                        )}
-                      </span>
-                    </div>
-                  )}
-                  {colorVal && (
-                    <div className={styles.prMetric}>
-                      <span className={styles.prMetricLabel}>Color</span>
-                      <span className={styles.prMetricVal}>
-                        <span className={styles.prMetricSwatch}
-                          style={{ background: cableColorCSS(colorVal), border: '1px solid rgba(0,0,0,0.18)' }} />
-                        {colorVal}
-                        {portInfo?._cable_color_model && <UserTag />}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* Port-TYPE tag / correction - record the physical port type
-              (RJ45 / SFP / USB / …). Feeds active-learning memory + retraining.
-              Only shown once a port is selected. */}
-          {portInfo && portInfo.status !== 'invalid' && portInfo.port_type && (
-            <StandardFeedback
-              key={`${scanId}:${selectedIdx}:${portNum}:type`}
-              accent={rc}
-              prompt={`Port type: ${prettyPortType(portInfo.port_type)} - right?`}
-              options={PORT_TYPE_OPTIONS.map(t => ({ value: t, label: prettyPortType(t) }))}
-              otherInput={null}
-              submitLabel="Save"
-              thanks="Saved - thanks, this trains the model."
-              answered={answeredKeys.has(`${scanId}:p:${selectedIdx}:${portNum}:type`) || !!portInfo._port_type_user}
-              answeredText={`Port type: ${prettyPortType(portInfo.port_type)} - you set this`}
-              onYes={async () => { markAnswered(`${scanId}:p:${selectedIdx}:${portNum}:type`); }}
-              onSubmit={(v) => submitPortTypeFeedback(v)}
-            />
-          )}
 
           {/* Low-confidence nudge - when the cable read is uncertain (usually a
               low-resolution / poorly-lit photo), tell the tech plainly and ask
@@ -3979,126 +4025,91 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             </div>
           )}
 
-          {/* End device (LLDP) - shown for any non-empty port. The inner states
-              cover the whole flow: idle → a "Find end device" button, loading,
-              resolved neighbour, none-found, and error/retry. Previously the
-              outer gate also required neighborStatus==='ok', which meant the
-              button (and every other state) could never render - so the LLDP
-              lookup was unreachable unless it happened to auto-resolve.
-              We ALSO show it when the switch found a live neighbour (or is
-              resolving one) even if the photo called the port empty - the live
-              switch is ground truth, so a real endpoint must never be hidden by
-              a mis-classified photo. */}
+          {/* ── What is on the other end ──
+              Asked of the live switch, not the photograph. Shown for any socket
+              that is not plainly empty, and also when the switch found something
+              on a socket the photograph read as empty - the switch is the ground
+              truth, so a real device must never be hidden by a misread photo.
+              The same labelled rows as the facts above: this used to be a dark
+              panel with an icon, a LIVE badge and four coloured chips, which is
+              four more styles than the screen needs. */}
           {(portInfo?.status !== 'empty'
             || neighborStatus === 'loading'
             || (neighborStatus === 'ok' && neighbor?.found)) && (
-          <div className={styles.prEnd} style={{ '--ac': rc }}>
+          <div className={styles.pBlock}>
+            <h3 className={styles.pBlockHead}>What is on the other end</h3>
+
             {neighborStatus === 'loading' && (
-              <>
-                <span className={styles.prEndPulse} />
-                <span className={styles.prEndDim}>Resolving end device…</span>
-              </>
+              <p className={styles.pNote}>
+                <span className={styles.btnSpinner} />
+                Asking the switch…
+              </p>
             )}
+
             {neighborStatus === 'ok' && neighbor && (() => {
-              // Pick a clean name: skip any field that contains a trailing
-              // colon (which means the LLDP parser returned a field label
-              // like "System description:" by mistake).
+              // Skip any field that is really a field label the parser returned
+              // by mistake ("System description:"), and never lead with a bare
+              // hardware address when there is a name.
               const isLabelish = (v) => !v || /:\s*$/.test(String(v).trim());
               const cleanOrNull = (v) => (v && !isLabelish(v) ? String(v).trim() : null);
-              const MAC_RE = /^(?:[0-9a-f]{2}[:\-]){5}[0-9a-f]{2}$/i;
+              const MAC_RE = /^(?:[0-9a-f]{2}[:-]){5}[0-9a-f]{2}$/i;
               const chassis = cleanOrNull(neighbor.chassis_id);
               const sysname = cleanOrNull(neighbor.system_name);
               const portId  = cleanOrNull(neighbor.port_id);
-              // Prefer a human-readable name; a bare MAC is only a fallback name.
               const humanName = (chassis && !MAC_RE.test(chassis) ? chassis : null)
                              || (sysname && !MAC_RE.test(sysname) ? sysname : null);
-              const macAddr = [portId, chassis].find(v => v && MAC_RE.test(v)) || null;
-              const name = humanName || macAddr || 'End device';
+              const macAddr = [portId, chassis].find((v) => v && MAC_RE.test(v)) || null;
               const desc = cleanOrNull(neighbor.port_description);
               const mgmt = cleanOrNull(neighbor.management_address);
-              // Always surface the identifying facts as their own labelled chips.
-              const chips = [
-                macAddr && macAddr !== name && { kind: 'mac',  label: 'MAC',  value: macAddr },
-                neighbor.vlan_id            && { kind: 'vlan', label: 'VLAN', value: String(neighbor.vlan_id) },
-                mgmt                        && { kind: 'ip',   label: 'IP',   value: mgmt },
-                desc && !MAC_RE.test(desc)  && { kind: 'info', label: null,   value: desc },
-              ].filter(Boolean).map((c, i) => ({ key: `c${i}`, ...c }));
               return (
-                <div className={styles.prEndCreative}>
-                  <div className={styles.prEndIcon} aria-hidden>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="2" y="3" width="20" height="14" rx="2"/>
-                      <line x1="8" y1="21" x2="16" y2="21"/>
-                      <line x1="12" y1="17" x2="12" y2="21"/>
-                    </svg>
-                    <span className={styles.prEndLiveDot} />
-                  </div>
-                  <div className={styles.prEndBody}>
-                    <div className={styles.prEndHead}>
-                      <span className={styles.prEndLabel}>Linked endpoint</span>
-                      <span className={styles.prEndTag}>LIVE</span>
-                    </div>
-                    <strong className={styles.prEndName}>{name}</strong>
-                    {chips.length > 0 && (
-                      <div className={styles.prEndChips}>
-                        {chips.map(chip => (
-                          <span key={chip.key} className={`${styles.prEndChip} ${styles[`prEndChip_${chip.kind}`]}`}>
-                            {chip.kind === 'mac' && (
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M6 4v6m12-6v6m-14 0h16v4a4 4 0 01-4 4h-1v4h-2v-4H9v4H7v-4H6a4 4 0 01-4-4v-4h2z"/>
-                              </svg>
-                            )}
-                            {chip.kind === 'ttl' && (
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <circle cx="12" cy="12" r="9"/>
-                                <polyline points="12 7 12 12 15 14"/>
-                              </svg>
-                            )}
-                            {chip.kind === 'vlan' && (
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/>
-                                <line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/>
-                              </svg>
-                            )}
-                            {chip.kind === 'ip' && (
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/>
-                                <path d="M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z"/>
-                              </svg>
-                            )}
-                            {chip.label && <span className={styles.prEndChipKey}>{chip.label}</span>}
-                            <span className={styles.prEndChipVal}>{chip.value}</span>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                <div className={styles.pList}>
+                  <PortFact label="Device" value={humanName || (macAddr ? 'Named only by its hardware address' : 'Answered, but did not give a name')} />
+                  <PortFact label="Its port" value={portId && !MAC_RE.test(portId) ? portId : null} mono />
+                  <PortFact label="Port description" value={desc && !MAC_RE.test(desc) ? desc : null} />
+                  <PortFact label="Its address" value={mgmt} mono />
+                  <PortFact label="Hardware address" value={macAddr} mono />
+                  <PortFact label="VLAN" value={neighbor.vlan_id ? String(neighbor.vlan_id) : null} mono />
                 </div>
               );
             })()}
+
             {neighborStatus === 'empty' && (
-              <>
-                <span className={styles.prEndDim}>
-                  Nothing answered on this port.
-                </span>
-                <button className={styles.prEndAction} onClick={() => findNeighbor()}>Retry</button>
-              </>
+              <p className={styles.pNote}>Nothing answered on this port.</p>
             )}
             {neighborStatus === 'error' && (
-              <>
-                <span className={styles.prEndDim}>End device lookup failed</span>
-                <button className={styles.prEndAction} onClick={() => findNeighbor()}>Retry</button>
-              </>
+              <p className={styles.pNote}>The switch could not be asked.</p>
             )}
-            {neighborStatus === 'idle' && (
-              <button className={styles.prEndAction} onClick={() => findNeighbor()}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                </svg>
-                Find end device
+            {(neighborStatus === 'idle' || neighborStatus === 'empty' || neighborStatus === 'error') && (
+              <button type="button" className={styles.pAction} onClick={() => findNeighbor()}>
+                {neighborStatus === 'idle' ? 'Ask the switch' : 'Ask again'}
               </button>
             )}
           </div>
+          )}
+
+          {/* ── Is this right? ──
+              The three things the model guessed and a person at the rack can
+              settle: the port type, the port number and the cable colour. They
+              were scattered down the screen between other things; they are one
+              group now, because answering them is one job. */}
+          {!ticketMode && portInfo && portInfo.status !== 'invalid' && (
+            <h3 className={`${styles.pBlockHead} ${styles.pBlockHeadLoose}`}>Is this right?</h3>
+          )}
+          {/* The physical port type: RJ45, SFP, USB. Feeds the retraining set. */}
+          {portInfo && portInfo.status !== 'invalid' && portInfo.port_type && (
+            <StandardFeedback
+              key={`${scanId}:${selectedIdx}:${portNum}:type`}
+              accent={rc}
+              prompt={`Port type: ${prettyPortType(portInfo.port_type)} - right?`}
+              options={PORT_TYPE_OPTIONS.map(t => ({ value: t, label: prettyPortType(t) }))}
+              otherInput={null}
+              submitLabel="Save"
+              thanks="Saved - thanks, this trains the model."
+              answered={answeredKeys.has(`${scanId}:p:${selectedIdx}:${portNum}:type`) || !!portInfo._port_type_user}
+              answeredText={`Port type: ${prettyPortType(portInfo.port_type)} - you set this`}
+              onYes={async () => { markAnswered(`${scanId}:p:${selectedIdx}:${portNum}:type`); }}
+              onSubmit={(v) => submitPortTypeFeedback(v)}
+            />
           )}
 
           {/* Port-location feedback - standard Yes/No → dropdown of ports + Other# */}
@@ -4131,9 +4142,13 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             />
           )}
 
-          {/* Jump to another port - optional type switch, then a compact input.
-              Switching type (e.g. RJ45 → SFP) re-points the input at that port
-              set so the user can locate a different type without going back. */}
+          {/* ── Look up another port ──
+              The type switch, then the number. Switching type re-points the
+              input at that set of ports, so another kind of port can be found
+              without going back to the rack. */}
+          {!ticketMode && selectedDevice && (
+            <h3 className={`${styles.pBlockHead} ${styles.pBlockHeadLoose}`}>Look up another port on this device</h3>
+          )}
           {!ticketMode && selectedDevice && portCatsToShow.length > 1 && (
             <div className={styles.prTypeSwitch}>
               {portCatsToShow.map(opt => {
@@ -4239,7 +4254,51 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           )}
 
           {reanalyzeNote && <p className={styles.reanalyzeNote} role="alert">{reanalyzeNote}</p>}
-          {/* Report row - View / Download / Share as labeled chips */}
+
+          {/* ── Where to next ──
+              What was missing. A located port is the middle of a job, and from
+              here a person wants the switch this port is on, the rack it sits
+              in, and what has happened on this port before. All three were tabs
+              of this screen's own bar until tonight and items in a More sheet
+              before that; with one four tab bar they had nowhere left, so they
+              are named here, on the screen that needs them. Back to the rack is
+              first because it is the one every other way out went through. */}
+          {!ticketMode && (
+            <>
+              <h3 className={`${styles.pBlockHead} ${styles.pBlockHeadLoose}`}>Where to next</h3>
+              <div className={styles.reportRow}>
+                <button type="button" className={styles.reportChip} onClick={leavePortView}>
+                  The rack
+                </button>
+                <button
+                  type="button"
+                  className={styles.reportChip}
+                  onClick={() => { leavePortView(); handleTabChange('switches'); }}
+                >
+                  Switches
+                </button>
+                <button
+                  type="button"
+                  className={styles.reportChip}
+                  onClick={() => { leavePortView(); handleTabChange('topology'); }}
+                >
+                  Topology
+                </button>
+                <button
+                  type="button"
+                  className={styles.reportChip}
+                  onClick={() => navigate(`/results/${encodeURIComponent(urlRackId || rackId || scanId)}/network#timeline`)}
+                >
+                  Port history
+                </button>
+              </div>
+            </>
+          )}
+
+          {!ticketMode && (
+            <h3 className={`${styles.pBlockHead} ${styles.pBlockHeadLoose}`}>This scan</h3>
+          )}
+          {/* View / Share / Change device / New scan */}
           <div className={styles.reportRow} style={{ '--ac': rc }}>
             <button className={`${styles.reportChip} ${styles.reportChipView}`}
               data-tour="full-report-btn"
@@ -4300,11 +4359,11 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
               }
             }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="4" rx="1"/><rect x="2" y="10" width="20" height="4" rx="1"/><rect x="2" y="17" width="20" height="4" rx="1"/></svg>
-              Change Device
+              Another device
             </button>
             <button className={styles.reportChip} onClick={() => navigate('/scan')}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
-              New Scan
+              New scan
             </button>
           </div>
         </div>
@@ -4672,9 +4731,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           <span className={styles.headerKind}>{
             tab === 'switches' ? 'Switches'
             : tab === 'topology' ? 'Topology'
-            : tab === 'network'  ? 'Discovery'
-            : tab === 'drift'    ? 'Timeline'
-            :                       'Scan results'
+            :                      'Scan results'
           }</span>
           <h2 className={styles.headerTitle}>
             {rackSaid ? rackSaid.name : (rackId || scanId)}
@@ -4706,9 +4763,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           either one brings the tabs in, and they stay for the rest of the rack. */}
       {!isDesktop && !embeddedProp && (
         <ScanTabBar
-          rackId={rackId}
-          flow={portMode ? 'port' : 'analyse'}
-          activeTab={tab === 'drift' ? 'timeline' : tab}
+          activeTab={tab}
           onTabChange={handleTabChange}
           badges={{
             ports: devices.filter(d => d.class_name === 'Switch').reduce((s, d) => s + (d.port_count || 0), 0) || undefined,
@@ -4970,19 +5025,14 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             Done in {fmtMs(analysisTimings.total_ms)}
           </span>
         )}
-        {/* scan line animation */}
-        <div className={styles.scanLine} />
-        {/* corner HUD */}
-        <span className={`${styles.hc} ${styles.hcTL}`} />
-        <span className={`${styles.hc} ${styles.hcTR}`} />
-        <span className={`${styles.hc} ${styles.hcBL}`} />
-        <span className={`${styles.hc} ${styles.hcBR}`} />
-        {/* bottom fade */}
-        <div className={styles.heroFade} />
-        {/* info badge */}
+        {/* The mark that says this photograph has been read. It sat in the
+            middle of the bottom edge over a gradient, under a travelling scan
+            line and four corner brackets - a scanner's chrome on a screen whose
+            job is to report. One static chip in the corner of the frame says the
+            same thing and leaves the rack to be looked at. */}
         <div className={styles.heroBadge}>
           <span className={styles.heroBadgeDot} />
-          <span className={styles.heroBadgeTxt}>ANALYZED</span>
+          <span className={styles.heroBadgeTxt}>ANALYSED</span>
         </div>
       </div>
 
@@ -4997,6 +5047,36 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
 
       {/* ── Action sheet ── */}
       <div className={styles.sheet}>
+
+        {/* ── What the scan found ──
+            The photograph is evidence; these are the findings, and they were
+            nowhere on the screen. Every one of them is already in what this page
+            was given: the rack's identity answer, the devices the scan returned
+            and the shelves it read. */}
+        {!ticketMode && phase !== 'all' && !portMode && (() => {
+          const found = effectiveDevices || [];
+          const switches = found.filter((d) => d.class_name === 'Switch').length;
+          const ports = found.reduce((n, d) => n + totalPortCount(d), 0);
+          const shelves = formatUnitsRange(units_detected);
+          const read = whenText(result?.timestamp);
+          return (
+            <div className={styles.rackFacts}>
+              <RackFact label="Read" value={read || 'Just now'} />
+              <RackFact label="Devices" value={found.length || null} mono />
+              <RackFact label="Switches" value={switches || null} mono />
+              <RackFact label="Ports" value={ports || null} mono />
+              <RackFact label="Shelves" value={shelves || null} mono />
+              <RackFact
+                label="Against the records"
+                value={identity ? (RECORD_SAID[identity.decision] || null) : null}
+              />
+            </div>
+          );
+        })()}
+
+        {!ticketMode && phase !== 'all' && !portMode && (
+          <h3 className={`${styles.pBlockHead} ${styles.pBlockHeadLoose}`}>What to do next</h3>
+        )}
 
         {/* What next. After seeing the rack there are two things to do: read
             its switches, or look at one port. Nothing else is on screen until
@@ -5020,6 +5100,29 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
               onClick={enterPortFlow}
             >
               Look up a port
+            </button>
+          </div>
+        )}
+
+        {/* The two screens that are not steps: the rack in three dimensions,
+            and what the record holds about its switches. They used to sit in a
+            More menu on the tab bar; the bar is four tabs and no menu now, so
+            they are named here, on the page they belong to. Back returns here. */}
+        {!ticketMode && phase !== 'all' && !portMode && (
+          <div className={styles.stepChoices}>
+            <button
+              type="button"
+              className={`${styles.stepChoice} ${styles.stepChoiceSecondary}`}
+              onClick={() => handleTabChange('topology')}
+            >
+              Topology
+            </button>
+            <button
+              type="button"
+              className={`${styles.stepChoice} ${styles.stepChoiceSecondary}`}
+              onClick={() => handleTabChange('switches')}
+            >
+              Switches
             </button>
           </div>
         )}
@@ -5336,13 +5439,6 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       {tab === 'switches' && (
         <div className={styles.tabContent}>
           <SwitchInfoContent rackId={rackId || scanId} />
-        </div>
-      )}
-
-      {/* ── Tab: Drift (continuous SSH telemetry from monitored switches) ── */}
-      {tab === 'drift' && (
-        <div className={styles.tabContent} style={{ minHeight: '60vh', padding: '16px' }}>
-          <PortHistoryContent rackId={urlRackId || rackId || scanId} />
         </div>
       )}
 

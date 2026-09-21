@@ -503,6 +503,20 @@ function PortHistoryInner({ embedded, rackId = null }) {
         </section>
       )}
 
+      {/* ── The port somebody tapped ──
+          Directly under the ports it belongs to, and above what changed. It used
+          to be rendered last, so tapping a port put its panel at the foot of the
+          page: the person tapped a socket and the answer appeared two screens
+          below, past the whole change log. ─────────────────────────── */}
+      {selectedId && selectedPort && (
+        <InterfaceDetail
+          deviceId={selectedId}
+          device={device}
+          port={selectedPort}
+          onClose={() => setSelectedPort(null)}
+        />
+      )}
+
       {/* ── What changed - shown once something has. With one reading, or two
           that agree, the heading sat over "Nothing has changed between readings",
           which the owner read as an empty box and asked to have removed. ── */}
@@ -535,17 +549,6 @@ function PortHistoryInner({ embedded, rackId = null }) {
         </section>
       )}
 
-      {/* ── Per-port detail - rendered as a bottom sheet so the page
-          stops being one long vertical column. Tap a tile to slide in
-          the detail; close button (or backdrop) dismisses it. ─────── */}
-      {selectedId && selectedPort && (
-        <InterfaceDetail
-          deviceId={selectedId}
-          device={device}
-          port={selectedPort}
-          onClose={() => setSelectedPort(null)}
-        />
-      )}
     </div>
   );
 }
