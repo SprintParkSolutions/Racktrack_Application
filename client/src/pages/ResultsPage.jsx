@@ -4677,10 +4677,10 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           {(rackSaid || takenAt) && (
             <div className={styles.headerWhere}>
               {rackSaid && rackSaid.also && <span>{rackSaid.also}</span>}
+              {/* The site, and no more. How many metres the phone stood from
+                  the site's address is the ladder's working, not something the
+                  person at the rack needs read back to them. */}
               {takenAt && takenAt.site && <span>{takenAt.site}</span>}
-              {takenAt && Number.isFinite(takenAt.distanceM) && (
-                <span>{takenAt.distanceM} m from its address</span>
-              )}
               {rackSaid && !rackSaid.confirmed && (
                 <span className={styles.headerRackAsk}>read, not confirmed</span>
               )}

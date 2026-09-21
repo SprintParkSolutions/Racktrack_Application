@@ -144,8 +144,13 @@ router.post('/:id/preview', gates.technician, async (req, res) => {
 
     // File the diff rather than throw it away. Everything downstream — the
     // approval, the tickets, the write and the history — points at this.
+    // The rack's own name goes on the check. It is what the adopt step wrote
+    // on the scan after the ladder decided which rack this is; left off, every
+    // drift in RackTrack Changes was headed by the hash of the photograph.
+    const payload = got.scan.payload || {};
     const filed = plans.create({
       scanId: got.scan.id, rackId: got.scan.rackId, rackUid: got.snap.rackUid,
+      rackName: got.scan.rackName || payload.rackName || null,
       report, by: (req.user && (req.user.username || req.user.email)) || null,
       orgId: req.user?.organization_id ?? null, tenantId: tenantOf(got.scan, req),
     });

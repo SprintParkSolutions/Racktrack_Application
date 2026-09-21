@@ -25,10 +25,28 @@ import styles from './DriftPage.module.css';
  */
 
 const WORD = {
-  create: 'Not in NetBox',
-  update: 'Different in NetBox',
-  rebind: "In NetBox under this rack's old id",
+  create: 'Not in your records',
+  update: 'Different from your records',
+  rebind: 'Listed under an older id',
 };
+
+// What each of those means, in one plain sentence. The short word is the
+// headline; this is the line under it; anything longer sits behind Read more.
+const MEANS = {
+  create: 'We saw this in the rack, but your records do not list it on this shelf.',
+  update: 'Your records list this, but some details are different.',
+  rebind: 'Your records list this under an id RackTrack used before.',
+};
+
+// "Router U20 SP-HYB-RM01-R01-R1" is how the comparison names a box. A person
+// standing at the rack already knows which rack it is, so the rack's name comes
+// off the end and the shelf is said in words.
+function plainName(name, rackName) {
+  let out = String(name || '');
+  if (rackName && out.endsWith(rackName)) out = out.slice(0, -rackName.length).trim();
+  const m = out.match(/^(.+?)\s+U(\d{1,2})$/);
+  return m ? `${m[1]} on shelf U${Number(m[2])}` : out;
+}
 
 // RackTrack's own bookkeeping, not a difference between the rack and the
 // record. When a person has said which record a rack is, the plan carries one
@@ -356,7 +374,7 @@ export default function DriftPage() {
           person chooses; that choice is what the next check compares against. */}
       {plan && !busy && (
         <div className={styles.against}>
-          <span className={styles.againstLabel}>Compared against</span>
+          <span className={styles.againstLabel}>Rack</span>
           {decided ? (
             <>
               <strong className={styles.againstName}>
@@ -364,20 +382,32 @@ export default function DriftPage() {
                   || (compared && compared.name) || 'this rack'}
               </strong>
               <span className={styles.againstWhy}>
-                {foundBy}
-                {where && where.verdict === 'here' ? ` ${where.note}` : ''}
+                {decided.confidence === 'confirmed'
+                  ? 'This is the rack in your records.'
+                  : 'This looks like the rack in your records. Not confirmed yet.'}
+                {where && where.verdict === 'here' && where.site ? ` Photo taken at ${where.site}.` : ''}
               </span>
+              <details className={styles.more}>
+                <summary>Read more</summary>
+                <span className={styles.moreLabel}>Compared against</span>
+                <span className={styles.againstWhy}>{foundBy}</span>
+              </details>
             </>
           ) : compared ? (
             <>
               <strong className={styles.againstName}>
                 {compared.name || (recordRack && recordRack.name) || 'this rack'}
               </strong>
-              <span className={styles.againstWhy}>{compared.why}</span>
+              <span className={styles.againstWhy}>Compared with this rack in your records.</span>
+              <details className={styles.more}>
+                <summary>Read more</summary>
+                <span className={styles.moreLabel}>Compared against</span>
+                <span className={styles.againstWhy}>{compared.why}</span>
+              </details>
             </>
           ) : (
             <>
-              <strong className={styles.againstName}>nothing yet</strong>
+              <strong className={styles.againstName}>Not identified yet</strong>
               {/* Only where nothing has said which rack this is. Where something
                   has, it says it once, below, and this does not say it twice. */}
               {!stillOpen && (
@@ -394,9 +424,15 @@ export default function DriftPage() {
           {/* Where the photo was taken, when the phone said. Said only when it
               tells somebody something: at this Site, at another one, or far
               from any. "No location" is not worth a line. */}
+          {/* Where the photo was taken matters when it was somewhere else, and
+              is said without the metres: the distance is the app's working. */}
           {where && where.verdict !== 'unknown' && !(decided && where.verdict === 'here') && (
             <span className={where.verdict === 'here' ? styles.againstWhy : styles.againstOpen}
-              data-testid="taken-at">{where.note}</span>
+              data-testid="taken-at">
+              {where.verdict === 'here'
+                ? `Photo taken at ${where.site || 'this site'}.`
+                : `This photo was not taken at ${where.site || 'the site this rack belongs to'}.`}
+            </span>
           )}
 
           {!sent && (shortlist.length > 0 || newName) && (
@@ -438,11 +474,16 @@ export default function DriftPage() {
         <div className={styles.verdict}>
           {changed.length === 0 ? (
             <>
-              <h2><span className={styles.tick} aria-hidden="true">✓</span>This rack matches NetBox</h2>
-              <p>
-                Checked just now. Nothing to send.
-                {housekeeping && ' RackTrack will note its own id on the record the next time an admin writes, so the next scan finds it at once.'}
-              </p>
+              <h2><span className={styles.tick} aria-hidden="true">✓</span>Everything matches your records</h2>
+              <p>Compared with NetBox just now. Nothing to send.</p>
+              {housekeeping && (
+                <details className={styles.more}>
+                  <summary>Read more</summary>
+                  <span className={styles.againstWhy}>
+                    RackTrack will note its own id on the record the next time an admin writes, so the next scan finds this rack at once. Nothing else on the record changes.
+                  </span>
+                </details>
+              )}
             </>
           ) : (
             <>
@@ -452,13 +493,13 @@ export default function DriftPage() {
                   a rack the screen had just said was not in the record at all. */}
               <h2>
                 {compared
-                  ? `${changed.length} ${changed.length === 1 ? 'difference' : 'differences'}`
+                  ? `${changed.length} ${changed.length === 1 ? 'thing is' : 'things are'} different from your records`
                   : `${changed.length} ${changed.length === 1 ? 'thing' : 'things'} would be added`}
               </h2>
               <p>
                 {compared
-                  ? 'Checked against NetBox just now.'
-                  : 'NetBox holds no such rack yet, so everything this scan saw would be new.'}
+                  ? 'Compared with NetBox just now. Send it to your admin to check.'
+                  : 'Your records do not have this rack yet, so everything in this photo would be new.'}
               </p>
             </>
           )}
@@ -509,22 +550,32 @@ export default function DriftPage() {
           return (
             <li key={item.uid} className={`${styles.item} ${styles[item.decision] || ''}`}>
               <div className={styles.itemTop}>
-                <span className={styles.type}>{item.type}</span>
-                <strong className={styles.name}>{item.name}</strong>
+                <strong className={styles.name}>
+                  {plainName(item.name, decided && (decided.rack.name || decided.rack.facilityId))}
+                </strong>
                 <span className={styles.what}>{WORD[item.action] || item.action}</span>
               </div>
+              {MEANS[item.action] && <p className={styles.means}>{MEANS[item.action]}</p>}
 
-              {lines.length > 0 && (
-                <ul className={styles.diff}>
-                  {lines.map((l) => (
-                    <li key={l.field}>
-                      <span className={styles.field}>{l.field}</span>
-                      <span className={styles.from}>NetBox says {show(l.from)}</span>
-                      <span className={styles.to}>you saw {show(l.to)}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <details className={styles.more}>
+                <summary>Read more</summary>
+                <span className={styles.againstWhy}>
+                  {item.type}: {item.name}
+                </span>
+                {lines.length > 0 && (
+                  <ul className={styles.diff}>
+                    {lines.map((l) => (
+                      <li key={l.field}>
+                        <span className={styles.field}>{l.field}</span>
+                        <span className={styles.from}>NetBox says {show(l.from)}</span>
+                        <span className={styles.to}>you saw {show(l.to)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {item.reason && <span className={styles.againstWhy}>{item.reason}</span>}
+                <span className={styles.againstWhy}>Nothing changes in NetBox until an admin approves it.</span>
+              </details>
 
               {sent && (
                 <p className={styles.state}>
@@ -545,16 +596,16 @@ export default function DriftPage() {
       {plan && changed.length > 0 && !sent && (
         <div className={styles.footer}>
           <label className={styles.label} htmlFor="note">
-            Anything the admin should know? (optional)
+            Note for the admin (optional)
           </label>
           <textarea id="note" className={styles.textarea} value={note}
-                    placeholder="U15 looked wrong to me"
+                    placeholder="For example: the router is on shelf U20"
                     onChange={(e) => setNote(e.target.value)} />
           <button type="button" className={styles.primary} disabled={!!busy} onClick={send}>
             Send to the admin
           </button>
           <p className={styles.footNote}>
-            An admin decides what reaches NetBox.
+            Nothing changes in NetBox until an admin approves it.
           </p>
         </div>
       )}

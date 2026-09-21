@@ -108,7 +108,7 @@ describe('<DriftPage> housekeeping', () => {
       }, { uid: 'site:office', type: 'Site', name: 'Office-Sprintpark', action: 'create', supporting: true, decidable: false }],
     } };
     mount();
-    await screen.findByText('This rack matches NetBox');
+    await screen.findByText('Everything matches your records');
     expect(screen.queryByText(/does not match/)).toBeNull();
     expect(screen.queryByText(/racktrack_uid|recordId|rack:t32:16/)).toBeNull();
     expect(screen.queryByText(/related record/)).toBeNull();
@@ -127,8 +127,8 @@ describe('<DriftPage> housekeeping', () => {
       }],
     } };
     mount();
-    await screen.findByText(/^1 difference$|1 thing would be added/);
-    expect(screen.getByText("In NetBox under this rack's old id")).toBeTruthy();
+    await screen.findByText(/1 thing is different from your records|1 thing would be added/);
+    expect(screen.getByText('Listed under an older id')).toBeTruthy();
     expect(screen.queryByText(/racktrack_uid/)).toBeNull();
   });
 });
@@ -205,7 +205,7 @@ describe('<DriftPage> which rack', () => {
     });
     mount();
     await screen.findByText('SW-16');
-    expect(screen.getByText('nothing yet')).toBeTruthy();
+    expect(screen.getByText('Not identified yet')).toBeTruthy();
     expect(screen.getByText('This rack is not in the record yet. Everything here reads as new.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Add RACK 7 to the record' })).toBeTruthy();
     // Not an error, and nothing on it decides or writes to the record.
@@ -215,7 +215,7 @@ describe('<DriftPage> which rack', () => {
     // has never heard of.
     expect(document.body.textContent).not.toMatch(/do(es)? not match/i);
     expect(screen.getByText(/would be added/)).toBeTruthy();
-    expect(document.body.textContent).toMatch(/NetBox holds no such rack yet/);
+    expect(document.body.textContent).toMatch(/Your records do not have this rack yet/);
   });
 
   test('with no answer from the identity route the line is what the comparison used', async () => {
