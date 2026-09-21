@@ -2,15 +2,15 @@
  * Organization settings -  the model, without the screen.
  *
  * The state lives on the server (/api/setup, server/lib/estate.js and the
- * profile sections beside it). What that state MEANS -  which of the four
- * steps is done, what is still required, which step to open first -  is
- * decided here, once, so the first-run flow, the settings view, the review
- * and the tests cannot disagree.
+ * profile sections beside it). What that state MEANS -  which step is done,
+ * what is still required, which step to open first -  is decided here, once,
+ * so the stepper, the review and the tests cannot disagree.
  *
- * Four steps since 21 Sep 2026: the organization, its sites (each with a
+ * Five steps since 22 Sep 2026: the organization, its sites (each with a
  * location and a single point of contact who gets an account), the rules,
- * and the review. Spaces, systems, vendors, naming and switch access were
- * taken out of setup; the server still holds whatever was saved in them.
+ * the review, and a closing step that thanks the person and closes.
+ * Spaces, systems, vendors, naming and switch access were taken out of
+ * setup; the server still holds whatever was saved in them.
  *
  * A site is a Site: the console calls it a Site, the server calls it a
  * tenant, and the older code and routes here call it a datacentre.
@@ -28,18 +28,22 @@ export const MANDATORY = [
   { key: 'rules', step: 'rules', short: 'Rules accepted', need: 'the rules accepted' },
 ];
 
-/* -- The four steps, in order -----------------------------------------
-   `kind` says what a step is to the flow: mandatory work (required) or the
-   review. `needsDc` marks a step with nothing to show until a site exists,
-   so it is locked rather than opened empty. `lead` is the one help line
-   under the step title. */
+/* -- The steps, in order ----------------------------------------------
+   `kind` says what a step is to the flow: work that must be complete before
+   the next step (required), or the closing step (done). `needsDc` marks a
+   step with nothing to show until a site exists, so it is locked rather
+   than opened empty. `lead` is the one help line under the step title.
+
+   The review is required too: the closing step says setup is done, so it is
+   not reached while something is still missing. */
 export const STEPS = [
   // No lead: the fields below are labelled, so listing them above was the
   // screen reading itself out.
   { key: 'org', label: 'Organization', title: 'Organization', kind: 'required', lead: '' },
   { key: 'sites', label: 'Sites', title: 'Sites', kind: 'required', lead: 'Each place that holds racks, and the person in charge there.' },
   { key: 'rules', label: 'Rules', title: 'Rules', kind: 'required', needsDc: true, lead: '' },
-  { key: 'review', label: 'Review', title: 'Review', kind: 'review', lead: '' },
+  { key: 'review', label: 'Review', title: 'Review', kind: 'required', lead: '' },
+  { key: 'done', label: 'Done', title: 'Thank you', kind: 'done', lead: '' },
 ];
 export const STEP_KEYS = STEPS.map((s) => s.key);
 export const stepOf = (key) => STEPS.find((s) => s.key === key) || null;
@@ -64,13 +68,16 @@ export const dcRulesAccepted = (dc) => !!dc?.completeness?.mandatory?.rules || !
 /** The site's single point of contact as the contacts section holds it. */
 export const spocOf = (dc) => (dc?.profile?.contacts || []).find((c) => c.role === 'spoc') || null;
 
+/** A site is ready when it says where it is and who its SPOC is. */
+export const siteReady = (dc) => dcAddressed(dc) && dcHasSpoc(dc);
+
 export function stepDone(step, model) {
   const dcs = model?.dcs || []; const any = dcs.length > 0;
   switch (step) {
     case 'org': return orgComplete(model?.org);
-    case 'sites': return any && dcs.every((d) => dcAddressed(d) && dcHasSpoc(d));
+    case 'sites': return any && dcs.every(siteReady);
     case 'rules': return any && dcs.every(dcRulesAccepted);
-    case 'review': { const p = progress(model); return p.required.done === p.required.total; }
+    case 'review': case 'done': { const p = progress(model); return p.required.done === p.required.total; }
     default: return false;
   }
 }
@@ -110,7 +117,8 @@ export function composeAddress(f) {
   return parts.join(', ');
 }
 
-/** The first step that still has required work; the review when none does. */
+/** The first step that still has required work; the review when none does.
+ *  Never the closing step: that one is reached by pressing Next. */
 export function firstIncompleteStep(model) {
   const s = STEPS.find((x) => x.kind === 'required' && !stepDone(x.key, model));
   return s ? s.key : 'review';

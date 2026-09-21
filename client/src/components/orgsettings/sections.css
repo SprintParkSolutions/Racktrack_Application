@@ -1,8 +1,8 @@
 /* Organization settings - the pieces the sections draw that are not a
    control: the remaining list, the organization name with its short code,
-   the rule, the review rows. Plain classes with an os- prefix, none of
-   which carry a substring index.css restyles. Flat: white, 1px hairlines,
-   no shadows. */
+   the statement the rules and the closing step read out, and the review
+   rows. Plain classes with an os- prefix, none of which carry a substring
+   index.css restyles. Flat: white, 1px hairlines, no shadows. */
 
 /* ---- What is still to do ---- */
 .os-rem { display: flex; flex-direction: column; gap: 20px; }
@@ -16,7 +16,6 @@
 .os-rem-ok { margin: 0; font-size: 13.5px; font-weight: 500; color: #111827; }
 
 /* ---- Small shared bits ---- */
-.os-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
 .os-link {
   background: none; border: 0; padding: 0; font-family: var(--font); font-size: inherit; font-weight: 500;
   color: #1f4ed8; text-decoration: none; cursor: pointer; text-align: left;
@@ -31,7 +30,7 @@
 .os-orgcode { color: #9aa5b3; font-size: 13px; }
 @media (min-width: 768px) { .os-orgname { min-height: 40px; font-size: 14px; } }
 
-/* ---- Rules ---- */
+/* ---- One statement on its own: the rules, the closing step ---- */
 .os-rule { margin: 0; font-size: 15px; line-height: 1.55; color: #111827; max-width: 60ch; }
 
 /* ---- Review rows ---- */
