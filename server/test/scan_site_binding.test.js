@@ -19,6 +19,12 @@
  *   5. a photo already on disk becomes the chosen Site's too, and the adopted
  *      copy of it goes stale, so the check made from it reaches that Site's
  *      SPOC; a re-scan for the same Site leaves both alone;
+ *   5a. only an owner or an organization admin moves a scan that already has a
+ *      Site; a technician of another Site who is served the rack leaves it
+ *      where it is, but still brings home a scan with no Site or one left on
+ *      the default tenant;
+ *   5b. the default tenant belongs to no organization, and naming it never
+ *      takes the caller's own organization away: same rack id as before;
  *   6. with no `siteId` nothing changes: a technician's scan is their Site's,
  *      an admin's lands on the default tenant, and an account with no Site is
  *      still refused a walk-through video.
@@ -56,7 +62,7 @@ const TAG = `ssb_${process.pid}_${Date.now()}`;
 const db = new Database(path.join(__dirname, '..', 'data', 'auth.db'));
 const made = { orgs: [], tenants: [], users: [] };
 let ORG, OTHER_ORG, SITE_1, SITE_2, SITE_OTHER, DEFAULT_SITE;
-let tech, admin, owner, stranger;
+let tech, tech2, admin, defaultAdmin, owner, stranger;
 
 function makeUser(name, role, tenantId, orgId) {
   const username = `${TAG}_${name}`;
@@ -84,6 +90,10 @@ before(() => {
   admin = makeUser('admin', 'org_admin', null, ORG);
   owner = makeUser('owner', 'owner', null, null);
   stranger = makeUser('stranger', 'member', SITE_OTHER, OTHER_ORG);
+  // A technician of the second Site, and an admin the way the owner makes one:
+  // in the organization, sitting on the shared default tenant.
+  tech2 = makeUser('tech2', 'member', SITE_2, ORG);
+  defaultAdmin = makeUser('defadmin', 'org_admin', DEFAULT_SITE, ORG);
 });
 
 const createdRacks = new Set();
@@ -235,6 +245,15 @@ test('resolve: the owner scanning at a Site carries that Site\'s organization, a
   assert.equal(out.auth.role, 'owner');
 });
 
+test('resolve: a Site with no organization never takes the caller\'s own away', () => {
+  const out = scanSite.resolve(defaultAdmin.payload, String(DEFAULT_SITE));
+  assert.equal(out.ok, true);
+  assert.equal(out.auth.tenantId, DEFAULT_SITE);
+  assert.equal(out.auth.organizationId, ORG, 'still their own organization, so still the scope org:<id>');
+  const inside = { sub: owner.row.id, role: 'owner', tenantId: DEFAULT_SITE, organizationId: ORG };
+  assert.equal(scanSite.resolve(inside, DEFAULT_SITE).auth.organizationId, ORG);
+});
+
 // ── The handlers ────────────────────────────────────────────────────
 test('a technician scanning at their own Site: the scan is that Site\'s', async (t) => {
   const { server, port } = await listen();
@@ -377,4 +396,80 @@ test('a walk-through video: no Site of your own is still refused, a chosen Site 
   const withSite = await send({ siteId: String(SITE_2) });
   assert.equal(withSite.status, 400, withSite.body.slice(0, 300));
   assert.match(withSite.json.error, /No racks detected/);
+});
+
+test('an admin on the default tenant who names it mints the rack id they minted before the picker', async (t) => {
+  const { server, port } = await listen();
+  t.after(() => new Promise((r) => server.close(r)));
+  const image = await freshImage();
+
+  const before = await scan(port, defaultAdmin, image);
+  assert.equal(before.status, 200, before.body.slice(0, 300));
+  const rackId = rackOf(before);
+  const named = await scan(port, defaultAdmin, image, DEFAULT_SITE);
+  assert.equal(named.status, 200, named.body.slice(0, 300));
+  assert.equal(rackOf(named), rackId, 'the same photo is the same rack, with or without the Site');
+  // And it is the id the organization's own technician mints, not one shared
+  // with every organization whose admins sit on the default tenant.
+  assert.equal(rackOf(await scan(port, tech, image, SITE_1)), rackId);
+});
+
+/** A map the way a real scan leaves it, one hour old, so a touch shows. */
+function ageMap(rackId) {
+  const mapFile = path.join(OUTPUTS, rackId, 'device_unit_map.json');
+  const map = JSON.parse(fs.readFileSync(mapFile, 'utf8'));
+  map.devices.forEach((d) => { d.port_count = 0; });
+  fs.writeFileSync(mapFile, JSON.stringify(map));
+  const long = new Date(Date.now() - 60 * 60 * 1000);
+  fs.utimesSync(mapFile, long, long);
+  return { mapFile, long };
+}
+
+test('a technician of another Site never moves a scan that has a Site; an admin may', async (t) => {
+  const { server, port } = await listen();
+  t.after(() => new Promise((r) => server.close(r)));
+  const image = await freshImage();
+
+  const first = await scan(port, tech, image, SITE_1);
+  assert.equal(first.status, 200, first.body.slice(0, 300));
+  const rackId = rackOf(first);
+  assert.equal(metaOf(rackId).tenantId, SITE_1);
+  const { mapFile, long } = ageMap(rackId);
+
+  // Same organization, so the same rack id and a cache hit - served, not moved.
+  const other = await scan(port, tech2, image, SITE_2);
+  assert.equal(other.status, 200, other.body.slice(0, 300));
+  assert.equal(rackOf(other), rackId);
+  assert.equal(metaOf(rackId).tenantId, SITE_1, 'still the first Site\'s scan');
+  assert.equal(Math.round(fs.statSync(mapFile).mtimeMs), long.getTime(), 'and its adopted copy is not thrown away');
+
+  const byAdmin = await scan(port, admin, image, SITE_2);
+  assert.equal(byAdmin.status, 200);
+  assert.equal(metaOf(rackId).tenantId, SITE_2, 'an organization admin moves it');
+  assert.ok(fs.statSync(mapFile).mtimeMs > long.getTime() + 1000);
+});
+
+test('a technician brings home a scan left on the default tenant, or with no Site at all', async (t) => {
+  const { server, port } = await listen();
+  t.after(() => new Promise((r) => server.close(r)));
+
+  // Left on the default tenant: an admin's scan from before the picker.
+  const onDefault = await freshImage();
+  const first = await scan(port, defaultAdmin, onDefault);
+  assert.equal(first.status, 200, first.body.slice(0, 300));
+  const rackA = rackOf(first);
+  assert.equal(metaOf(rackA).tenantId, DEFAULT_SITE);
+  ageMap(rackA);
+  assert.equal(rackOf(await scan(port, tech2, onDefault, SITE_2)), rackA);
+  assert.equal(metaOf(rackA).tenantId, SITE_2);
+
+  // No Site at all: an admin with no tenant of their own.
+  const nowhere = await freshImage();
+  const second = await scan(port, admin, nowhere);
+  assert.equal(second.status, 200, second.body.slice(0, 300));
+  const rackB = rackOf(second);
+  assert.equal(metaOf(rackB).tenantId ?? null, null);
+  ageMap(rackB);
+  assert.equal(rackOf(await scan(port, tech2, nowhere, SITE_2)), rackB);
+  assert.equal(metaOf(rackB).tenantId, SITE_2);
 });

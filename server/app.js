@@ -3395,11 +3395,26 @@ function scanSiteFor(req, res) {
 // served until the map on disk is newer than it (routes/netbox/scans.js), and
 // a copy keyed under the old Site names the wrong records. Nothing happens
 // without a `siteId`, or when the scan already is that Site's. Never fatal.
+//
+// Who may move a scan that already has a Site: an owner or an organisation
+// admin, nobody else. Rack ids are scoped by organisation, so a technician of
+// Site B can be served Site A's rack (a cache hit, a confirmed match), and
+// their scan must not take the rack, its confirmations and its SPOC away from
+// Site A. A scan with no Site, or one left on the shared default tenant from
+// before the picker, is still brought home by anybody's first scan. The role
+// is the caller's own: scan_site.resolve copies the payload and never edits it.
 function stampScanSite(rackId, site) {
   if (!site || !site.chosen) return;
   try {
     const m = readMeta(rackId) || {};
     if (m.tenantId != null && Number(m.tenantId) === Number(site.tenantId)) return;
+    if (m.tenantId != null) {
+      let defaultId = null;
+      try { defaultId = auth.getDefaultTenantId() || null; } catch { defaultId = null; }
+      const role = site.auth?.role;
+      const mayMove = role === 'owner' || role === 'org_admin';
+      if (!mayMove && Number(m.tenantId) !== Number(defaultId)) return;
+    }
     m.tenantId = site.tenantId;
     writeMeta(rackId, m);
     const map = path.join(outputsDir, rackId, 'device_unit_map.json');
