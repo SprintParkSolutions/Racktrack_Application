@@ -70,13 +70,18 @@
 .pickNote { display: block; margin-top: 8px; font-size: 12.5px; color: var(--muted-1); line-height: 1.45; }
 .pickError { margin: 8px 0 0; font-size: 13.5px; color: var(--bad); }
 
+/* Every section on this page is closed by one hairline under it, never by a line
+   over the next one: a top border and a bottom border used to meet in one place
+   and draw 2px there. The answer is the exception - it runs straight into its
+   own differences with no line between them. */
+
 /* the answer, before the detail */
 .verdict { padding: 18px var(--gutter) 14px; }
 .verdict h2 { margin: 0 0 4px; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
 .verdict p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--muted-1); }
 .tick { color: var(--good); font-size: 20px; line-height: 1; }
 
-.waiting, .done { margin: 0; padding: 2px var(--gutter) 14px; }
+.waiting, .done { margin: 0; padding: 2px var(--gutter) 14px; border-bottom: 1px solid var(--hair); }
 .waiting h2, .done h2 { margin: 0 0 4px; font-size: 16px; font-weight: 700; }
 .done h2 { color: var(--good); }
 .waiting p, .done p { margin: 0 0 4px; font-size: 14px; line-height: 1.5; color: var(--muted-1); }
@@ -104,8 +109,8 @@
 .how li { margin-bottom: 2px; }
 .means { margin: 4px 0 0; font-size: 13.5px; line-height: 1.45; color: var(--muted-1); }
 
-/* the differences, as rows */
-.list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hair); }
+/* the differences, as rows - the substance of the page */
+.list { list-style: none; margin: 0; padding: 0; }
 .item { padding: 14px var(--gutter); border-bottom: 1px solid var(--hair); }
 .item.approved .what { color: var(--good); }
 .item.rejected .what { color: var(--bad); }
@@ -130,7 +135,7 @@
 
 /* Before sending: who this drift check will go to - the SPOC of the site, or
    an admin and the reason why. */
-.send { border-top: 1px solid var(--hair); }
+.send { padding-bottom: 16px; border-bottom: 1px solid var(--hair); }
 .goesTo { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px;
           padding: 14px var(--gutter) 4px; font-size: 14px; }
 .goesToLabel { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); min-width: 60px; }
@@ -177,7 +182,7 @@
   background: #121212; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; }
 
 /* Choosing what to send. A plain tick box, the platform's own, at the size a thumb can hit. */
-.pickAll { display: flex; align-items: center; gap: 10px; padding: 10px var(--gutter); border-top: 1px solid var(--hair);
+.pickAll { display: flex; align-items: center; gap: 10px; padding: 10px var(--gutter); border-bottom: 1px solid var(--hair);
            font-size: 13.5px; color: var(--muted-1); cursor: pointer; }
 .pickAll input, .pickOne { width: 20px; height: 20px; flex: none; margin: 0; accent-color: #121212; cursor: pointer; }
 .pickOne { align-self: center; }
@@ -245,7 +250,7 @@
 .dotOk { background: var(--good); } .dotIdle { background: #c9ced4; }
 
 /* The report: one quiet button and what it is for. */
-.reportRow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 14px var(--gutter); border-top: 1px solid var(--hair); }
+.reportRow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 14px var(--gutter); }
 .secondaryBtn { min-height: 40px; padding: 0 16px; border-radius: 6px; border: 1px solid #121212; background: var(--bg, #fff);
                 color: #121212; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
 .secondaryBtn:disabled { opacity: .55; cursor: default; }
