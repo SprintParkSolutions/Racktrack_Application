@@ -496,8 +496,10 @@ function PortHistoryInner({ embedded, rackId = null }) {
         </section>
       )}
 
-      {/* ── What changed - the point of the page ── */}
-      {selectedId && (
+      {/* ── What changed - shown once something has. With one reading, or two
+          that agree, the heading sat over "Nothing has changed between readings",
+          which the owner read as an empty box and asked to have removed. ── */}
+      {selectedId && events.length > 0 && (
         <section className={styles.band}>
           <div className={styles.bandHead}>
             <h3>What changed</h3>

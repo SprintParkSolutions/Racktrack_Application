@@ -5368,9 +5368,6 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       {/* ── Tab: Drift (continuous SSH telemetry from monitored switches) ── */}
       {tab === 'drift' && (
         <div className={styles.tabContent} style={{ minHeight: '60vh', padding: '16px' }}>
-          <p style={{ margin: '0 0 12px', fontSize: 14, lineHeight: 1.5, color: 'var(--muted, #5c646d)' }}>
-            What changed on this rack's switch ports, reading by reading.
-          </p>
           <PortHistoryContent rackId={urlRackId || rackId || scanId} />
         </div>
       )}
