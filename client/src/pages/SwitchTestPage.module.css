@@ -45,6 +45,118 @@
   color: var(--text);
 }
 
+/* ── The two halves of the page ──
+   The switches as they are now, and what has changed on their ports over time.
+   The same pill pair as the form's v2c/v3 choice, so the page has one way of
+   offering two things. */
+.viewSeg {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+  flex: none;
+  margin: 0 16px 4px;
+  padding: 4px; border-radius: 12px;
+  background: var(--bg); border: 1px solid var(--border, rgba(0,0,0,.14));
+}
+.viewBtn {
+  min-height: 40px; padding: 0 10px;
+  border: 1px solid transparent; border-radius: 9px;
+  background: transparent; color: var(--muted);
+  font-family: var(--font); font-size: 14px; font-weight: 650;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.viewOn { background: var(--card); color: var(--text); border-color: var(--border, rgba(0,0,0,.18)); }
+
+/* ── A band of the page ──
+   This rack, one switch's facts, its ports, where it sits. Same card as a
+   switch row without the state rail, so the page is one kind of surface. */
+.panel {
+  position: relative;
+  flex: none;
+  display: flex; flex-direction: column; gap: 12px;
+  margin: 12px 12px 0;
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 1px solid var(--border, rgba(0,0,0,.10));
+  border-radius: 14px;
+  overflow: hidden;
+}
+.panelHead { display: flex; align-items: center; gap: 10px; }
+.panelHead h2 {
+  flex: 1; margin: 0;
+  font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -.01em;
+}
+.panelHead > span {
+  flex: none; font-size: 12px; color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A plain line naming the group under it. */
+.sectionHead {
+  flex: none;
+  margin: 18px 16px 8px;
+  font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--muted); font-weight: 700;
+}
+
+/* ── Facts ──
+   Every number on this page is a label above a value, all the same size, all
+   aligned. A person should not have to work out what a number is. */
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 12px 16px;
+}
+.fact { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.factLabel {
+  font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted); font-weight: 600;
+}
+.factVal {
+  font-size: 14.5px; font-weight: 650; color: var(--text);
+  letter-spacing: -.01em; font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.factWarn { color: #b26a00; }
+
+/* ── Which switch ──
+   One line each, the chosen one filled. The state rail runs down the left of
+   the line it belongs to, as it does on a card. */
+.pick {
+  flex: none;
+  display: flex; flex-direction: column;
+  margin: 0 12px;
+  background: #ffffff;
+  border: 1px solid var(--border, rgba(0,0,0,.10));
+  border-radius: 14px;
+  overflow: hidden;
+}
+.pickRow {
+  position: relative;
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 12px 14px 12px 17px;
+  border: 0; border-top: 1px solid var(--border, rgba(0,0,0,.08));
+  background: transparent; text-align: left;
+  font-family: var(--font);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.pickRow:first-child { border-top: 0; }
+.pickRow::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: transparent;
+}
+.pickRow[data-state='good']::before { background: #0f7b4f; }
+.pickRow[data-state='ok']::before   { background: rgba(15,123,79,.45); }
+.pickRow[data-state='bad']::before  { background: #c0392b; }
+.pickRow[data-state='busy']::before { background: #b26a00; }
+.pickOn { background: var(--bg2, #f4f5f7); }
+.pickWho { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pickName {
+  font-size: 15.5px; font-weight: 700; color: var(--text);
+  letter-spacing: -.01em; overflow-wrap: anywhere;
+}
+.pickWhat { font-size: 12.5px; color: var(--text); overflow-wrap: anywhere; }
+.pickWhen { font-size: 11.5px; color: var(--muted); overflow-wrap: anywhere; }
+
 /* ── One switch ──
    Each switch is its own card, numbered, with a gap of page between it and
    the next: three switches read as three things, not one long sheet. The
@@ -162,6 +274,11 @@
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 .pinUp { background: #0f7b4f; border-color: #0f7b4f; color: #ffffff; }
+/* An SFP cage, as the photograph read it: a heavier line along the bottom,
+   which survives being 11px wide on a 52 port switch. */
+.pinSfp { border-bottom: 3px solid #121212; }
+/* A port the photograph and the switch do not agree about. */
+.pinBad { box-shadow: inset 0 0 0 2px #c0392b; }
 .pinOn { outline: 2px solid #121212; outline-offset: 1px; }
 
 .plateNote {
@@ -174,6 +291,8 @@
 .key i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
 .keyUp { background: #0f7b4f; }
 .keyDown { background: #ffffff; border: 1px solid var(--border, rgba(0,0,0,.18)); }
+.keySfp { background: #ffffff; border: 1px solid var(--border, rgba(0,0,0,.18)); border-bottom: 3px solid #121212; }
+.keyBad { background: #ffffff; border: 1px solid var(--border, rgba(0,0,0,.18)); box-shadow: inset 0 0 0 2px #c0392b; }
 .keyHint { font-style: italic; }
 
 /* ── Actions, at the switch's name ── */
@@ -320,27 +439,34 @@
 .secondary { background: transparent; border: 1px solid var(--border, rgba(0,0,0,.22)); color: var(--text); }
 .primary:disabled, .secondary:disabled { opacity: .5; cursor: default; }
 
-/* Full width, hairline under it - a row like the switches above it. */
+/* Under the list of switches, the width of it. */
 .addMore {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  width: 100%; min-height: 56px;
-  background: transparent; border: 0;
-  border-bottom: 1px solid var(--border, rgba(0,0,0,.09));
+  display: flex; align-items: center; justify-content: center;
+  flex: none;
+  width: calc(100% - 24px); min-height: 48px;
+  margin: 10px 12px 0;
+  background: transparent;
+  border: 1px solid var(--border, rgba(0,0,0,.22));
+  border-radius: 10px;
   color: var(--text); font-family: var(--font);
-  font-size: 14px; font-weight: 600;
+  font-size: 14px; font-weight: 650;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
-.addMore span { font-size: 18px; font-weight: 500; color: var(--muted); }
 .addMore:active { background: var(--bg2, rgba(0,0,0,.03)); }
 
 /* ── Add / edit ── */
 .form {
-  padding: 18px 16px 22px;
-  margin: 0 -16px;   /* full-bleed inside a switch row, which has its own 16px */
-  border-bottom: 1px solid var(--border, rgba(0,0,0,.09));
+  flex: none;
+  margin: 12px 12px 0;
+  padding: 16px;
+  border: 1px solid var(--border, rgba(0,0,0,.10));
+  border-radius: 14px;
   background: var(--bg2, #fafafa);
   display: flex; flex-direction: column; gap: 14px;
 }
+/* Inside a band it is already inset, so it sits flush and only the fill and the
+   hairline part it from the facts above. */
+.panel .form { margin: 2px 0 0; }
 .form h2 { margin: 0; font-size: 17px; font-weight: 650; color: var(--text); letter-spacing: -.01em; }
 .field { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0; }
 .field span {
@@ -409,6 +535,6 @@
 .notice b { font-weight: 700; color: var(--text); }
 
 /* ── Save the places and move on ── */
-.finish { padding: 18px 16px 8px; display: flex; flex-direction: column; gap: 10px; }
+.finish { flex: none; padding: 18px 16px 8px; display: flex; flex-direction: column; gap: 10px; }
 .finishOk { margin: 0; font-size: 13px; color: #0f7b4f; }
 .finishBad { margin: 0; font-size: 13px; color: #c0392b; }
