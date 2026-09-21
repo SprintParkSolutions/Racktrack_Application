@@ -174,6 +174,53 @@ describe('the tables hold a plan and everything on it', () => {
     assert.equal(store.itemsOf(plan.id).length, 0, 'its items went with it');
     assert.equal(store.getSetting(4242, 'dual_approval_risks'), undefined);
   });
+
+  it('keeps what a person changed on a check, and never edits or deletes a change', () => {
+    const cols = store.db().prepare('PRAGMA table_info(approval_overrides)').all().map((c) => c.name);
+    for (const col of ['plan_id', 'item_uid', 'kind', 'netbox_id', 'record_name', 'fields', 'shown', 'source',
+      'suggestion_id', 'rule', 'note', 'created_by', 'created_by_id', 'created_at', 'revoked_at', 'revoked_by']) {
+      assert.ok(cols.includes(col), `approval_overrides.${col}`);
+    }
+    assert.ok(store.TABLES.includes('approval_overrides'));
+    assert.ok(store.db().prepare('PRAGMA table_info(approval_plans)').all().some((c) => c.name === 'base_fingerprint'));
+
+    const plan = store.insertPlan({ orgId: 4343, status: 'assigned', fingerprint: 'f1', createdAt: store.nowIso() },
+      [{ uid: 'dev:1', type: 'Device', action: 'create', decidable: true }]);
+    const before = store.getPlan(plan.id).version;
+    const move = store.addOverride(plan.id, { itemUid: 'dev:1', kind: 'move', netboxId: 199,
+      recordName: 'SP-R1-U20-ACT', fields: { position: { from: 22, to: 20 } },
+      shown: { name: 'SP-R1-U20-ACT', position: 22, serial: null }, source: 'suggestion',
+      suggestionId: 'wrong_shelf|dev:1|199', rule: 'wrong_shelf', createdBy: 'dc007.spoc', createdById: 41 });
+    assert.deepEqual(move.fields, { position: { from: 22, to: 20 } });
+    assert.deepEqual(move.shown, { name: 'SP-R1-U20-ACT', position: 22, serial: null });
+    assert.equal(move.revokedAt, null);
+    assert.ok(store.getPlan(plan.id).version > before, 'a change to a check is a new version of it');
+    const typed = store.addOverride(plan.id, { itemUid: 'dev:1', kind: 'value',
+      fields: { serial: { from: null, to: 'FOC1' } }, source: 'manual', createdBy: 'dc007.spoc' });
+    assert.deepEqual(store.overridesOf(plan.id).map((o) => o.id), [move.id, typed.id]);
+
+    const taken = store.revokeOverride(move.id, 'dc007.spoc');
+    assert.ok(taken.revokedAt);
+    assert.equal(taken.revokedBy, 'dc007.spoc');
+    assert.deepEqual(store.overridesOf(plan.id).map((o) => o.id), [typed.id], 'a change taken back no longer applies');
+    assert.deepEqual(store.overridesOf(plan.id, { active: false }).map((o) => o.id), [move.id, typed.id],
+      'and is still on the record');
+
+    // The items of a check are swapped whole, with the plan patched in the same step.
+    const swapped = store.replaceItems(plan.id, [
+      { uid: 'dev:1', type: 'Device', action: 'rebind', decidable: true, decision: 'approved',
+        extra: { modified: { overrideId: typed.id } } },
+      { uid: 'dev:2', type: 'Device', action: 'create', decidable: true },
+    ], { fingerprint: 'f2', baseFingerprint: 'f1' });
+    assert.equal(swapped.fingerprint, 'f2');
+    assert.equal(store.getPlan(plan.id, { heavy: false }).baseFingerprint, 'f1', 'on a light read too');
+    assert.deepEqual(store.itemsOf(plan.id).map((i) => `${i.uid} ${i.action} ${i.decision}`),
+      ['dev:1 rebind approved', 'dev:2 create pending']);
+    assert.deepEqual(store.getItem(plan.id, 'dev:1').modified, { overrideId: typed.id });
+
+    store.purgeOrg(4343);
+    assert.deepEqual(store.overridesOf(plan.id, { active: false }), [], 'the changes go with the check');
+  });
 });
 
 describe('the change registry only ever grows', () => {

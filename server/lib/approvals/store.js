@@ -332,6 +332,27 @@ function _prep() {
       updated_at TEXT    NOT NULL,
       PRIMARY KEY (org_id, key)
     );
+
+    CREATE TABLE IF NOT EXISTS approval_overrides (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      plan_id       INTEGER NOT NULL REFERENCES approval_plans(id) ON DELETE CASCADE,
+      item_uid      TEXT,
+      kind          TEXT    NOT NULL,
+      netbox_id     INTEGER,
+      record_name   TEXT,
+      fields        TEXT    NOT NULL,
+      shown         TEXT,
+      source        TEXT    NOT NULL,
+      suggestion_id TEXT,
+      rule          TEXT,
+      note          TEXT,
+      created_by    TEXT,
+      created_by_id INTEGER,
+      created_at    TEXT    NOT NULL,
+      revoked_at    TEXT,
+      revoked_by    TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_approval_overrides_plan ON approval_overrides(plan_id, revoked_at);
   `);
   // Columns added after a table first shipped go here, one line each, so an
   // older database catches up on the next boot.
@@ -350,6 +371,10 @@ function _prep() {
   _ensureColumn('approval_plans', 'findings', 'findings TEXT');
   _ensureColumn('approval_plans', 'evidence', 'evidence TEXT');
   _ensureColumn('approval_plans', 'suggestion_state', 'suggestion_state TEXT');
+  // The fingerprint a check was FILED with. A change a person makes re-plans
+  // the check and signs a new one, and this is what still says "the same drift"
+  // to the phone that compares the rack again without that change.
+  _ensureColumn('approval_plans', 'base_fingerprint', 'base_fingerprint TEXT');
   // What a notice is about, as fields a screen can read without parsing words.
   _ensureColumn('approval_notifications', 'data', 'data TEXT');
   handle().exec('CREATE INDEX IF NOT EXISTS idx_approval_plans_spoc ON approval_plans(spoc_user_id, status)');
@@ -459,6 +484,7 @@ function planOf(r, { heavy = true } = {}) {
     updatedAt: r.updated_at, legacyId: r.legacy_id,
     spocUserId: r.spoc_user_id ?? null, spoc: parse(r.spoc), needsAdmin: parse(r.needs_admin),
     incident: parse(r.incident), suggestionState: parse(r.suggestion_state, {}),
+    baseFingerprint: r.base_fingerprint ?? null,
     findings: [], evidence: null,
   };
   if (heavy) {
@@ -549,6 +575,14 @@ const windowOf = (r) => r && ({
   note: r.note, createdBy: r.created_by, createdAt: r.created_at,
 });
 
+const overrideOf = (r) => r && ({
+  id: r.id, planId: r.plan_id, itemUid: r.item_uid, kind: r.kind, netboxId: r.netbox_id,
+  recordName: r.record_name, fields: parse(r.fields, {}), shown: parse(r.shown),
+  source: r.source, suggestionId: r.suggestion_id, rule: r.rule, note: r.note,
+  createdBy: r.created_by, createdById: r.created_by_id, createdAt: r.created_at,
+  revokedAt: r.revoked_at, revokedBy: r.revoked_by,
+});
+
 // camelCase field -> column, and which columns hold JSON or a 0/1 flag. One
 // table each, so an update can take the same names a read hands back.
 const PLAN_COLS = {
@@ -569,6 +603,7 @@ const PLAN_COLS = {
   spocUserId: 'spoc_user_id', spoc: 'spoc', needsAdmin: 'needs_admin', incident: 'incident',
   writtenById: 'written_by_id', findings: 'findings', evidence: 'evidence',
   suggestionState: 'suggestion_state',
+  baseFingerprint: 'base_fingerprint',
 };
 const PLAN_JSON = new Set(['counts', 'warnings', 'orphans', 'verification', 'result',
   'preSnapshot', 'postSnapshot', 'spoc', 'needsAdmin', 'incident', 'findings', 'evidence',
@@ -944,6 +979,65 @@ function updateItem(planId, uid, patch, { touch = true } = {}) {
   db().prepare(`UPDATE approval_items SET ${sets.join(', ')} WHERE plan_id = @plan_id AND uid = @uid`).run(params);
   if (touch) touchPlan(planId);
   return getItem(planId, uid);
+}
+
+/** What a suggestion is worked out from, without the rest of the heavy columns. */
+function evidenceOf(planId) {
+  const r = db().prepare('SELECT findings, evidence FROM approval_plans WHERE id = ?').get(Number(planId));
+  return { findings: parse(r && r.findings, []), evidence: parse(r && r.evidence) };
+}
+
+/**
+ * Swap a plan's items for a fresh comparison's, and patch the plan, in one
+ * transaction. The caller has already carried over every decision that still
+ * stands. Tickets, comments and events name an item by its uid and hold no
+ * foreign key to it, so nothing else goes with the old rows.
+ */
+function replaceItems(planId, items, planPatch = {}) {
+  return tx(() => {
+    db().prepare('DELETE FROM approval_items WHERE plan_id = ?').run(Number(planId));
+    for (const item of items || []) insertItem(planId, item);
+    return updatePlan(planId, planPatch);
+  });
+}
+
+// -- Overrides ----------------------------------------------------------
+// What a person changed on a check before approving it: a record moved to the
+// shelf the photo shows, a record marked offline, a value typed by hand. A row
+// is never edited and never deleted; taking a change back stamps revoked_at.
+function addOverride(planId, o, { touch = true } = {}) {
+  const info = db().prepare(`
+    INSERT INTO approval_overrides (plan_id, item_uid, kind, netbox_id, record_name, fields, shown,
+      source, suggestion_id, rule, note, created_by, created_by_id, created_at)
+    VALUES (@plan_id, @item_uid, @kind, @netbox_id, @record_name, @fields, @shown,
+      @source, @suggestion_id, @rule, @note, @created_by, @created_by_id, @created_at)
+  `).run({
+    plan_id: Number(planId), item_uid: o.itemUid ?? null, kind: String(o.kind),
+    netbox_id: o.netboxId ?? null, record_name: o.recordName ?? null,
+    fields: json(o.fields || {}), shown: json(o.shown), source: o.source || 'manual',
+    suggestion_id: o.suggestionId ?? null, rule: o.rule ?? null, note: o.note ?? null,
+    created_by: o.createdBy ?? null, created_by_id: o.createdById ?? null,
+    created_at: o.createdAt || nowIso(),
+  });
+  if (touch) touchPlan(planId);
+  return getOverride(info.lastInsertRowid);
+}
+
+const getOverride = (id) => overrideOf(db()
+  .prepare('SELECT * FROM approval_overrides WHERE id = ?').get(Number(id)));
+
+/** A plan's overrides, oldest first. `active: false` includes the ones taken back. */
+const overridesOf = (planId, { active = true } = {}) => db()
+  .prepare(`SELECT * FROM approval_overrides WHERE plan_id = ?
+    ${active ? 'AND revoked_at IS NULL' : ''} ORDER BY id`).all(Number(planId)).map(overrideOf);
+
+function revokeOverride(id, by, { touch = true } = {}) {
+  const row = getOverride(id);
+  if (!row || row.revokedAt) return row;
+  db().prepare('UPDATE approval_overrides SET revoked_at = ?, revoked_by = ? WHERE id = ?')
+    .run(nowIso(), by ?? null, Number(id));
+  if (touch) touchPlan(row.planId);
+  return getOverride(id);
 }
 
 // -- Tickets ----------------------------------------------------------
@@ -1434,6 +1528,7 @@ const TABLES = ['approval_plans', 'approval_items', 'approval_tickets', 'approva
   'approval_verifications', 'approval_comments', 'approval_events', 'approval_sla',
   'approval_notifications', 'approval_exceptions', 'approval_windows', 'approval_settings',
   'approval_changes'];
+TABLES.push('approval_overrides');
 
 module.exports = {
   // the handle
@@ -1444,6 +1539,7 @@ module.exports = {
   SLA_STATES, slaStateOf,
   // items and tickets
   insertItem, itemsOf, getItem, updateItem,
+  replaceItems, addOverride, getOverride, overridesOf, revokeOverride, evidenceOf,
   ticketsOf, getTicket, putTicket, updateTicket, listTickets, ticketsWaitingOnServiceNow,
   // the history of a plan
   addDecision, decisionsOf, addVerification, verificationsOf,

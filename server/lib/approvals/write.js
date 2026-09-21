@@ -476,18 +476,11 @@ function _setDeps(deps) {
 
 /** The scan snapshot and the NetBox client a write needs. */
 async function prepare(plan, who, { client = null, snapshot = null } = {}) {
-  let snap = snapshot;
-  if (!snap) {
-    if (plan.scanId == null) return { error: 'this plan has no scan to write from' };
-    const scan = require('../netbox/store').getScan(plan.scanId);
-    if (!scan) return { error: 'the scan this plan was compared from is gone', code: 'not_found' };
-    snap = (scan.payload && scan.payload.reconciled) || (scan.payload && scan.payload.snapshot);
-    if (!snap) return { error: 'that scan has no detection result yet' };
-    try {
-      require('../netbox/unmanaged').applyTo(snap, scan.rackId);
-      require('../netbox/entered').applyTo(snap, scan.rackId);
-    } catch { /* a scan with no hand-declared extras writes just the same */ }
-  }
+  // The one loader every comparison of a check shares, so what a person
+  // changed on it is in the snapshot here exactly as it was when they changed it.
+  const loaded = require('./snapshot').forPlan(plan, { snapshot });
+  if (loaded.error) return loaded;
+  const { snap } = loaded;
   const nb = client || require('./connections').netboxFor({
     orgId: plan.orgId ?? who.orgId, userId: who.id });
   if (!nb) {

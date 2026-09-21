@@ -190,8 +190,13 @@ for (const [move, call] of Object.entries(TICKET_MOVES)) {
  * and what did not is in `refused` with the reason, so a screen can say which
  * row is still waiting on somebody. For the SPOC the check is with or an
  * organization admin, never the person who sent it; the service holds that.
+ *
+ * A row may also change a value before approving it: { uid, decision:
+ * 'modified', modified: { serial, asset_tag, description }, note }. The check
+ * is then compared with NetBox again, `replanned` says so, and the row comes
+ * back approved with `modified: true`.
  */
-router.post('/:planId/decide', gates.readers, (req, res) => {
+router.post('/:planId/decide', gates.readers, wrap(async (req, res) => {
   const decisions = bodyOf(req).decisions;
   if (!Array.isArray(decisions) || !decisions.length) {
     return res.status(400).json({ code: 'bad_request',
@@ -201,9 +206,26 @@ router.post('/:planId/decide', gates.readers, (req, res) => {
     return res.status(400).json({ code: 'bad_request',
       error: 'The whole rack can only be assigned to somebody. Approve or reject each device on its own.' });
   }
-  return answer(res, service.decideItems(idOf(req), decisions, { actor: req.user, req }),
-    (o) => ({ ...o, replanned: false }));
-});
+  return answer(res, await service.decide(idOf(req), decisions, { actor: req.user, req }));
+}));
+
+/**
+ * What RackTrack suggests about a check, acted on: accept it, or put it away.
+ * `:sid` is the suggestion's id, URL-encoded. Body { note }. Accepting may
+ * change the check and compare it with NetBox again, so the answer is the
+ * whole check as GET /:planId gives it, items and all. 409 when the suggestion
+ * no longer applies, when NetBox could not be compared, or when the fresh
+ * comparison does not show the change - with the writer's own reason.
+ */
+router.post('/:planId/suggestions/:sid/accept', gates.readers, wrap(async (req, res) => answer(res,
+  await service.acceptSuggestion(idOf(req), req.params.sid, { note: bodyOf(req).note, actor: req.user, req }))));
+
+router.post('/:planId/suggestions/:sid/dismiss', gates.readers, (req, res) => answer(res,
+  service.dismissSuggestion(idOf(req), req.params.sid, { note: bodyOf(req).note, actor: req.user, req })));
+
+/** Take back a change a person made on the check. The answer is the whole check again. */
+router.delete('/:planId/overrides/:overrideId', gates.readers, wrap(async (req, res) => answer(res,
+  await service.revokeOverride(idOf(req), req.params.overrideId, { actor: req.user, req }))));
 
 /**
  * One name against what will be written: { comment, incidentState }. Twice,
