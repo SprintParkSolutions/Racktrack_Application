@@ -43,7 +43,10 @@ describe('<AssignedNotice>', () => {
     render(<AssignedNotice />);
     await screen.findByText('Check rack SP-HYB-RM01-R01-R1');
     expect(screen.getByText(/Aasritha has asked you to check rack/)).toBeTruthy();
+    // what to check is there, one tap away, and no address is ever printed
     expect(screen.getByText(/Router on shelf U20/)).toBeTruthy();
+    expect(screen.getByText('Details')).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/https?:\/\//);
     expect(screen.getByText('and 1 more')).toBeTruthy();
     // the email's greeting, signature and status line are not part of the card
     expect(screen.queryByText(/Hello dc007/)).toBeNull();
@@ -62,9 +65,13 @@ describe('<AssignedNotice>', () => {
 
   test('other events are not this card\'s business, and the steps are kept apart from the ask', () => {
     const parts = splitBody(BODY);
-    expect(parts.first).toMatch(/^Aasritha has asked/);
-    expect(parts.first).not.toMatch(/What to do/);
-    expect(parts.steps).toMatch(/^What to do:/);
+    expect(parts.lead).toBe('Aasritha has asked you to check rack SP-HYB-RM01-R01-R1 at Office-Sprintpark.');
+    expect(parts.details).toMatch(/^What to check:/);
+    expect(parts.details).not.toMatch(/What to do/);
+    expect(parts.steps).toMatch(/^1\. Open the check/);
     expect(parts.url).toMatch(/^https:\/\/dev1\.service-now\.com/);
+    // several incidents, several addresses: one button, and none of them printed
+    const many = splitBody(`${BODY}\nhttps://dev1.service-now.com/two\nhttps://dev1.service-now.com/three`);
+    expect(`${many.lead}${many.details}${many.steps}`).not.toMatch(/https?:/);
   });
 });

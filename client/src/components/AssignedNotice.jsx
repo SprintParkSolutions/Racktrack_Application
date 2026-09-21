@@ -19,20 +19,39 @@ import styles from './AssignedNotice.module.css';
    ────────────────────────────────────────────────────────────────────── */
 
 const POLL_MS = 60_000;
-const URL_RE = /(https?:\/\/[^\s]+)/;
+const URL_RE = /https?:\/\/[^\s]+/g;
 
-/** The part a person reads first, and the steps that follow it. */
+/**
+ * A notice, taken apart for a small screen.
+ *
+ *   lead     the one sentence that says what was asked - always shown
+ *   details  what to check, the question, the incident numbers - one tap away
+ *   steps    what to do about it - with the details
+ *   url      the first address in it, which becomes a button; an address is
+ *            never printed, however many the message carried
+ *
+ * It used to show everything. A whole rack handed over is ten items and as many
+ * incidents, and the notice then covered the entire Scan screen with a list and
+ * a bare ServiceNow address - the owner asked why a technician was seeing that.
+ */
 export function splitBody(body) {
-  const text = String(body || '')
+  const raw = String(body || '');
+  const url = (raw.match(URL_RE) || [])[0] || null;
+  const text = raw
     .replace(/^Hello [^\n]*\n+/, '')            // the greeting is for the email
     .replace(/\n+- RackTrack\s*$/, '')          // so is the signature
-    .replace(/\nPlan \d+ - [^\n]*\n?/, '\n');   // and the plan's one-line status
-  const url = (text.match(URL_RE) || [])[1] || null;
-  const clean = text.replace(URL_RE, '').replace(/\n{3,}/g, '\n\n').trim();
-  const at = clean.indexOf('What to do:');
+    .replace(/\nPlan \d+ - [^\n]*\n?/, '\n')   // and the plan's one-line status
+    .replace(URL_RE, '')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  const at = text.indexOf('What to do:');
+  const before = (at >= 0 ? text.slice(0, at) : text).trim();
+  const cut = before.indexOf('\n');
   return {
-    first: (at >= 0 ? clean.slice(0, at) : clean).trim(),
-    steps: at >= 0 ? clean.slice(at).trim() : '',
+    lead: (cut >= 0 ? before.slice(0, cut) : before).trim(),
+    details: (cut >= 0 ? before.slice(cut) : '').trim(),
+    steps: at >= 0 ? text.slice(at).replace(/^What to do:\s*/, '').trim() : '',
     url,
   };
 }
@@ -89,12 +108,18 @@ export default function AssignedNotice() {
         {rows.length > 1 && <span className={styles.more}>and {rows.length - 1} more</span>}
       </div>
       <h2 className={styles.title}>{String(top.subject || '').replace(/^Assigned to you:\s*/i, '').replace(/^./, (c) => c.toUpperCase())}</h2>
-      <p className={styles.body}>{parts.first}</p>
+      <p className={styles.body}>{parts.lead}</p>
 
-      {parts.steps && (
+      {(parts.details || parts.steps) && (
         <details className={styles.steps}>
-          <summary>What to do</summary>
-          <p className={styles.body}>{parts.steps.replace(/^What to do:\s*/, '')}</p>
+          <summary>Details</summary>
+          {parts.details && <p className={styles.body}>{parts.details}</p>}
+          {parts.steps && (
+            <>
+              <span className={styles.subhead}>What to do</span>
+              <p className={styles.body}>{parts.steps}</p>
+            </>
+          )}
         </details>
       )}
 

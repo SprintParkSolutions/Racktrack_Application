@@ -138,6 +138,14 @@ function recipientsFor(event, plan, payload) {
 // -- What it says ---------------------------------------------------------
 const where = (plan) => `rack ${plan.rackName || plan.rackId || plan.id}`;
 
+/**
+ * A rack, as a person would name it. A scan nobody has identified is known only
+ * by the hash of its photograph, which means nothing to the person reading: it
+ * is "a rack that has not been identified yet", and the site says where.
+ */
+const rackWords = (name) => (!name || /^RK-[0-9A-F]{6,}$/i.test(String(name))
+  ? 'a rack that has not been identified yet' : `rack ${name}`);
+
 /** One item to check, as somebody at the rack would say it. */
 const ITEM_MEANS = {
   create: 'it is in the rack, but the record does not list it on that shelf',
@@ -162,19 +170,27 @@ const LINES = {
   // incident, and the three steps. It used to say "please check rack RK-2F85EE94,
   // open the plan" - the photograph's hash and no reason.
   assigned: (plan, p) => {
-    const rack = p.rackName || plan.rackName || plan.rackId || `plan ${plan.id}`;
+    const rack = rackWords(p.rackName || plan.rackName || plan.rackId);
     const targets = Array.isArray(p.targets) ? p.targets : [];
     const incidents = (Array.isArray(p.incidents) ? p.incidents : []).filter((i) => i && i.number);
     const by = p.actor && p.actor.username ? p.actor.username : 'An admin';
+    // A whole rack handed over is ten items and ten incidents. Reciting them all
+    // filled a phone screen with a list nobody reads; the first few say what kind
+    // of job it is, and the check itself has the rest.
+    const SHOWN = 4;
+    const numbers = incidents.map((i) => i.number);
     return [
-      `${by} has asked you to check rack ${rack}${p.siteName ? ` at ${p.siteName}` : ''}.`,
+      `${by} has asked you to check ${rack}${p.siteName ? ` at ${p.siteName}` : ''}`
+        + `${targets.length > 1 ? `: ${targets.length} things` : ''}.`,
       '',
       targets.length ? 'What to check:' : '',
-      ...targets.map((t) => `  - ${plainItem(t, rack)}`),
+      ...targets.slice(0, SHOWN).map((t) => `  - ${plainItem(t, p.rackName || plan.rackName || '')}`),
+      targets.length > SHOWN ? `  - and ${targets.length - SHOWN} more, listed in the check.` : '',
       p.question ? '' : '',
       p.question ? `${by} asks: "${p.question}"` : '',
-      incidents.length ? '' : '',
-      ...incidents.flatMap((i) => [`ServiceNow incident: ${i.number}`, i.url || '']),
+      numbers.length ? '' : '',
+      numbers.length ? `ServiceNow: ${numbers.slice(0, 3).join(', ')}${numbers.length > 3 ? ` and ${numbers.length - 3} more` : ''}` : '',
+      incidents[0] && incidents[0].url ? incidents[0].url : '',
       '',
       'What to do:',
       '  1. Open the check and press Accept.',
@@ -222,7 +238,7 @@ const LINES = {
 
 const SUBJECTS = {
   submitted: (plan) => `RackTrack: a drift check on ${where(plan)} needs triage`,
-  assigned: (plan, p) => `Assigned to you: check rack ${p.rackName || plan.rackName || plan.rackId || plan.id}`,
+  assigned: (plan, p) => `Assigned to you: check ${rackWords(p.rackName || plan.rackName || plan.rackId)}`,
   p1_p2_created: (plan) => `RackTrack: ${plan.priority} drift on ${where(plan)}`,
   sla_warn: (plan, p) => `RackTrack: the ${p.clock} clock on ${where(plan)} is close to its target`,
   sla_breach: (plan, p) => `RackTrack: the ${p.clock} clock on ${where(plan)} has run out`,
