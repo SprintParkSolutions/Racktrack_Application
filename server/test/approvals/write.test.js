@@ -253,6 +253,56 @@ describe('a write that goes through', () => {
     assert.equal(out.write.state, 'written', out.write.why);
     assert.deepEqual([...W.calls.pushed[0].deferScaffolding].sort(), ['mfr:unknown', 'role:moved-box', 'role:router']);
   });
+
+  // The site is on that list because of the write of 21 September: a shelf move
+  // an approver had signed was refused and wrote NOTHING, because the site row
+  // that rode along with it read as a create and NetBox already had a site of
+  // that name. A row the write does not need is not in the write.
+  it('leaves out the site a shelf move does not need', async () => {
+    const changes = [
+      { type: 'Site', uid: 'site:office-sprintpark', name: 'Office-Sprintpark', action: 'create' },
+      { type: 'Device', uid: 'dev:t32:16:u20', name: 'SP-R1-U20-ACT', action: 'rebind', netboxId: 199,
+        diff: { racktrack_uid: { from: null, to: 'dev:t32:16:u20' }, recordId: { from: null, to: 199 },
+          position: { from: 22, to: 20 } } },
+    ];
+    const id = approved({ changes, held: true });
+    const snapshot = { rackUid: 'rack:t32:16',
+      sites: [{ uid: 'site:office-sprintpark', name: 'Office-Sprintpark', slug: 'office-sprintpark' }],
+      racks: [{ uid: 'rack:t32:16', name: 'SP-HYB-RM01-R01-R1', siteUid: 'site:office-sprintpark' }],
+      devices: [{ uid: 'dev:t32:16:u20', name: 'SP-R1-U20-ACT', siteUid: 'site:office-sprintpark',
+        rackUid: 'rack:t32:16' }] };
+    const W = driver({ comparisons: [changes, []],
+      push: () => ({ counts: { rebind: 1, skip: 1 }, changes: [changes[1]] }) });
+    const out = await write.runAfterApproval(id, { approver: SPOC, client: client(), writer: W, snapshot });
+
+    assert.equal(out.write.state, 'written', out.write.why);
+    assert.deepEqual([...W.calls.pushed[0].deferScaffolding], ['site:office-sprintpark'],
+      'the rack is not being made and is not moving, so the site is left out of the write');
+    assert.deepEqual(W.calls.pushed[0].sites.map((o) => o.uid), ['site:office-sprintpark'],
+      'the row stays in the snapshot, so the rack under it still resolves');
+  });
+
+  it('keeps the site a rack it is making needs', async () => {
+    const changes = [
+      { type: 'Site', uid: 'site:office-sprintpark', name: 'Office-Sprintpark', action: 'create' },
+      { type: 'Rack', uid: 'rack:t32:16', name: 'SP-HYB-RM01-R01-R1', action: 'create' },
+      { type: 'Device', uid: 'dev:t32:16:u20', name: 'SP-R1-U20-ACT', action: 'update', netboxId: 44,
+        diff: { position: { from: 22, to: 20 } } },
+    ];
+    const id = approved({ changes, held: true });
+    const snapshot = { rackUid: 'rack:t32:16',
+      sites: [{ uid: 'site:office-sprintpark', name: 'Office-Sprintpark', slug: 'office-sprintpark' }],
+      racks: [{ uid: 'rack:t32:16', name: 'SP-HYB-RM01-R01-R1', siteUid: 'site:office-sprintpark' }],
+      devices: [{ uid: 'dev:t32:16:u20', name: 'SP-R1-U20-ACT', siteUid: 'site:office-sprintpark',
+        rackUid: 'rack:t32:16' }] };
+    const W = driver({ comparisons: [changes, []],
+      push: () => ({ counts: { create: 2, update: 1 }, changes }) });
+    const out = await write.runAfterApproval(id, { approver: SPOC, client: client(), writer: W, snapshot });
+
+    assert.equal(out.write.state, 'written', out.write.why);
+    assert.equal(W.calls.pushed[0].deferScaffolding, undefined,
+      'a rack has to hang off a site, so the site this write makes it at stays in');
+  });
 });
 
 describe('the write a final approval starts', () => {
