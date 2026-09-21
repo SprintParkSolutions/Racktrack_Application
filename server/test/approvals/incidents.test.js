@@ -717,5 +717,8 @@ describe('a ServiceNow that does not answer', () => {
     assert.equal(out.incident.error, null);
     assert.deepEqual(incidentOf(id).pending.map((p) => p.op), ['raise'],
       'and the raise is owed, so a restart in the middle loses nothing');
+    const told = heard.filter((h) => h.event === 'assigned');
+    assert.equal(told.length, 1, 'the SPOC is told all the same, without a number');
+    assert.equal(told[0].incident.number, null);
   });
 });

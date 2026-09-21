@@ -484,9 +484,9 @@ function submit(planId, { note: said = null, items: chosen = null, actor, req = 
 /** The check's one incident as a caller is shown it, or null. */
 const incidentOf = (plan) => (plan && plan.incident) || null;
 
-// How long a send waits for ServiceNow before it answers without the number.
+// How long a send waits for ServiceNow before it goes on without the number.
 const RAISE_WAIT_MS = 12000;
-const RAISING = { system: 'servicenow', number: null, url: null, state: 'raising', assigned: false, error: null };
+const raiseWait = () => Number(process.env.RT_INCIDENT_WAIT_MS) || RAISE_WAIT_MS;
 
 /**
  * Raise the check's incident and tell the holder the check is theirs. Async
@@ -494,28 +494,16 @@ const RAISING = { system: 'servicenow', number: null, url: null, state: 'raising
  * `again`. Never throws; a failure is a value on the plan. Answers
  * { holder, needsAdmin, incident }.
  *
- * The send waits for the incident so its answer can carry the number, but not
- * for long: a ServiceNow that is slow or dead is given RAISE_WAIT_MS, after
- * which the answer goes out saying the incident is still `raising`. The raise
- * carries on by itself, lands on the plan, and the holder is told then.
+ * The ServiceNow incident comes first, before anybody is told, so the answer
+ * to the send and the notice to the holder can both carry its number. It is
+ * raised once per check and stamped on the plan by incidents.js. But nobody
+ * waits long for it: a ServiceNow that is slow or dead is given RAISE_WAIT_MS,
+ * then the holder is told and the send is answered with the incident still
+ * `raising`. The raise carries on by itself and lands on the plan when it
+ * lands; one that fails is recorded there, the admins are told, and the poller
+ * tries it again.
  */
-async function dispatch(planId, opts = {}) {
-  const incidents = require('./incidents');
-  const wait = Number(process.env.RT_INCIDENT_WAIT_MS) || RAISE_WAIT_MS;
-  const waited = await incidents.within(tellHolder(planId, opts), wait);
-  if (!waited.late && waited.value) return waited.value;
-  const plan = store.getPlan(planId, { heavy: false });
-  return { holder: (plan && plan.spoc) || null, needsAdmin: null,
-    incident: (plan && plan.incident) || RAISING };
-}
-
-/**
- * dispatch() without the clock. The ServiceNow incident comes first, before
- * anybody is told, so the notice can carry its number. It is raised once per
- * check and stamped on the plan by incidents.js; with no ServiceNow, or one
- * that refused, the notice goes out all the same and says what it can.
- */
-async function tellHolder(planId, { actor, req = null, again = false } = {}) {
+async function dispatch(planId, { actor, req = null, again = false } = {}) {
   const who = actorOf(actor) || SYSTEM;
   let plan = store.getPlan(planId, { heavy: false });
   if (!plan) return { holder: null, needsAdmin: null, incident: null };
@@ -524,7 +512,8 @@ async function tellHolder(planId, { actor, req = null, again = false } = {}) {
   }
   if (plan.spoc.toldAt && !again) return { holder: plan.spoc, needsAdmin: null, incident: incidentOf(plan) };
   try {
-    await require('./incidents').raiseFor(plan.id, { again });
+    const incidents = require('./incidents');
+    await incidents.within(incidents.raiseFor(plan.id, { again }), raiseWait());
   } catch { /* the check is with its holder whatever ServiceNow did */ }
   plan = store.getPlan(planId, { heavy: false });
   if (!plan || plan.spocUserId == null || !plan.spoc) return { holder: null, needsAdmin: null, incident: null };
@@ -939,7 +928,7 @@ async function assign(planId, body = {}, { actor, req = null } = {}) {
   if (plan.incident && plan.incident.sysId) {
     const incidents = require('./incidents');
     await incidents.within(incidents.reassign(plan.id, holder, { by: who.username ?? null, reason: reason || null }),
-      Number(process.env.RT_INCIDENT_WAIT_MS) || RAISE_WAIT_MS);
+      raiseWait());
   }
   const sent = await dispatch(plan.id, { actor: who, req, again: true });
   if (old) {

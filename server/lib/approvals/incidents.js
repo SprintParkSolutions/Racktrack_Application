@@ -62,7 +62,7 @@ const CLOSING = ['resolved', 'closed', 'cancelled'];
 const MAX_TRIES = 8;
 // How long a request waits for ServiceNow before it answers without it. The
 // call itself carries on and lands on the plan when it lands.
-const PUSH_WAIT_MS = Number(process.env.RT_INCIDENT_PUSH_WAIT_MS) || 10000;
+const PUSH_WAIT_MS = 10000;
 
 const REASON_WORDS = {
   insufficient_evidence: 'not enough evidence', incorrect_remediation: 'the wrong fix',
@@ -668,9 +668,10 @@ async function push(planId, { fetchImpl }) {
  * wait for. Without it only a push already under way is waited for, which is
  * the one the bus listener starts when a write finishes.
  */
-async function answerFor(planId, { push: now = false, waitMs = PUSH_WAIT_MS, fetchImpl } = {}) {
+async function answerFor(planId, { push: now = false, waitMs = null, fetchImpl } = {}) {
   const work = now ? pushOutcome(planId, { fetchImpl }) : pushing.get(Number(planId));
-  const waited = work ? await within(work, waitMs) : { late: false };
+  const wait = waitMs || Number(process.env.RT_INCIDENT_PUSH_WAIT_MS) || PUSH_WAIT_MS;
+  const waited = work ? await within(work, wait) : { late: false };
   const plan = store.getPlan(planId, { heavy: false });
   const inc = plan && plan.incident;
   if (!inc || inc.system === 'none') return null;
