@@ -6,7 +6,7 @@
  * with NetBox, ServiceNow and the mail transport stubbed at the module
  * boundary, and check the rules hold at the HTTP layer:
  *
- *   - a technician (member) reaches exactly six routes and is refused the rest
+ *   - a technician (member) reaches exactly eight routes and is refused the rest
  *   - a technician sees only the plans they raised
  *   - approve and reject are refused until the item has been assigned and
  *     has come back
@@ -237,6 +237,15 @@ test('the drift workflow holds its rules at every route', async (t) => {
   assert.equal(rows('drift.submit', planId).length, 1, 'the hand-over is on the audit trail');
   const submitOther = await call(port, memberTok, 'POST', `/api/nb/plans/${adminPlanId}/submit`, {});
   assert.equal(submitOther.status, 404, 'a technician cannot submit a plan that is not theirs');
+
+  // The Report screen is the technician's - it is what they hand to whoever
+  // was not at the rack - so the report of their own scan, and the matching
+  // view the screen asks for beside it, both answer. Gated to admins they
+  // answered 403 and the screen said the report "is for an admin".
+  const rep = await call(port, memberTok, 'GET', `/api/nb/scans/${scanId}/report`);
+  assert.equal(rep.status, 200, `a technician reads the report of their scan: ${rep.status} ${rep.raw}`);
+  const view = await call(port, memberTok, 'GET', `/api/nb/scans/${scanId}/reconcile`);
+  assert.equal(view.status, 200, `a technician reads the matching view of their scan: ${view.status} ${view.raw}`);
 
   // ---- 2. The technician is refused everything else.
   const refused = [

@@ -30,6 +30,20 @@ const WORD = {
   rebind: "In NetBox under this rack's old id",
 };
 
+// RackTrack's own bookkeeping, not a difference between the rack and the
+// record. When a person has said which record a rack is, the plan carries one
+// more line: write RackTrack's id onto that record so the next scan finds it
+// at once. The record itself is untouched - its name, site, height and shelves
+// stay exactly as the customer has them - and NetBox had no id there to begin
+// with. The owner opened this screen and read "1 thing does not match" over a
+// rack that matched in every way that matters, with two internal keys under
+// it; that line is a note now, and it is never counted.
+const isHousekeeping = (item) => item.action === 'rebind' && !item.fromUid;
+
+// Fields that carry RackTrack's own keys. They are how the app finds a record
+// again, not something a person saw on the rack, so they are never shown.
+const INTERNAL_FIELDS = new Set(['racktrack_uid', 'racktrack_bound', 'recordId']);
+
 const STATE_WORD = {
   pending: 'Waiting on the admin',
   approved: 'Approved',
@@ -69,11 +83,13 @@ const FITS_BY = {
 
 function diffLines(diff) {
   if (!diff) return [];
-  return Object.entries(diff).map(([field, v]) => ({
-    field,
-    from: v && typeof v === 'object' && 'from' in v ? v.from : null,
-    to: v && typeof v === 'object' && 'to' in v ? v.to : v,
-  }));
+  return Object.entries(diff)
+    .filter(([field]) => !INTERNAL_FIELDS.has(field))
+    .map(([field, v]) => ({
+      field,
+      from: v && typeof v === 'object' && 'from' in v ? v.from : null,
+      to: v && typeof v === 'object' && 'to' in v ? v.to : v,
+    }));
 }
 
 const show = (v) => (v === null || v === undefined || v === '' ? ' - ' : String(v));
@@ -109,11 +125,13 @@ export default function DriftPage() {
   }, []);
 
   const items = plan?.items || [];
-  const changed = useMemo(() => items.filter((i) => i.decidable), [items]);
+  const changed = useMemo(() => items.filter((i) => i.decidable && !isHousekeeping(i)), [items]);
   const auto = useMemo(
-    () => items.filter((i) => i.supporting && ['create', 'update', 'rebind'].includes(i.action)),
+    () => items.filter((i) => i.supporting && !isHousekeeping(i)
+      && ['create', 'update', 'rebind'].includes(i.action)),
     [items],
   );
+  const housekeeping = useMemo(() => items.some(isHousekeeping), [items]);
 
   const load = useCallback(async () => {
     setBusy('Checking this rack against NetBox');
@@ -285,12 +303,16 @@ export default function DriftPage() {
         <button type="button" className={styles.back} onClick={goBack} aria-label="Back">
           <BackIcon />
         </button>
-        <div>
-          <h1 className={styles.title}>Drift check</h1>
-          <p className={styles.sub}>{rackId}</p>
-        </div>
+        {/* The title and nothing under it. The rack is named once, just below,
+            in the line that says what it was compared against; the scan's own
+            id is a hash of the photograph and tells the person nothing. */}
+        <h1 className={styles.title} title={rackId}>Drift check</h1>
       </header>
 
+      {/* A name typed by hand is the fallback for a rack nothing has identified.
+          Once the app has said which rack this is, the box only invited people
+          to type over an answer that was already right. */}
+      {!decided && !busy && plan && (
       <div className={styles.nameRow}>
         <label className={styles.nameLabel} htmlFor="rackname">Rack name (optional)</label>
         <input
@@ -305,6 +327,7 @@ export default function DriftPage() {
           {nameSaved ? 'Saved.' : 'Leave blank to keep the current name.'}
         </span>
       </div>
+      )}
 
       {busy && <p className={styles.busy}>{busy}…</p>}
 
@@ -345,7 +368,10 @@ export default function DriftPage() {
                 {decided.rack.name || decided.rack.facilityId
                   || (compared && compared.name) || 'this rack'}
               </strong>
-              <span className={styles.againstWhy}>{foundBy}</span>
+              <span className={styles.againstWhy}>
+                {foundBy}
+                {where && where.verdict === 'here' ? ` ${where.note}` : ''}
+              </span>
             </>
           ) : compared ? (
             <>
@@ -373,7 +399,7 @@ export default function DriftPage() {
           {/* Where the photo was taken, when the phone said. Said only when it
               tells somebody something: at this Site, at another one, or far
               from any. "No location" is not worth a line. */}
-          {where && where.verdict !== 'unknown' && (
+          {where && where.verdict !== 'unknown' && !(decided && where.verdict === 'here') && (
             <span className={where.verdict === 'here' ? styles.againstWhy : styles.againstOpen}
               data-testid="taken-at">{where.note}</span>
           )}
@@ -417,9 +443,11 @@ export default function DriftPage() {
         <div className={styles.verdict}>
           {changed.length === 0 ? (
             <>
-              <span className={styles.tick}>✓</span>
-              <h2>This rack matches NetBox</h2>
-              <p>Nothing here disagrees with the record. There is nothing to send.</p>
+              <h2><span className={styles.tick} aria-hidden="true">✓</span>This rack matches NetBox</h2>
+              <p>
+                Checked just now. Nothing to send.
+                {housekeeping && ' RackTrack will note its own id on the record the next time an admin writes, so the next scan finds it at once.'}
+              </p>
             </>
           ) : (
             <>
@@ -429,37 +457,28 @@ export default function DriftPage() {
                   a rack the screen had just said was not in the record at all. */}
               <h2>
                 {compared
-                  ? `${changed.length} ${changed.length === 1 ? 'thing does' : 'things do'} not match`
+                  ? `${changed.length} ${changed.length === 1 ? 'difference' : 'differences'}`
                   : `${changed.length} ${changed.length === 1 ? 'thing' : 'things'} would be added`}
               </h2>
               <p>
                 {compared
                   ? 'Checked against NetBox just now.'
-                  : 'Nothing was compared: NetBox holds no such rack yet, so everything this scan saw would be new.'}
-                {auto.length > 0 && ` ${auto.length} related ${auto.length === 1 ? 'record' : 'records'} would be created too.`}
+                  : 'NetBox holds no such rack yet, so everything this scan saw would be new.'}
               </p>
             </>
           )}
         </div>
       )}
 
-      {plan && !busy && changed.length > 0 && !sent && (
+      {/* Who it goes to, when the record names somebody. Where it names nobody
+          there is nothing to say: the admin chooses, as the admin always may,
+          and a sentence about a missing contact read as a fault with the rack. */}
+      {plan && !busy && changed.length > 0 && !sent && spoc && (
         <div className={styles.goesTo}>
-          {spoc ? (
-            <>
-              <span className={styles.goesToLabel}>Goes to</span>
-              <strong className={styles.goesToName}>{spoc.name}</strong>
-              {spoc.title && <span className={styles.goesToRole}>{spoc.title}</span>}
-              {spoc.email && <span className={styles.goesToMail}>{spoc.email}</span>}
-              <p className={styles.goesToNote}>
-                The rack&rsquo;s contact in NetBox. The admin can pick someone else.
-              </p>
-            </>
-          ) : (
-            <p className={styles.goesToNote}>
-              NetBox names no single point of contact for this rack, so the admin will choose who checks it.
-            </p>
-          )}
+          <span className={styles.goesToLabel}>Goes to</span>
+          <strong className={styles.goesToName}>{spoc.name}</strong>
+          {spoc.title && <span className={styles.goesToRole}>{spoc.title}</span>}
+          {spoc.email && <span className={styles.goesToMail}>{spoc.email}</span>}
         </div>
       )}
 

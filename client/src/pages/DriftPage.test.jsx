@@ -96,6 +96,43 @@ const KNOWN = { name: 'RK-07', confidence: 'known', why: 'matched a rack the cus
 const NOTHING = { name: 'RK-1', confidence: 'none', why: 'this scan is not tied to a rack the customer has set up' };
 const cand = (id, name, score) => ({ source: 'known', id, name, facilityId: null, score, reasons: [] });
 
+describe('<DriftPage> housekeeping', () => {
+  test("RackTrack's own tag on a matched rack is a note, not a mismatch, and shows no internal keys", async () => {
+    stub('draft');
+    routes.current['GET /api/nb/plans/7'] = { body: {
+      id: 7, rackId: 'RK-1', scanId: 3, status: 'draft',
+      items: [{
+        uid: 'rack:t32:16', type: 'Rack', name: 'SP-HYB-RM01-R01-R1', action: 'rebind',
+        fromUid: null, boundBy: 'record-binding', decidable: true, decision: 'pending',
+        diff: { racktrack_uid: { from: null, to: 'rack:t32:16' }, recordId: { from: null, to: 26 } },
+      }, { uid: 'site:office', type: 'Site', name: 'Office-Sprintpark', action: 'create', supporting: true, decidable: false }],
+    } };
+    mount();
+    await screen.findByText('This rack matches NetBox');
+    expect(screen.queryByText(/does not match/)).toBeNull();
+    expect(screen.queryByText(/racktrack_uid|recordId|rack:t32:16/)).toBeNull();
+    expect(screen.queryByText(/related record/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /send to the admin/i })).toBeNull();
+    expect(screen.getByText(/will note its own id on the record/)).toBeTruthy();
+  });
+
+  test("a rack really held under an older RackTrack id is still a difference", async () => {
+    stub('draft');
+    routes.current['GET /api/nb/plans/7'] = { body: {
+      id: 7, rackId: 'RK-1', scanId: 3, status: 'draft',
+      items: [{
+        uid: 'rack:t32:16', type: 'Rack', name: 'SP-HYB-RM01-R01-R1', action: 'rebind',
+        fromUid: 'rack:RK-OLD', decidable: true, decision: 'pending',
+        diff: { racktrack_uid: { from: 'rack:RK-OLD', to: 'rack:t32:16' } },
+      }],
+    } };
+    mount();
+    await screen.findByText(/^1 difference$|1 thing would be added/);
+    expect(screen.getByText("In NetBox under this rack's old id")).toBeTruthy();
+    expect(screen.queryByText(/racktrack_uid/)).toBeNull();
+  });
+});
+
 describe('<DriftPage> which rack', () => {
   test('the rack it was compared against, and what found it, are on the screen', async () => {
     stub('open', contactsFor(KNOWN), {

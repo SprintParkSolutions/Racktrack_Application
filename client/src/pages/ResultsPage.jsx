@@ -1294,7 +1294,11 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     // page of its own rather than a tab of this one, because reading a switch
     // is work with its own state - credentials, a reading, where it sits in
     // the rack - not another view of the photograph.
-    if (newTab === 'network' || newTab === 'report') {
+    // Drift is the check against the record, which is a page of its own too.
+    // The tab used to open the older port-history view kept inside this page,
+    // so the same word led to two different screens depending on where it was
+    // tapped, and the bar never lit up on the one people meant.
+    if (newTab === 'network' || newTab === 'report' || newTab === 'drift') {
       // urlRackId first: it is the id in the address bar and is set before the
       // scan result has loaded, whereas `rackId` comes out of that result.
       navigate(`/results/${encodeURIComponent(urlRackId || rackId || scanId)}/${newTab}`);

@@ -82,8 +82,14 @@ router.get('/', gates.admin, (req, res) => res.json(store.listScans()));
  * The scan history for one rack, newest first, with a plain summary of what
  * changed between each scan and the one before it. This is how a rack accrues a
  * record over time rather than a pile of unrelated scans.
+ *
+ * A technician may read it. The Report screen is theirs - it is what they hand
+ * to whoever was not at the rack - and this route is a read of a scan they are
+ * already allowed to see (scanFor scopes it to their own racks). Gated to admins
+ * it answered 403, and the screen told the person who had just photographed the
+ * rack that their report "is for an admin".
  */
-router.get('/:id/report', gates.admin, (req, res) => {
+router.get('/:id/report', gates.technician, (req, res) => {
   const scan = scanFor(req, res);
   if (!scan) return undefined;
   const doc = report.build(scan);
@@ -1253,7 +1259,10 @@ function confirmedHere(base, sws, scope, scanId) {
   return out;
 }
 
-router.get('/:id/reconcile', gates.admin, (req, res) => {
+// A read, and the Report screen asks for it beside the report itself, so a
+// technician may have it too. Saving a matching or confirming a switch is the
+// POST below, and that stays with admins.
+router.get('/:id/reconcile', gates.technician, (req, res) => {
   const scan = scanFor(req, res);
   if (!scan) return undefined;
   const base = scan.payload && scan.payload.snapshot;

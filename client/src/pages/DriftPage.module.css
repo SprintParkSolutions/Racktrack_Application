@@ -1,141 +1,141 @@
-/* Drift check - the technician's screen. No write button anywhere. */
+/* Drift check - the technician's screen. No write button anywhere.
 
-.page { min-height: 100%; padding: 0 0 40px; background: var(--bg, #fff); color: var(--text, #1c1c1c); }
+   One column, one gutter, hairlines between sections, and type doing the work:
+   the name of the rack, one sentence on how it was found, the verdict, the
+   differences as plain rows, and the way to send them on. Nothing tinted,
+   nothing boxed, because the owner opened the earlier version and read it as
+   a pile of cards. */
+
+.page {
+  min-height: 100%; padding: 0 0 40px;
+  background: var(--bg, #fff); color: var(--text, #1c1c1c);
+  --gutter: 16px;
+  --hair: var(--border, #e3e6ea);
+  --muted-1: #5c646d;
+  --muted-2: #8b939c;
+  --good: #1c6b3c;
+  --warn: #87610a;
+  --bad: #94302a;
+  --accent: #1f4e79;
+}
 
 .head {
-  display: flex; align-items: flex-start; gap: 12px;
-  padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 12px;
-  border-bottom: 1px solid var(--border, #e6eae8);
+  display: flex; align-items: center; gap: 10px;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) var(--gutter) 10px;
+  border-bottom: 1px solid var(--hair);
 }
-.back { flex: none; width: 38px; height: 38px; display: grid; place-items: center;
+.back { flex: none; width: 36px; height: 36px; margin-left: -8px; display: grid; place-items: center;
         border: none; background: none; color: inherit; cursor: pointer; }
-.title { margin: 4px 0 2px; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
-.sub { margin: 0; font-size: 13px; color: var(--muted, #5f6864); font-family: ui-monospace, Menlo, monospace; }
+.title { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
 
-.busy, .error { margin: 14px 16px; font-size: 14.5px; }
-.busy { color: var(--muted, #5f6864); }
-.error { color: #9d4a3f; }
+.busy, .error { margin: 14px var(--gutter); font-size: 14px; }
+.busy { color: var(--muted-1); }
+.error { color: var(--bad); }
+
+/* Which record this rack was compared against, and why the app believes it is
+   the same rack. One label, one name, one sentence. */
+.against { display: grid; gap: 3px; padding: 14px var(--gutter) 12px; border-bottom: 1px solid var(--hair); }
+.againstLabel { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); }
+.againstName { font-size: 16px; font-weight: 700; color: var(--text, #1c1c1c); }
+.againstWhy { font-size: 13.5px; color: var(--muted-1); line-height: 1.45; }
+/* What is still open about it: a suggestion nobody has confirmed, a tie, or a
+   rack the record has never heard of. */
+.againstOpen { margin-top: 2px; font-size: 13.5px; color: var(--warn); line-height: 1.45; }
+
+/* The last step of all: a person picks from the short list the steps above left. */
+.pick { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--hair); }
+.pickLabel { display: block; margin-bottom: 8px; font-size: 11px; letter-spacing: .08em;
+             text-transform: uppercase; color: var(--muted-2); font-weight: 600; }
+.pickRow { display: flex; flex-wrap: wrap; gap: 8px; }
+.pickBtn {
+  flex: 1 1 auto; min-height: 40px; padding: 0 14px; border: 1px solid var(--accent);
+  border-radius: 6px; background: var(--bg, #fff); color: var(--accent);
+  font-size: 14.5px; font-weight: 600; font-family: inherit; cursor: pointer;
+}
+.pickBtn:disabled { border-color: var(--hair); color: var(--muted-2); cursor: default; }
+.pickNote { display: block; margin-top: 8px; font-size: 12.5px; color: var(--muted-1); line-height: 1.45; }
+.pickError { margin: 8px 0 0; font-size: 13.5px; color: var(--bad); }
 
 /* the answer, before the detail */
-.verdict { margin: 16px 16px 4px; padding: 16px; border-radius: 8px; background: #f6f8f7; }
-.verdict h2 { margin: 0 0 6px; font-size: 20px; font-weight: 700; }
-.verdict p { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--muted, #5f6864); }
-.tick { display: block; font-size: 30px; color: #0b6a44; line-height: 1; margin-bottom: 6px; }
+.verdict { padding: 18px var(--gutter) 14px; }
+.verdict h2 { margin: 0 0 4px; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+.verdict p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--muted-1); }
+.tick { color: var(--good); font-size: 20px; line-height: 1; }
 
-.waiting, .done { margin: 14px 16px; padding: 14px 16px; border-radius: 8px; }
-.waiting { background: #fbf8ef; border-left: 3px solid #8a6d1f; }
-.done { background: #eef5f1; border-left: 3px solid #0b6a44; }
-.waiting h2, .done h2 { margin: 0 0 5px; font-size: 17px; font-weight: 700; }
-.waiting p, .done p { margin: 0 0 6px; font-size: 14.5px; line-height: 1.5; }
-.spoc { color: var(--muted, #5f6864); }
+.waiting, .done { margin: 0; padding: 14px var(--gutter); border-top: 1px solid var(--hair); }
+.waiting h2, .done h2 { margin: 0 0 4px; font-size: 16px; font-weight: 700; }
+.done h2 { color: var(--good); }
+.waiting p, .done p { margin: 0 0 4px; font-size: 14px; line-height: 1.5; color: var(--muted-1); }
+.spoc { color: var(--muted-1); }
 /* the one way out: the same check in RackTrack Approvals */
-.track { display: inline-block; margin-top: 4px; font-size: 14.5px; font-weight: 700;
-         color: #0b6a44; text-decoration: underline; text-underline-offset: 3px; }
+.track { display: inline-block; margin-top: 4px; font-size: 14px; font-weight: 600;
+         color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
 
-.list { list-style: none; margin: 10px 0 0; padding: 0; }
-.item { padding: 14px 16px; border-top: 1px solid var(--border, #e6eae8); }
-.item.approved { background: #f7fbf9; }
-.item.rejected { background: #fdf8f7; }
-.item.ticketed { background: #fdfbf5; }
+/* the differences, as rows */
+.list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hair); }
+.item { padding: 12px var(--gutter); border-bottom: 1px solid var(--hair); }
+.item.approved .what { color: var(--good); }
+.item.rejected .what { color: var(--bad); }
 
-.itemTop { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; }
-.type { font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
-        color: #949d98; font-weight: 700; }
-.name { font-size: 17px; font-weight: 700; }
-.what { margin-left: auto; font-size: 12.5px; font-weight: 600; color: #8a6d1f; white-space: nowrap; }
+.itemTop { display: flex; align-items: baseline; gap: 8px; }
+.type { flex: none; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase;
+        color: var(--muted-2); font-weight: 600; min-width: 52px; }
+.name { flex: 1 1 auto; min-width: 0; font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.what { flex: none; font-size: 12.5px; font-weight: 600; color: var(--warn); white-space: nowrap; }
 
-.diff { list-style: none; margin: 9px 0 0; padding: 0; }
-.diff li { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 4px 0; font-size: 14px; }
-.field { font-family: ui-monospace, Menlo, monospace; color: #949d98; min-width: 88px; }
-.from { color: #9d4a3f; }
-.to { color: #0b6a44; font-weight: 600; }
+/* One difference per row, in three fixed columns, so a long value wraps inside
+   its own column instead of dropping to the left edge under the field name. */
+.diff { list-style: none; margin: 6px 0 0 60px; padding: 0; }
+.diff li { display: grid; grid-template-columns: 68px minmax(0, 1fr) minmax(0, 1fr); gap: 2px 10px;
+           padding: 2px 0; font-size: 13px; align-items: baseline; }
+.field { font-family: ui-monospace, Menlo, monospace; color: var(--muted-2); overflow-wrap: anywhere; }
+.from { color: var(--muted-1); overflow-wrap: anywhere; }
+.to { color: var(--text, #1c1c1c); font-weight: 600; overflow-wrap: anywhere; }
 
-.state { margin: 10px 0 0; font-size: 13.5px; font-weight: 600; color: var(--muted, #5f6864); }
-.finding { margin: 5px 0 0; font-size: 13.5px; color: #0b6a44; }
+.state { margin: 6px 0 0 60px; font-size: 13px; font-weight: 600; color: var(--muted-1); }
+.finding { margin: 4px 0 0 60px; font-size: 13px; color: var(--good); }
 
-.footer { margin-top: 22px; padding: 16px; border-top: 1px solid var(--border, #e6eae8); }
-.label { display: block; margin-bottom: 6px; font-size: 12px; letter-spacing: 0.06em;
-         text-transform: uppercase; color: var(--muted, #5f6864); font-weight: 700; }
-.textarea {
-  width: 100%; min-height: 78px; resize: vertical; padding: 12px; font-size: 16px;
-  font-family: inherit; border: 1px solid var(--border, #c9d0cc); border-radius: 8px;
-  background: var(--bg, #fff); color: inherit;
-}
-.primary {
-  width: 100%; margin-top: 12px; padding: 15px; border: none; border-radius: 10px;
-  background: #0b6a44; color: #fff; font-size: 16px; font-weight: 700; cursor: pointer;
-}
-.primary:disabled { background: #c9d0cc; cursor: default; }
-.footNote { margin: 9px 0 0; font-size: 12.5px; color: #949d98; text-align: center; }
-
-/* optional rack name - set it here, edit it any time */
-.nameRow { padding: 14px 16px 4px; }
-.nameLabel {
-  display: block; margin-bottom: 6px; font-size: 12px; letter-spacing: 0.06em;
-  text-transform: uppercase; color: var(--muted, #5f6864); font-weight: 700;
-}
-.nameInput {
-  width: 100%; padding: 12px 14px; font-size: 16px; font-family: inherit;
-  border: 1px solid var(--border, #c9d0cc); border-radius: 8px;
-  background: var(--bg, #fff); color: inherit;
-}
-.nameInput:focus { outline: 2px solid #0b6a44; outline-offset: 1px; border-color: #0b6a44; }
-.nameHint { display: block; margin-top: 6px; font-size: 12.5px; color: #949d98; }
-
-/* Before sending: who this drift check will go to (the rack's SPOC from NetBox). */
-.goesTo { margin: 8px 16px 4px; padding: 12px 16px; border-radius: 8px;
-          background: #eef4fb; border-left: 3px solid #1f6feb; }
-.goesToLabel { display: block; font-size: 10.5px; letter-spacing: 0.08em;
-               text-transform: uppercase; color: #1f6feb; font-weight: 700; margin-bottom: 3px; }
-.goesToName { font-size: 16px; font-weight: 700; }
-.goesToRole { margin-left: 8px; font-size: 13px; color: var(--muted, #5f6864); }
-.goesToMail { display: block; margin-top: 2px; font-size: 13px; color: var(--muted, #5f6864);
+/* Before sending: who this drift check will go to, when NetBox names somebody. */
+.goesTo { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px;
+          padding: 12px var(--gutter); border-top: 1px solid var(--hair); font-size: 14px; }
+.goesToLabel { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); min-width: 60px; }
+.goesToName { font-weight: 600; }
+.goesToRole { color: var(--muted-1); }
+.goesToMail { flex: 1 1 100%; margin-left: 68px; font-size: 13px; color: var(--muted-1);
               font-family: ui-monospace, Menlo, monospace; word-break: break-all; }
-.goesToNote { margin: 6px 0 0; font-size: 12.5px; color: #66706a; line-height: 1.45; }
+.goesToNote { display: none; }
+
+.footer { padding: 16px var(--gutter) 0; border-top: 1px solid var(--hair); }
+.label { display: block; margin-bottom: 6px; font-size: 11px; letter-spacing: .08em;
+         text-transform: uppercase; color: var(--muted-2); font-weight: 600; }
+.textarea {
+  width: 100%; min-height: 72px; resize: vertical; padding: 10px 12px; font-size: 15px;
+  font-family: inherit; border: 1px solid var(--hair); border-radius: 6px;
+  background: var(--bg, #fff); color: inherit;
+}
+.textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+.primary {
+  width: 100%; margin-top: 12px; min-height: 46px; padding: 0 16px; border: none; border-radius: 6px;
+  background: #121212; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
+}
+.primary:disabled { background: #c9ced4; cursor: default; }
+.footNote { margin: 8px 0 0; font-size: 12.5px; color: var(--muted-2); text-align: center; }
+
+/* optional rack name - only for a rack nothing has identified */
+.nameRow { padding: 12px var(--gutter) 4px; }
+.nameLabel { display: block; margin-bottom: 6px; font-size: 11px; letter-spacing: .08em;
+             text-transform: uppercase; color: var(--muted-2); font-weight: 600; }
+.nameInput {
+  width: 100%; padding: 10px 12px; font-size: 15px; font-family: inherit;
+  border: 1px solid var(--hair); border-radius: 6px; background: var(--bg, #fff); color: inherit;
+}
+.nameInput:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+.nameHint { display: block; margin-top: 6px; font-size: 12.5px; color: var(--muted-2); }
 
 /* No record system connected yet. Not a failure, a thing to set up: an admin
    gets the way there, a technician gets the person to ask. */
-.needsSource { margin: 16px; padding: 16px; border-radius: 8px; border: 1px solid #e3e7ee; background: #fff; }
-.needsSource h2 { margin: 0 0 6px; font-size: 18px; font-weight: 700; }
-.needsSource p { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--muted, #5f6864); }
+.needsSource { padding: 16px var(--gutter); border-bottom: 1px solid var(--hair); }
+.needsSource h2 { margin: 0 0 4px; font-size: 16px; font-weight: 700; }
+.needsSource p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--muted-1); }
 .connect { margin-top: 12px; min-height: 40px; padding: 0 16px; border: 0; border-radius: 6px;
-  background: #111827; color: #fff; font-size: 14px; font-weight: 600; }
-
-/* Which record this rack was compared against, and why the app believes it is
-   the same rack. One line: a person asks it once, and only once. */
-.against {
-  display: grid;
-  gap: 2px;
-  padding: 12px 16px;
-  margin: 0 0 12px;
-  border-radius: 12px;
-  background: var(--surface-2, #f4f6f5);
-  border-left: 3px solid var(--accent, #0b6a44);
-}
-.againstLabel {
-  font-size: 11px;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--text-3, #7a847e);
-}
-.againstName { font-size: 16px; color: var(--text-1, #161a17); }
-.againstWhy { font-size: 13.5px; color: var(--text-2, #59635d); line-height: 1.45; }
-/* What is still open about it: a suggestion nobody has confirmed, a tie, or a
-   rack the record has never heard of. */
-.againstOpen { margin-top: 4px; font-size: 13.5px; color: #8a6d1f; line-height: 1.45; }
-
-/* The last step of all: a person picks from the short list the steps above left. */
-.pick { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border, #e6eae8); }
-.pickLabel {
-  display: block; margin-bottom: 8px; font-size: 11px; letter-spacing: .08em;
-  text-transform: uppercase; color: var(--text-3, #7a847e); font-weight: 700;
-}
-.pickRow { display: flex; flex-wrap: wrap; gap: 8px; }
-.pickBtn {
-  flex: 1 1 auto; min-height: 42px; padding: 0 16px; border: 1px solid #0b6a44;
-  border-radius: 8px; background: var(--bg, #fff); color: #0b6a44;
-  font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer;
-}
-.pickBtn:disabled { border-color: #c9d0cc; color: #949d98; cursor: default; }
-.pickNote { display: block; margin-top: 8px; font-size: 12.5px; color: #66706a; line-height: 1.45; }
-.pickError { margin: 8px 0 0; font-size: 13.5px; color: #9d4a3f; }
+  background: #121212; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; }

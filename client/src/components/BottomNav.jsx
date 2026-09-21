@@ -32,13 +32,14 @@ function RackTabs({ rackId, pathname, hash }) {
   const active = pathname.endsWith('/network') ? 'network'
     : pathname.endsWith('/report') ? 'report'
       : pathname.endsWith('/topology') ? 'topology'
-        : pathname.startsWith('/switch-info') ? 'switches'
-          : hash === '#drift' ? 'drift'
-            : 'overview';
+        : pathname.endsWith('/drift') ? 'drift'
+          : pathname.startsWith('/switch-info') ? 'switches'
+            : hash === '#drift' ? 'drift'
+              : 'overview';
   const base = `/results/${encodeURIComponent(rackId)}`;
   const go = (key) => navigate(
     key === 'overview' ? base
-      : key === 'drift' ? `${base}#drift`
+      : key === 'drift' ? `${base}/drift`
         : key === 'switches' ? `/switch-info/${encodeURIComponent(rackId)}`
           : `${base}/${key}`,
   );
