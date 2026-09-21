@@ -457,6 +457,35 @@ describe('<DriftPage> the whole comparison', () => {
     expect(screen.getByText('One page of this comparison. It is attached to the incident when you send.')).toBeTruthy();
   });
 
+  test('each thing is said once, and in the order a person needs it', async () => {
+    stub('open', { body: { ...toSpoc.body, matchedRack: KNOWN } });
+    routes.current['GET /api/nb/plans/7'] = { body: {
+      id: 7, rackId: 'RK-1', scanId: 3, status: 'open',
+      items: [
+        { uid: 'dev:RK-1:u20', type: 'Device', name: 'Router U20', action: 'create', decidable: true, decision: 'pending' },
+        { uid: 'dev:RK-1:u17', type: 'Device', name: 'Switch U17', action: 'skip', decidable: false },
+      ],
+      orphans: [
+        { netboxId: 196, name: 'SP-R1-U17-SW03', position: 17, seen: true, matchedBox: 'dev:RK-1:u17' },
+        { netboxId: 198, name: 'SP-R1-U19-FW', position: 19, seen: false },
+      ],
+    } };
+    mount();
+    await screen.findByText('Router on shelf U20');
+    const text = document.body.textContent;
+    const at = (s) => { const i = text.indexOf(s); expect(i).toBeGreaterThan(-1); return i; };
+    // which rack, the answer, the difference itself, what needs no attention,
+    // then the one action - who it goes to, the note and the button - and last
+    // the report
+    const order = ['Drift check', 'RK-07', 'Compared with this rack in your records.', '1 thing is different from your records',
+      'Router on shelf U20', 'Matched', 'Not seen', 'Goes to', 'dc007.spoc',
+      'Note for the SPOC', 'Raise incident', 'Drift report'].map(at);
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+    // and no count is said twice
+    expect(text.match(/1 thing is different/g)).toHaveLength(1);
+    expect(text.match(/Matched/g)).toHaveLength(1);
+  });
+
   test('the drift report is read in the app, on a fresh link that names the check', async () => {
     stub('open', contactsFor(KNOWN), { 'GET /api/scan/RK-1/report-token': { body: { token: 'tok' } } });
     const opened = vi.spyOn(window, 'open').mockImplementation(() => null);
