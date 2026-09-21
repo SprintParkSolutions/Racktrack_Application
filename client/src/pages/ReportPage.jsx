@@ -673,8 +673,13 @@ function DeviceRow({ d, cam, sw, tone = 'switch', rackName = '', open, onToggle 
   const camMake = cam ? cam.make : (matched ? '' : d.vendor);
   const camModel = cam ? cam.model : (matched ? '' : d.model);
   const camPorts = cam ? cam.portCount : (matched ? null : d.portCount);
+  // A router's make and model are not read off its face: the owner does not
+  // want them, and the camera's guess at a small box's lettering ("MOXA" on an
+  // ISP router) was wrong more often than it was right. What a matched switch
+  // says about itself still stands.
+  const isRouter = /router/i.test(String(d.role || d.name || ''));
   const identity = matched ? said(sw ? sw.vendor : d.vendor, sw ? sw.model : d.model)
-    : said(camMake, camModel);
+    : (isRouter ? '' : said(camMake, camModel));
 
   // How it is doing, as numbers with their names - a sentence of six facts
   // separated by dots wraps into a shape nobody can scan, and "1 of 28 ports
