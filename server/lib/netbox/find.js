@@ -28,7 +28,12 @@
  *      own text filters are looser than they look.
  *   4. An object already carrying a racktrack_uid that is not the one being
  *      asked about is NEVER returned. It belongs to another identity, and
- *      claiming it is the "one uid on two objects" trap.
+ *      claiming it is the "one uid on two objects" trap. One exception, and it
+ *      is at the bottom of the file: byName answers about a CATALOGUE object -
+ *      a site, a maker, a model, a role - whose name NetBox itself keeps unique
+ *      and on which nothing is ever written. A site is one site whatever a scan
+ *      called it, so the id another scan left on it is reported rather than
+ *      being a reason to ask NetBox for a second site of that name.
  *   5. Every answer carries a plain English sentence a person reads.
  *
  * Three shapes come back, and only three:
@@ -61,6 +66,14 @@ const DEVICES = '/api/dcim/devices/';
 
 /** Ask for two. One is an answer; two is a refusal that names both. */
 const LIMIT = 2;
+
+/**
+ * How many rows a "contains" lookup may answer with before the verification
+ * runs. Two is right for a filter that answers only the row that matches; a
+ * filter that also answers the rows around it needs room for the one that is
+ * really being asked about, or the answer is decided by NetBox's sort order.
+ */
+const LOOSE_LIMIT = 25;
 
 const text = (v) => String(v ?? '').trim();
 
@@ -118,6 +131,12 @@ const ambiguous = (rows, why) => ({
  */
 const SOURCE_FOR = Object.freeze({
   'record-binding': 'confirmed',
+  // A catalogue name NetBox itself keeps unique - a site, a maker, a role. The
+  // record states there is exactly one thing of that name, so the name IS the
+  // key here and not a guess about hardware. Rank 3, 'modelled'. This is the
+  // one place a name earns that, and it is why byName below is the only door
+  // to it: a rack name and a device name stay 'inferred', as 4.4 says.
+  'unique-name': 'modelled',
   'facility-id': 'modelled',
   serial: 'modelled',
   'asset-tag': 'modelled',
@@ -547,4 +566,74 @@ async function byId(client, endpoint, netboxId, { uid = null, expect = null } = 
   return found(row, 'record-binding', `a person named ${label(row)} as this object's record`);
 }
 
-module.exports = { findRack, findDevice, byId, disagreements, RACKS, DEVICES };
+// ── the catalogue ───────────────────────────────────────────────────────────
+
+/**
+ * Which NetBox object this catalogue entry is, by the name NetBox itself keeps
+ * unique: a site, a location inside a site, a maker, a model of that maker, a
+ * role.
+ *
+ * This exists because of a live write that was refused and lost everything
+ * with it. The scan minted the site's id from the site's NAME - office
+ * sprintpark - and the customer's own site of that name carries the slug
+ * office-sprint. Nothing in NetBox carried the id we asked for, so the site
+ * read as missing, a create was planned, and NetBox refused it with "site with
+ * this name already exists". One object nobody needed took a shelf move an
+ * approver had signed down with it.
+ *
+ * So the question asked here is the one the record can answer: what is the
+ * thing of this name. Three things make that safe, and they are the same three
+ * the rest of this file lives by:
+ *
+ *   - The comparison is on the NAME, trimmed and case-insensitive, because
+ *     "Office-Sprintpark" and " office-sprintpark " are one site. Our slug is
+ *     never compared: the slug is the customer's, and they are free to have
+ *     chosen another one.
+ *   - Two rows is a refusal that names both, never the first hit. Inside a
+ *     scope where NetBox allows the name to repeat - a location in a site, a
+ *     model of a maker - the scope is part of the question or it is not asked.
+ *   - Nothing is written, so a row already carrying another RackTrack id is
+ *     still the right object: a site is one site whatever a scan called it.
+ *     That is SAID in the answer, as `carried`, and it is the caller's to
+ *     report; it is not a reason to make a second site.
+ */
+async function byName(client, endpoint, {
+  name = null, field = 'name', scope = null, what = 'record',
+} = {}) {
+  if (!client) return none(`there is no connection to the record, so nothing is claimed about this ${what}`);
+  const want = text(name);
+  if (!want) return none(`this ${what} has no name to look up, so nothing is claimed about it`);
+  const where = scope && typeof scope === 'object' ? scope : {};
+  const asked = `the name ${want}${Object.keys(where).length ? ' in this scope' : ''}`;
+  // NetBox's own case-insensitive exact filter. A plain `name=` is exact and
+  // case-sensitive on the versions that matter, which is how a differently
+  // capitalised site stayed invisible; an instance that will not take the
+  // lookup is asked the plain way instead, and the rows are verified either way.
+  let res = await ask(client, endpoint, { ...where, [`${field}__ie`]: want });
+  if (res.rows === null) res = await ask(client, endpoint, { ...where, [field]: want });
+  if (res.rows === null) {
+    return none(`the record could not be asked about ${asked}. ${blockedBy(res.error)}`, true);
+  }
+  /** A row whose own field really is this name, either side's spaces ignored. */
+  const is = (r) => text(r[field]).toLowerCase() === want.toLowerCase();
+  // Exact said nothing. A name typed with a space on the end is still that
+  // name, so ask the looser way once - contains, case-insensitive - and let the
+  // verification above decide, which is what it is for. More rows are asked for
+  // here because "contains" answers with neighbours: "Office" matches every
+  // office there is, and the one that IS this name has to be among them.
+  if (!res.rows.some(is)) {
+    const loose = await ask(client, endpoint, { ...where, [`${field}__ic`]: want }, LOOSE_LIMIT);
+    if (loose.rows && loose.rows.some(is)) res = loose;
+  }
+  const real = res.rows.filter(is);
+  if (!real.length) return none(`nothing in the record has ${asked}`);
+  if (real.length > 1) {
+    return ambiguous(real, `${real.length} records have ${asked}: ${real.map(label).join(' and ')}. `
+      + 'Nothing here can tell them apart, so none of them is claimed.');
+  }
+  const row = real[0];
+  const hit = found(row, 'unique-name', `the record already holds ${label(row)} under ${asked}`);
+  return { ...hit, carried: uidOn(row) || null };
+}
+
+module.exports = { findRack, findDevice, byId, byName, disagreements, RACKS, DEVICES };

@@ -19,6 +19,18 @@ const RACK_ID = 26;
 const DEVICES = '/api/dcim/devices/';
 const INTERFACES = '/api/dcim/interfaces/';
 
+/** What the real NetBox refuses a second one of, by endpoint. */
+const UNIQUE = {
+  '/api/dcim/sites/': ['name', 'slug'],
+  '/api/dcim/manufacturers/': ['name', 'slug'],
+  '/api/dcim/device-roles/': ['name', 'slug'],
+};
+const LABEL = {
+  '/api/dcim/sites/': 'site',
+  '/api/dcim/manufacturers/': 'manufacturer',
+  '/api/dcim/device-roles/': 'device role',
+};
+
 /** A NetBox in memory. `calls` is every request, `writes()` every one that was not a read. */
 function fakeNetBox() {
   const { NetBox, UID_FIELD, BOUND_FIELD } = require('../../lib/netbox/netbox');
@@ -55,11 +67,38 @@ function fakeNetBox() {
         if (q.name !== undefined && o.name !== q.name) return false;
         if (q.slug !== undefined && o.slug !== q.slug) return false;
         if (q.model !== undefined && o.model !== q.model) return false;
+        // NetBox's case-insensitive exact lookups, the ones a catalogue object
+        // is found by its own name with.
+        for (const f of ['name', 'slug', 'model']) {
+          const want = q[`${f}__ie`];
+          if (want === undefined) continue;
+          if (String(o[f] ?? '').toLowerCase() !== String(want).toLowerCase()) return false;
+        }
+        if (q.manufacturer_id !== undefined
+          && Number((o.manufacturer || {}).id ?? o.manufacturer) !== Number(q.manufacturer_id)) return false;
+        if (q.site_id !== undefined
+          && Number((o.site || {}).id ?? o.site) !== Number(q.site_id)) return false;
         return true;
       });
       return { results: list, next: null };
     }
-    if (method === 'POST') { const o = { id: nextId++, ...body }; rows(path).push(o); return o; }
+    if (method === 'POST') {
+      // The uniqueness the real NetBox enforces, in the words it enforces it
+      // with. Without this a fake POST always succeeded, so the write that lost
+      // the owner's demo - a second site of a name NetBox already had - could
+      // not be reproduced in a test at all.
+      const unique = UNIQUE[path];
+      for (const f of unique || []) {
+        const want = String((body || {})[f] ?? '').toLowerCase();
+        if (!want) continue;
+        if (!rows(path).some((o) => String(o[f] ?? '').toLowerCase() === want)) continue;
+        throw Object.assign(new Error('Bad request'), { status: 400,
+          detail: { [f]: [`${LABEL[path] || 'object'} with this ${f} already exists.`] } });
+      }
+      const o = { id: nextId++, ...body };
+      rows(path).push(o);
+      return o;
+    }
     if (method === 'PATCH') {
       const m = path.match(/^(.*\/)(\d+)\/$/);
       const o = rows(m[1]).find((x) => x.id === Number(m[2]));
@@ -89,8 +128,14 @@ function fakeNetBox() {
 /** The customer's rack as it stands before the demo: 199 on U22, U20 empty, nothing of ours on the record. */
 function seedDemoRack(nb, { position = 22, role = { id: 9, name: 'Router', slug: 'router' } } = {}) {
   const { UID_FIELD, BOUND_FIELD } = require('../../lib/netbox/netbox');
-  nb.rows('/api/dcim/sites/').push({ id: 7, name: 'Office-Sprintpark', slug: 'office-sprintpark',
-    custom_fields: { [UID_FIELD]: 'site:office-sprintpark' } });
+  // The customer's own site, exactly as the real NetBox holds it: the NAME the
+  // scan is given, a SLUG of their own choosing that is not the one RackTrack
+  // would mint from that name, and none of RackTrack's ids on it. That is the
+  // shape that failed the write on 21 September, so it is the shape the fixture
+  // has: our id found nothing, the slug found nothing, the site read as a create
+  // and NetBox refused it.
+  nb.rows('/api/dcim/sites/').push({ id: 7, name: 'Office-Sprintpark', slug: 'office-sprint',
+    custom_fields: {} });
   nb.rows('/api/dcim/racks/').push({ id: RACK_ID, name: 'RACK-1', facility_id: 'SP-HYB-RM01-R01-R1',
     site: { id: 7 }, u_height: 24,
     custom_fields: { [UID_FIELD]: RACK_UID, [BOUND_FIELD]: 'bound by a person' } });

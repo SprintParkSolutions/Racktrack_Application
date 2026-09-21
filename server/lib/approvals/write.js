@@ -292,33 +292,58 @@ function recordVerdict(plan, attempt, checked) {
 }
 
 /**
- * The catalogue entries - manufacturers, device types, roles - this write
- * would create and nothing in it needs.
+ * The scaffolding - manufacturers, device types, roles, and the site and
+ * location the rack hangs off - this write would create and nothing in it needs.
  *
  * Scaffolding goes with whatever needs it, and a comparison lists it for
  * every box in the photo, ticked or not. A write of one approved shelf move
  * would otherwise also create the make, model and role RackTrack guessed for
  * fifteen other boxes, in the customer's NetBox and in the registry. Needed:
  * the type and role of every device this write creates, or updates in its
- * type or role, and the maker of each such type. The rest is handed to the
- * writer by uid as `deferScaffolding`; the rows stay in the snapshot.
+ * type or role, and the maker of each such type; and the site and location of
+ * every rack or device it creates, or moves between sites or locations. The
+ * rest is handed to the writer by uid as `deferScaffolding`; the rows stay in
+ * the snapshot.
+ *
+ * The site is on that list because of the write of 21 September. One approved
+ * shelf move carried a site row nothing in it needed, RackTrack's id for that
+ * site was not on the customer's site of the same name, so it read as a create
+ * and NetBox refused it - "site with this name already exists" - and the whole
+ * approved write failed with it. Two things had to be true for that to happen
+ * and now neither is: the site is found by its name (netbox/find.byName), and a
+ * scaffolding row the write does not need is not in the write at all.
  */
 function spareScaffolding(toWrite, items) {
   const byUid = new Map((items || []).map((i) => [i.uid, i]));
   const needed = new Set();
+  const changes = (uid, ...fields) => {
+    const item = byUid.get(uid);
+    if (!item) return false;
+    if (item.action === 'create') return true;
+    const diff = item.diff || {};
+    return item.action === 'update' && fields.some((f) => diff[f]);
+  };
   const types = new Map((toWrite.deviceTypes || []).map((t) => [t.uid, t]));
   for (const d of toWrite.devices || []) {
-    const item = byUid.get(d.uid);
-    if (!item) continue;
-    const diff = item.diff || {};
-    if (!(item.action === 'create' || (item.action === 'update' && (diff.device_type || diff.role)))) continue;
+    if (d.siteUid && changes(d.uid, 'site')) needed.add(d.siteUid);
+    if (!changes(d.uid, 'device_type', 'role')) continue;
     if (d.deviceTypeUid) needed.add(d.deviceTypeUid);
     if (d.roleUid) needed.add(d.roleUid);
     const type = types.get(d.deviceTypeUid);
     if (type && type.manufacturerUid) needed.add(type.manufacturerUid);
   }
+  // A rack that is made, or moved to another site or location, needs both.
+  for (const r of toWrite.racks || []) {
+    if (!changes(r.uid, 'site', 'location')) continue;
+    if (r.siteUid) needed.add(r.siteUid);
+    if (r.locationUid) needed.add(r.locationUid);
+  }
+  // A location is inside its site, so a location this write needs needs it too.
+  for (const l of toWrite.locations || []) {
+    if (needed.has(l.uid) && l.siteUid) needed.add(l.siteUid);
+  }
   const spare = new Set();
-  for (const key of ['manufacturers', 'deviceTypes', 'deviceRoles']) {
+  for (const key of ['manufacturers', 'deviceTypes', 'deviceRoles', 'sites', 'locations']) {
     for (const o of toWrite[key] || []) {
       const item = byUid.get(o.uid);
       if (item && item.action === 'create' && !needed.has(o.uid)) spare.add(o.uid);

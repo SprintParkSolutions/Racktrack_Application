@@ -207,9 +207,34 @@ function alreadyExists(err) {
  *   - Exactly one hit. Two is ambiguous and is left as a failure.
  *   - An object already carrying somebody else's uid is never taken. That is
  *     the "one uid on two objects" trap, and it stops here.
+ *   - Our id is stamped on a port or a socket we would have made ourselves, and
+ *     NOT on the customer's catalogue - their site, their maker, their model,
+ *     their role. Their name and their slug are theirs: an id of ours on an
+ *     object whose name or slug is not the one we would have minted turns the
+ *     NEXT comparison into an offer to rename it, which is how a shelf move
+ *     would come to carry a rename of the customer's site. A catalogue object is
+ *     found by its name every time instead, which costs one read and cannot
+ *     propose anything.
  */
-async function adopt(client, spec, payload, uid, err) {
+async function adopt(client, spec, payload, uid, err, { stamp = true } = {}) {
   if (!alreadyExists(err)) return null;
+  const byKey = await adoptByKey(client, spec, payload, uid, stamp);
+  if (byKey) return byKey;
+  // The last line of defence, and the one the live write needed. The key that
+  // made NetBox refuse is not always a key we can ask with: the scan's slug for
+  // the site was office-sprintpark and the customer's site of that name is
+  // office-sprint, so the slug lookup answered nothing and a write an approver
+  // had signed died on "site with this name already exists". NetBox has just
+  // told us the thing is there. Ask it by name, take it as it stands, and write
+  // nothing at all on it.
+  const hit = await lookupByName(client, spec, payload, uid);
+  return hit && hit.id
+    ? { id: hit.id, by: 'its name', stamped: false, why: hit.why, carried: hit.carried ?? null }
+    : null;
+}
+
+/** Adopt by the key that made NetBox refuse: our id on it, unless it is theirs. */
+async function adoptByKey(client, spec, payload, uid, stamp = true) {
   if (typeof spec.naturalKey !== 'function') return null;
   const key = spec.naturalKey(payload);
   if (!key || !Object.keys(key).length) return null;
@@ -225,12 +250,41 @@ async function adopt(client, spec, payload, uid, err) {
   const carried = (found.custom_fields || {})[UID_FIELD];
   // Already ours, under this very uid: nothing to stamp, just use it.
   if (carried && carried !== uid) return null;
+  if (!stamp) return { id: found.id, by: Object.keys(key).join(' and '), stamped: false,
+                       why: `the record already holds it under its ${Object.keys(key).join(' and ')}` };
   if (!carried) {
     try {
       await client.patch(spec.endpoint, found.id, { custom_fields: { [UID_FIELD]: uid } });
     } catch { return null; }
   }
-  return { id: found.id, by: Object.keys(key).join(' and ') };
+  return { id: found.id, by: Object.keys(key).join(' and '), stamped: true };
+}
+
+/**
+ * The catalogue object NetBox already holds under this name, or null.
+ *
+ * Only a type whose name NetBox itself keeps unique, and only inside the scope
+ * it is unique in - mapping.js says which, and a rack and a device deliberately
+ * have no name key at all. find.byName refuses on two rows and writes nothing.
+ *
+ * Nothing is stamped on what comes back, and that is the point rather than an
+ * omission. Their slug is theirs: if our id were written onto a site whose slug
+ * is not the slug we would have minted, the very NEXT comparison would find it
+ * by our id, see the slugs differ and offer to rename the customer's site. So
+ * the object is used and left exactly as they have it, and the name finds it
+ * again next time just as reliably.
+ */
+async function lookupByName(client, spec, payload, uid) {
+  if (typeof spec.nameKey !== 'function') return null;
+  const key = spec.nameKey(payload);
+  // No name, or a scope this push has not created yet: there is nothing to ask
+  // with, and an unscoped question about a name NetBox lets repeat is exactly
+  // the question this file refuses to ask.
+  if (!key || !key.value) return null;
+  return find.byName(client, spec.endpoint, {
+    name: key.value, field: key.field || 'name', scope: key.scope || null,
+    what: String(spec.label).toLowerCase(), uid,
+  });
 }
 
 function aliasUid(uid, key, hash) {
@@ -423,8 +477,17 @@ const CUSTOMER_OWNED = Object.freeze({
  */
 const HARDWARE_FIELDS = Object.freeze(['serial', 'asset_tag', 'device_type', 'role']);
 
-/** The catalogue a box brings with it, which may turn out not to be needed. */
-const SCAFFOLDING = new Set(['manufacturers', 'deviceTypes', 'deviceRoles']);
+/**
+ * The catalogue a scan brings with it, which may turn out not to be needed.
+ *
+ * Everything this writer can make that is not hardware: the makes, models and
+ * roles a box brings, and the site and location the rack hangs off. Not one of
+ * them is what anybody approved, and until the site was on this list one of
+ * them could refuse a write that had been approved - so each one is looked up
+ * by name before it is made, dropped when nothing in the write needs it, and
+ * never a reason for the rest of the write to fail.
+ */
+const SCAFFOLDING = new Set(['manufacturers', 'deviceTypes', 'deviceRoles', 'sites', 'locations']);
 
 /** Is this record marked, on the record itself, as one a person bound? */
 const boundOnRecord = (row) => Boolean(String(((row || {}).custom_fields || {})[BOUND_FIELD] ?? '').trim());
@@ -881,6 +944,57 @@ function sayCandidate(spec, obj, hit, report) {
   report.warnings.push(why);
 }
 
+/**
+ * A catalogue entry NetBox already holds under its own name: reported, used and
+ * left alone.
+ *
+ * One row, one finding, no change. The row is a noop because that is the truth
+ * - nothing was written on the customer's object, not even our own id - and a
+ * noop is not actionable, so nothing here is put to a person as a decision and
+ * nothing here moves a fingerprint. What a person reads is the finding: the
+ * thing was already there, it is being used, and this is what its record says.
+ */
+function sayFound(spec, obj, hit, report, { refused = null } = {}) {
+  const what = String(spec.label).toLowerCase();
+  const name = obj.name || obj.model || obj.label || obj.uid;
+  const why = refused
+    ? `NetBox would not make a second ${what} called "${name}" (${refused}), and it already holds `
+      + `the one of that name: ${hit.why || `record ${hit.id}`}. That one is used and nothing was `
+      + 'written on it.'
+    : `The customer's record already holds this ${what}: ${hit.why || `record ${hit.id}`}. It is used `
+      + 'as it stands and nothing was written on it.';
+  report.findings.push({
+    tier: 'low', kind: 'catalogue-already-there', type: spec.label, uid: obj.uid,
+    netboxId: hit.id ?? null, by: hit.by ?? null, why,
+  });
+  report.changes.push({
+    type: spec.label, uid: obj.uid, name: String(name), action: 'noop',
+    netboxId: hit.id, reason: why,
+  });
+}
+
+/**
+ * More than one thing of one name, where NetBox keeps that name unique: said
+ * out loud, and nothing is made.
+ *
+ * A second one is not made on a shrug. The row is a skip, so whatever refers to
+ * it waits with it rather than being written against a guess.
+ */
+function sayTwoOfAName(spec, obj, hit, report) {
+  const what = String(spec.label).toLowerCase();
+  const name = obj.name || obj.model || obj.label || obj.uid;
+  const why = `More than one ${what} in the customer's record is called "${name}": ${hit.why} `
+    + 'Nothing is made and nothing is used until a person says which one this is.';
+  report.findings.push({
+    tier: 'medium', kind: 'catalogue-candidates', type: spec.label, uid: obj.uid,
+    candidates: hit.ambiguous, why,
+  });
+  report.warnings.push(why);
+  report.changes.push({
+    type: spec.label, uid: obj.uid, name: String(name), action: 'skip', reason: why,
+  });
+}
+
 async function walk(snapshot, client, apply, report, { boundField = true } = {}) {
   uniqueInterfaceNames(snapshot, report);
   const resolved = new Map();   // our uid -> NetBox id (or Pending)
@@ -1158,6 +1272,57 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
         });
         bump('update');
         continue;
+      }
+
+      // Nothing of ours carries this uid, and this is a catalogue entry rather
+      // than hardware: a site, a location, a make, a model, a role. Two
+      // questions come before "make it", in this order.
+      //
+      // First: does this write need it at all? A comparison lists the catalogue
+      // of every box in the photograph, ticked or not, so a write of one
+      // approved shelf move carries the site the rack hangs off and the makes
+      // and models guessed for fifteen boxes nobody decided about. What nothing
+      // in the write refers to is named on the way in (approvals/write.js,
+      // overrides.js) and is not made here. The object still resolves, as
+      // something a later plan may make, so whatever refers to it can say so.
+      //
+      // Second: is it already there under its own name? The customer's estate
+      // has their site, their makers and their roles in it, named as they name
+      // them and carrying none of our ids - so our id finds nothing and this
+      // read as a create. NetBox then refuses the create, because a site with
+      // that name already exists, and on 21 September that refusal failed a
+      // write an approver had signed: nothing at all was written, over one
+      // object the write did not need. Asking the record by name settles it
+      // before a single POST, in the preview as well as in the write, because
+      // the preview is what happens.
+      if (SCAFFOLDING.has(spec.field)) {
+        if (deferred.has(obj.uid)) {
+          resolved.set(obj.uid, new Pending(spec.label, obj.uid));
+          report.changes.push({
+            type: spec.label, uid: obj.uid, name: String(name), action: 'skip',
+            reason: 'not needed: nothing this write changes refers to it, so it is not made in the '
+              + "customer's record and what that record holds stays as they have it",
+          });
+          bump('skip');
+          continue;
+        }
+        let known;
+        try {
+          known = await lookupByName(client, spec, payload, obj.uid);
+        } catch { known = null; }
+        if (known && known.id) {
+          resolved.set(obj.uid, known.id);
+          sayFound(spec, obj, known, report);
+          bump('noop');
+          bump('adopted');
+          continue;
+        }
+        if (known && known.ambiguous) {
+          skipped.add(obj.uid);
+          sayTwoOfAName(spec, obj, known, report);
+          bump('skip');
+          continue;
+        }
       }
 
       // Nothing carries this uid. Before calling it a create: was this same
@@ -1500,24 +1665,6 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
         continue;
       }
 
-      // A catalogue entry only a moved box used: a device type, a role or a
-      // manufacturer the camera minted for a box that turned out to be the
-      // customer's own record. Their type and role are theirs and are never
-      // written, so making this entry would put an object in their NetBox for
-      // nothing. The box still refers to it, so it resolves as something a later
-      // plan may make, and the row says why it was not made. A preview says the
-      // same, because the preview is what happens.
-      if (SCAFFOLDING.has(spec.field) && deferred.has(obj.uid)) {
-        resolved.set(obj.uid, new Pending(spec.label, obj.uid));
-        report.changes.push({
-          type: spec.label, uid: obj.uid, name: String(name), action: 'skip',
-          reason: 'not needed: the only box that used it is the customer\'s own record, '
-            + 'and what that record is stays as they have it',
-        });
-        bump('skip');
-        continue;
-      }
-
       // Nothing in NetBox carries this uid - it is a create. Unless an answer
       // about a box this scan does not have is still outstanding, in which case
       // a create is how that box gets recorded twice.
@@ -1542,9 +1689,20 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
           // NetBox refused because it already holds this object under its own
           // name. That is a match, not a failure: the thing we were about to
           // create is already there, it simply has never carried our uid.
-          const claimed = await adopt(client, spec, payload, obj.uid, err);
+          const claimed = await adopt(client, spec, payload, obj.uid, err,
+            { stamp: !SCAFFOLDING.has(spec.field) });
           if (claimed) {
             resolved.set(obj.uid, claimed.id);
+            // Claimed by its own name, with nothing written on it. There is no
+            // change to report and no diff to sign, so it is a noop with a
+            // finding beside it: a write that carries on is still a write
+            // somebody should be able to read the reason for.
+            if (claimed.stamped === false) {
+              sayFound(spec, obj, claimed, report, { refused: refusalText(err) });
+              bump('noop');
+              bump('adopted');
+              continue;
+            }
             report.changes.push({
               type: spec.label, uid: obj.uid, name: String(name), action: 'update',
               netboxId: claimed.id,

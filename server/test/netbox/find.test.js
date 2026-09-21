@@ -14,7 +14,11 @@
  *   5. two devices answering is a refusal that names both, never the first row;
  *   6. an object carrying somebody else's RackTrack id is never handed back;
  *   7. a name finds the record and is never an identity: it comes back as
- *      'possible', which identity.writable refuses to write.
+ *      'possible', which identity.writable refuses to write;
+ *   8. a CATALOGUE object - a site, a maker, a model - is found by the name
+ *      NetBox itself keeps unique, whatever its slug, whatever the case, and
+ *      whatever spaces are around it; inside the scope the name is unique in;
+ *      two of a name refuses and names both; and nothing is ever written.
  */
 const test = require('node:test');
 const assert = require('node:assert');
@@ -53,6 +57,14 @@ function fakeNetBox(rows = {}, { loose = false } = {}) {
       if (p.position !== undefined && Number(r.position) !== Number(p.position)) return false;
       if (p.face !== undefined && !same((r.face || {}).value ?? r.face, p.face)) return false;
       if (p.name !== undefined && !same(r.name, p.name)) return false;
+      // NetBox's case-insensitive lookups: __ie exact, __ic contains.
+      for (const f of ['name', 'slug', 'model']) {
+        if (p[`${f}__ie`] !== undefined && !same(r[f], p[`${f}__ie`])) return false;
+        if (p[`${f}__ic`] !== undefined
+          && !String(r[f] ?? '').toLowerCase().includes(String(p[`${f}__ic`]).toLowerCase())) return false;
+      }
+      if (p.manufacturer_id !== undefined
+        && Number(id(r.manufacturer)) !== Number(p.manufacturer_id)) return false;
       if (p.serial !== undefined) {
         // Loose is the real NetBox behaviour this resolver has to survive: a
         // filter that answers with anything holding the text.
@@ -316,4 +328,88 @@ test('a real shelf that moved is still caught', () => {
   const moved = disagreements({ id: 5, name: 'SW01', position: 18 }, { name: 'SW01', position: 13 });
   assert.equal(moved.length, 1);
   assert.match(moved[0], /the shelf was 13 and is now 18/);
+});
+
+
+// ── the catalogue ───────────────────────────────────────────────────────────
+//
+// The write of 21 September: the scan's id for the site was on nothing, the slug
+// RackTrack mints from the site's name was not the customer's slug, so the site
+// read as a create and NetBox refused it - and an approved shelf move wrote
+// nothing at all. A catalogue object is asked for by its name now.
+const SITES = '/api/dcim/sites/';
+
+test('a site is found by its name however different its slug is', async () => {
+  const nb = fakeNetBox({ [SITES]: [
+    { id: 7, name: 'Office-Sprintpark', slug: 'office-sprint', custom_fields: {} },
+  ] });
+  const hit = await find.byName(nb, SITES, { name: 'Office-Sprintpark', what: 'site' });
+  assert.equal(hit.id, 7);
+  assert.equal(hit.by, 'unique-name');
+  assert.ok(identity.writable(hit.confidence), 'the name NetBox keeps unique IS the key here');
+  assert.match(hit.why, /Office-Sprintpark \(id 7\)/);
+});
+
+test('the case and the spaces around a name do not matter', async () => {
+  const nb = fakeNetBox({ [SITES]: [
+    { id: 7, name: '  office-SPRINTPARK ', slug: 'office-sprint', custom_fields: {} },
+  ] });
+  assert.equal((await find.byName(nb, SITES, { name: 'Office-Sprintpark' })).id, 7);
+  assert.equal((await find.byName(nb, SITES, { name: ' Office-Sprintpark  ' })).id, 7);
+});
+
+test('a name that is only part of another name is not that object', async () => {
+  const nb = fakeNetBox({ [SITES]: [
+    { id: 7, name: 'Office-Sprintpark North', slug: 'ospn', custom_fields: {} },
+  ] });
+  const out = await find.byName(nb, SITES, { name: 'Office-Sprintpark', what: 'site' });
+  assert.ok(out.none, 'a contains filter answers it, and the verification throws it out');
+  assert.match(out.why, /nothing in the record has the name Office-Sprintpark/);
+});
+
+test('two of one name refuses and names both', async () => {
+  const nb = fakeNetBox({ [SITES]: [
+    { id: 7, name: 'Office-Sprintpark', slug: 'a', custom_fields: {} },
+    { id: 8, name: 'office-sprintpark', slug: 'b', custom_fields: {} },
+  ] });
+  const out = await find.byName(nb, SITES, { name: 'Office-Sprintpark', what: 'site' });
+  assert.deepEqual(out.ambiguous.map((r) => r.id), [7, 8]);
+  assert.match(out.why, /none of them is claimed/);
+});
+
+test('a model is asked for inside its maker and never across the estate', async () => {
+  const TYPES = '/api/dcim/device-types/';
+  const nb = fakeNetBox({ [TYPES]: [
+    { id: 90, model: 'DGS-1210', slug: 'dgs-1210', manufacturer: { id: 3 }, custom_fields: {} },
+    { id: 91, model: 'DGS-1210', slug: 'dgs-1210-x', manufacturer: { id: 4 }, custom_fields: {} },
+  ] });
+  const hit = await find.byName(nb, TYPES, { name: 'DGS-1210', field: 'model',
+    scope: { manufacturer_id: 4 }, what: 'model' });
+  assert.equal(hit.id, 91, 'one maker\'s model is not another maker\'s');
+  assert.equal(nb.asked.every((a) => a.params.manufacturer_id === 4), true, 'the scope is in every question');
+});
+
+test('a site another scan put its id on is still the customer\'s one site', async () => {
+  const nb = fakeNetBox({ [SITES]: [
+    { id: 7, name: 'Office-Sprintpark', slug: 'office-sprint',
+      custom_fields: { [UID_FIELD]: 'site:office-sprint' } },
+  ] });
+  const hit = await find.byName(nb, SITES, { name: 'Office-Sprintpark', uid: 'site:office-sprintpark' });
+  assert.equal(hit.id, 7, 'there is one site of that name and NetBox will not hold a second');
+  assert.equal(hit.carried, 'site:office-sprint', 'and what it carries is said, not hidden');
+});
+
+test('a site that cannot be asked about is not a site that is missing', async () => {
+  const nb = fakeNetBox({ [SITES]: [] });
+  nb.request = async () => { throw Object.assign(new Error('Forbidden'), { status: 403 }); };
+  const out = await find.byName(nb, SITES, { name: 'Office-Sprintpark', what: 'site' });
+  assert.ok(out.none && out.blocked, 'nothing is claimed and nothing is called absent');
+  assert.match(out.why, /token may have expired/);
+});
+
+test('a name nobody stated asks NetBox nothing at all', async () => {
+  const nb = fakeNetBox({ [SITES]: [] });
+  const out = await find.byName(nb, SITES, { name: '   ', what: 'site' });
+  assert.ok(out.none);
+  assert.equal(nb.asked.length, 0);
 });
