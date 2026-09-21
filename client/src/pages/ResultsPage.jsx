@@ -1298,7 +1298,11 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     // The tab used to open the older port-history view kept inside this page,
     // so the same word led to two different screens depending on where it was
     // tapped, and the bar never lit up on the one people meant.
-    if (newTab === 'network' || newTab === 'report' || newTab === 'drift') {
+    // Timeline is the in-page view that carried the name Drift before: the
+    // port history and the switches read for this rack. Its state key is still
+    // 'drift', which the hash and the back stack already know.
+    if (newTab === 'timeline') newTab = 'drift';
+    else if (newTab === 'network' || newTab === 'report' || newTab === 'drift') {
       // urlRackId first: it is the id in the address bar and is set before the
       // scan result has loaded, whereas `rackId` comes out of that result.
       navigate(`/results/${encodeURIComponent(urlRackId || rackId || scanId)}/${newTab}`);
@@ -4664,7 +4668,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             tab === 'switches' ? 'Switches'
             : tab === 'topology' ? 'Topology'
             : tab === 'network'  ? 'Discovery'
-            : tab === 'drift'    ? 'Port history and drift'
+            : tab === 'drift'    ? 'Timeline'
             :                       'Scan results'
           }</span>
           <h2 className={styles.headerTitle}>
@@ -4703,7 +4707,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       {!isDesktop && !embeddedProp && (tab !== 'overview' || portMode) && (
         <ScanTabBar
           rackId={rackId}
-          activeTab={tab}
+          activeTab={tab === 'drift' ? 'timeline' : tab}
           onTabChange={handleTabChange}
           badges={{
             ports: devices.filter(d => d.class_name === 'Switch').reduce((s, d) => s + (d.port_count || 0), 0) || undefined,
@@ -5344,7 +5348,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             letterSpacing: '-0.01em',
             color: 'var(--t1, #1c1c1c)',
           }}>
-            Port history &amp; drift
+            Port history and switches
           </h2>
           <PortHistoryContent rackId={urlRackId || rackId || scanId} />
         </div>

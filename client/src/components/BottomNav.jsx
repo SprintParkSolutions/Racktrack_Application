@@ -34,12 +34,13 @@ function RackTabs({ rackId, pathname, hash }) {
       : pathname.endsWith('/topology') ? 'topology'
         : pathname.endsWith('/drift') ? 'drift'
           : pathname.startsWith('/switch-info') ? 'switches'
-            : hash === '#drift' ? 'drift'
+            : hash === '#drift' ? 'timeline'
               : 'overview';
   const base = `/results/${encodeURIComponent(rackId)}`;
   const go = (key) => navigate(
     key === 'overview' ? base
       : key === 'drift' ? `${base}/drift`
+        : key === 'timeline' ? `${base}#drift`
         : key === 'switches' ? `/switch-info/${encodeURIComponent(rackId)}`
           : `${base}/${key}`,
   );

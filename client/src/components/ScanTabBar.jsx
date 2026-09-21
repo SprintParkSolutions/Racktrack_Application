@@ -25,9 +25,14 @@ const PRIMARY_TABS = [
   { key: 'drift',     label: 'Drift',     icon: <IconDrift /> },
 ];
 
+// Timeline is the screen that used to be called Drift: what changed on this
+// rack's ports over time, and the switches added on the Network page. Drift
+// now means the check against the record, and the owner asked where the older
+// screen had gone - so it keeps its place under a name of its own.
 const MORE_TABS = [
   { key: 'topology',  label: 'Topology',  icon: <IconTopology /> },
   { key: 'switches',  label: 'Switches',  icon: <IconSwitch /> },
+  { key: 'timeline',  label: 'Timeline',  icon: <IconDrift /> },
 ];
 
 export default function ScanTabBar({ activeTab, onTabChange, badges = {} }) {

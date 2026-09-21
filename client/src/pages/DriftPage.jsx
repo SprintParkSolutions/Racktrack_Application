@@ -126,11 +126,6 @@ export default function DriftPage() {
 
   const items = plan?.items || [];
   const changed = useMemo(() => items.filter((i) => i.decidable && !isHousekeeping(i)), [items]);
-  const auto = useMemo(
-    () => items.filter((i) => i.supporting && !isHousekeeping(i)
-      && ['create', 'update', 'rebind'].includes(i.action)),
-    [items],
-  );
   const housekeeping = useMemo(() => items.some(isHousekeeping), [items]);
 
   const load = useCallback(async () => {

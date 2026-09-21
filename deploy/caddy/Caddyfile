@@ -47,6 +47,18 @@ demo.racktrack.ai {
 		file_server
 	}
 
+	# RackTrack Trace: a read-only page that shows how a scan was tied to a rack,
+	# what the comparison proposed and what became of the check. Three static
+	# files in /srv/trace (bind-mounted from ./deploy/trace). Same origin, so it
+	# asks the application's own API with the same session and needs no sign-in
+	# of its own; it carries no call that writes.
+	redir /trace /trace/ 308
+	handle_path /trace/* {
+		root * /srv/trace
+		try_files {path} /index.html
+		file_server
+	}
+
 	reverse_proxy racktrack:3001
 
 	log {
