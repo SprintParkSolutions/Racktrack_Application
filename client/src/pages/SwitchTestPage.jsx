@@ -501,7 +501,7 @@ export default function SwitchTestPage() {
       // Save finished, which read as Save not working.
       //
       // Except where the evidence cannot tell two boxes apart. A tie is not a
-      // match with a caveat, it is two matches, and one press of Save places
+      // match with a caveat, it is two matches, and one choice of a box
       // would store the coin toss. Review leaves those empty; so does this.
       const start = {};
       for (const s of view.switches || []) {
@@ -518,7 +518,7 @@ export default function SwitchTestPage() {
       // nobody looking at it. That was the whole bug: a stored match reads as
       // a confirmed one everywhere downstream, so a guess made by a port count
       // arrived in the report, the export and NetBox as a fact a person had
-      // agreed to. Saving is a person's act now - Save places here, or Confirm
+      // agreed to. Saving is a person's act now - choosing a box, or Confirm
       // on the Review screen, which confirms one switch at a time.
     } catch { /* the rack simply has no places to offer yet */ }
   }, [rackId]);
@@ -1179,24 +1179,28 @@ export default function SwitchTestPage() {
                   .filter(([id, uid]) => uid && id !== String(serverId))
                   .map(([id, uid]) => [uid, (places.switches || []).find((x) => String(x.id) === id)?.label || 'another switch']),
               )}
-              onChange={(uid) => setMatch((m) => {
+              onChange={(uid) => {
                 // One box holds one switch, so pointing this one at a box
                 // another switch holds moves it rather than making a pair the
                 // server has to refuse.
-                const next = { ...m, [serverId]: uid };
+                const next = { ...match, [serverId]: uid };
                 if (uid) {
                   for (const other of Object.keys(next)) {
                     if (String(other) !== String(serverId) && next[other] === uid) next[other] = '';
                   }
                 }
-                return next;
-              })}
+                setMatch(next);
+                // And it is kept there and then. A "Save places" button under
+                // the whole screen was the only thing that wrote a choice down,
+                // so a choice made and not pressed was quietly lost.
+                savePlaces({ matches: Object.fromEntries(Object.entries(next).map(([k, v]) => [k, v || null])) });
+              }}
             />
             {/* Nothing has been stored for this rack yet, so what is showing is
                 the server's proposal. Say so where it shows, rather than letting
                 it read as a place somebody chose. */}
             {places.suggested && (match[serverId]
-              ? <p className={styles.proposal}>Suggested. Save places to keep it.</p>
+              ? <p className={styles.proposal}>Suggested. Choose it to keep it.</p>
               : <p className={styles.proposal}>{settleAdvice(reasonFor(places, serverId), false)}</p>
             )}
           </section>
@@ -1450,20 +1454,14 @@ export default function SwitchTestPage() {
         {/* ── The chosen switch, in full ── */}
         {chosenLook && renderChosen(chosenLook)}
 
-        {/* Save the places, then go on to the report. The way on is always there
-            once a switch has been read; Save places needs boxes to put the
-            switches in, and Go to report does not. */}
+        {/* The way on, once a switch has been read. Where a switch sits is
+            saved as it is chosen, so there is nothing to press for that. */}
         {!form && looks.some((l) => l.reading) && (
           <div className={styles.finish}>
             {matchNote && (
               <p className={matchNote.ok ? styles.finishOk : styles.finishBad}>{matchNote.text}</p>
             )}
             <div className={styles.actions}>
-              {places?.devices?.length > 0 && (
-                <button type="button" className={styles.secondary} disabled={savingMatch} onClick={() => savePlaces()}>
-                  {savingMatch ? 'Saving…' : 'Save places'}
-                </button>
-              )}
               <button
                 type="button"
                 className={styles.primary}
