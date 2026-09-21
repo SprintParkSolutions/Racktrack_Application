@@ -88,6 +88,6 @@ describe('<SitePicker>', () => {
     // A server that sends no ready-made "Site 9" is still sending the number.
     expect(siteMatches(unnamed, 'site 9')).toBe(true);
     render(<Held sites={[OFFICE, unnamed]} />);
-    expect(document.body.textContent).not.toMatch(/RK-|[–—]|\+/);
+    expect(document.body.textContent).not.toMatch(/RK-|[\u2013\u2014]|\+/);
   });
 });
