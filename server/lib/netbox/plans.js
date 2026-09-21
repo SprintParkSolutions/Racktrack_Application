@@ -232,8 +232,8 @@ function resolveTicket(id, uid, { by, finding, outcome = 'checked' } = {}) {
  * technician's note travels with it, because "three of these look wrong to me"
  * is worth more than the diff on its own.
  */
-function submit(id, { by, note } = {}) {
-  const out = service.submit(id, { note, actor: actorOf(by) });
+function submit(id, { by, note, items = null } = {}) {
+  const out = service.submit(id, { note, items, actor: actorOf(by) });
   if (out && out.error) return { error: out.error };
   return { plan: get(id), already: Boolean(out.already) };
 }

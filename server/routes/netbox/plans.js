@@ -121,8 +121,12 @@ router.get('/', gates.technician, (req, res) => {
  */
 router.post('/:planId/submit', gates.technician, (req, res) => {
   if (!mine(req, plans.get(req.params.planId))) return res.status(404).json({ error: 'no such plan' });
+  // { items: [uid] } sends those differences and leaves the rest marked as not
+  // sent; without it everything goes, as it always did.
+  const chosen = (req.body || {}).items;
   const out = plans.submit(req.params.planId, {
     by: who(req), note: (req.body || {}).note,
+    items: Array.isArray(chosen) ? chosen.map(String) : null,
   });
   if (out.error) return res.status(out.error === 'no such plan' ? 404 : 409).json(out);
   if (!out.already) {

@@ -168,3 +168,30 @@
 .needsSource p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--muted-1); }
 .connect { margin-top: 12px; min-height: 40px; padding: 0 16px; border: 0; border-radius: 6px;
   background: #121212; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; }
+
+/* Choosing what to send. A plain tick box, the platform's own, at the size a thumb can hit. */
+.pickAll { display: flex; align-items: center; gap: 10px; padding: 10px var(--gutter); border-top: 1px solid var(--hair);
+           font-size: 13.5px; color: var(--muted-1); cursor: pointer; }
+.pickAll input, .pickOne { width: 20px; height: 20px; flex: none; margin: 0; accent-color: #121212; cursor: pointer; }
+.pickOne { align-self: center; }
+
+/* Where a sent check has got to. Seven steps down the page: done ones filled,
+   the current one ringed, the rest hollow - and a line joining them. */
+.progress { margin: 10px 0 4px; }
+.steps { list-style: none; margin: 0; padding: 0; }
+.step { position: relative; display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 14px; color: var(--muted-2); }
+.step::before { content: ''; position: absolute; left: 6px; top: -9px; width: 2px; height: 18px; background: var(--hair); }
+.step:first-child::before { display: none; }
+.stepDot { position: relative; z-index: 1; width: 14px; height: 14px; flex: none; border-radius: 50%;
+           border: 2px solid var(--hair); background: var(--bg, #fff); }
+.stepDone { color: var(--text, #1c1c1c); }
+.stepDone .stepDot { border-color: var(--good); background: var(--good); }
+.stepDone::before, .stepNow::before { background: var(--good); }
+.stepNow { color: var(--text, #1c1c1c); font-weight: 700; }
+.stepNow .stepDot { border-color: var(--good); box-shadow: 0 0 0 3px rgba(28, 107, 60, .18); }
+.trackNote, .offTrack { margin: 8px 0 0; font-size: 13.5px; line-height: 1.45; color: var(--muted-1); }
+.offTrack { color: var(--warn); }
+.tickets { list-style: none; margin: 10px 0 0; padding: 10px 0 0; border-top: 1px solid var(--hair); }
+.tickets li { display: grid; gap: 1px; padding: 4px 0; font-size: 13.5px; color: var(--muted-1); }
+.tickets b { color: var(--text, #1c1c1c); font-weight: 600; }
+.found { color: var(--good); }

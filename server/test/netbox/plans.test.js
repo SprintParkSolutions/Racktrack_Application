@@ -380,6 +380,24 @@ describe('a technician hands it to an admin', () => {
     assert.equal(inbox[0].submittedBy, 'ravi', 'the index carries it, so an inbox needs no file reads');
   });
 
+  it('sends the differences the technician chose, and marks the rest as not sent', () => {
+    const p = plans.create({ scanId: 24, rackId: 'RK-TEST', report: report(), by: 'ravi' });
+    // Two devices differ: dev:u12 (not in the record) and dev:u15 (a different shelf).
+    const out = plans.submit(p.id, { by: 'ravi', note: 'only the new switch for now', items: ['dev:u12'] });
+    assert.equal(out.plan.status, 'submitted');
+    const byUid = Object.fromEntries(out.plan.items.map((i) => [i.uid, i]));
+    assert.equal(byUid['dev:u12'].decision, 'pending', 'the chosen one waits on the admin');
+    assert.notEqual(byUid['dev:u15'].decision, 'pending', 'the one left out asks nothing of anybody');
+    assert.match(byUid['dev:u15'].note, /Not sent by ravi/, 'and says who set it aside, so nothing is hidden');
+    assert.ok(out.plan.events.some((e) => e.what === 'sent to the admin'));
+  });
+
+  it('refuses to send nothing', () => {
+    const p = plans.create({ scanId: 25, rackId: 'RK-TEST', report: report(), by: 'ravi' });
+    assert.match(plans.submit(p.id, { by: 'ravi', items: [] }).error, /at least one/);
+    assert.equal(plans.get(p.id).status, 'open', 'and the check is still nobody else\'s problem');
+  });
+
   it('is idempotent, and refuses once written', () => {
     const p = plans.create({ scanId: 23, rackId: 'RK-TEST', report: report(), by: 'ravi' });
     plans.submit(p.id, { by: 'ravi' });

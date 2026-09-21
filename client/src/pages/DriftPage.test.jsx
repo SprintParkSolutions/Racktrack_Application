@@ -96,6 +96,64 @@ const KNOWN = { name: 'RK-07', confidence: 'known', why: 'matched a rack the cus
 const NOTHING = { name: 'RK-1', confidence: 'none', why: 'this scan is not tied to a rack the customer has set up' };
 const cand = (id, name, score) => ({ source: 'known', id, name, facilityId: null, score, reasons: [] });
 
+describe('<DriftPage> choosing and following', () => {
+  const two = (status) => ({
+    id: 7, rackId: 'RK-1', scanId: 3, status,
+    submittedBy: status === 'submitted' ? 'ravi' : null,
+    submittedAt: status === 'submitted' ? new Date().toISOString() : null,
+    items: [
+      { uid: 'dev:a', type: 'Device', name: 'SW-16', action: 'create', decidable: true, decision: 'pending' },
+      { uid: 'dev:b', type: 'Device', name: 'FW-02', action: 'update', decidable: true, decision: 'pending' },
+    ],
+  });
+
+  test('one difference can be left out, and only the ticked ones are sent', async () => {
+    stub('open');
+    routes.current['GET /api/nb/plans/7'] = { body: two('open') };
+    routes.current['POST /api/nb/plans/7/submit'] = { body: { planId: 7, status: 'submitted' } };
+    mount();
+    await screen.findByText('SW-16');
+    expect(screen.getByText('All selected')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Send to the admin' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Send FW-02' }));
+    expect(screen.getByText('1 of 2 selected')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Send 1 of 2 to the admin' }));
+    await waitFor(() => {
+      const call = authFetch.mock.calls.find(([u, init]) => u === '/api/nb/plans/7/submit' && init && init.method === 'POST');
+      expect(call).toBeTruthy();
+      expect(JSON.parse(call[1].body).items).toEqual(['dev:a']);
+    });
+  });
+
+  test('with nothing ticked there is nothing to send', async () => {
+    stub('open');
+    routes.current['GET /api/nb/plans/7'] = { body: two('open') };
+    mount();
+    await screen.findByText('SW-16');
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Send SW-16' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Send FW-02' }));
+    expect(screen.getByRole('button', { name: 'Choose at least one to send' }).disabled).toBe(true);
+  });
+
+  test('after sending, the check is followed step by step, with who holds it and the incident', async () => {
+    stub('submitted');
+    routes.current['GET /api/approvals/plans/7'] = { body: {
+      plan: { id: 7, status: 'in_progress' },
+      items: [{ uid: DEV, name: 'SW-16' }],
+      tickets: [{ itemUid: DEV, assignee: 'dc007.tech', status: 'in_progress', external: { number: 'INC0010007' } }],
+    } };
+    mount();
+    await screen.findByText('Sent to the admin');
+    const now = await screen.findByText('Started');
+    await waitFor(() => expect(now.closest('li').getAttribute('aria-current')).toBe('step'));
+    for (const label of ['Sent', 'Assigned', 'Resolved', 'Verified', 'Approved', 'Written to NetBox']) {
+      expect(screen.getByText(label)).toBeTruthy();
+    }
+    expect(screen.getByText(/With dc007.tech - INC0010007 - in progress/)).toBeTruthy();
+  });
+});
+
 describe('<DriftPage> housekeeping', () => {
   test("RackTrack's own tag on a matched rack is a note, not a mismatch, and shows no internal keys", async () => {
     stub('draft');

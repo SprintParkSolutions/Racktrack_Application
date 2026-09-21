@@ -364,7 +364,7 @@ function createFromPreview({ scan, snap, report, actor, tenantId = null, parentP
  * look wrong to me" is worth more than the diff on its own. Sending it twice
  * is not an error; the second time says `already`.
  */
-function submit(planId, { note: said = null, actor, req = null } = {}) {
+function submit(planId, { note: said = null, items: chosen = null, actor, req = null } = {}) {
   const who = actorOf(actor);
   const found = open(planId, who);
   if (found.refused) return found.refused;
@@ -377,13 +377,34 @@ function submit(planId, { note: said = null, actor, req = null } = {}) {
   if (plan.status !== 'draft') return { plan: get(plan.id, who).plan, already: true };
 
   return run((effects) => {
+    // The person at the rack may send some of what differs and leave the rest.
+    // What they leave is not hidden: it stays on the check, marked as not sent
+    // with their name on it, so the admin can see it was seen and set aside -
+    // it simply asks nothing of anybody. Sending nothing at all is refused.
+    const all = store.itemsOf(plan.id);
+    const open = all.filter((i) => i.decidable && i.decision === 'pending');
+    let left = [];
+    if (Array.isArray(chosen)) {
+      const want = new Set(chosen.map(String));
+      const sending = open.filter((i) => want.has(i.uid));
+      if (!sending.length) return refuse('bad_request', 'choose at least one difference to send');
+      left = open.filter((i) => !want.has(i.uid));
+      for (const i of left) {
+        store.updateItem(plan.id, i.uid, {
+          decision: 'not_applicable', decidedBy: who.username ?? null, decidedAt: store.nowIso(),
+          note: `Not sent by ${who.username || 'the technician'}: left for a later check.`,
+        }, { touch: false });
+      }
+    }
     const items = store.itemsOf(plan.id);
+    const leftNames = left.map((i) => i.name);
     const moved = move(effects, plan, 'submitted', {
       actor: who, action: 'submit', req, force: !isStrict(who), ctx: ctxFor(plan),
       patch: { submittedAt: store.nowIso(), submittedBy: who.username ?? null,
                submittedById: who.id ?? null, submittedNote: text(said) || null },
-      payload: { what: 'sent to the admin', detail: { note: text(said) || null, ...shape.summarise(items) } },
-      auditPayload: { note: text(said) || null },
+      payload: { what: 'sent to the admin', detail: { note: text(said) || null,
+        ...(leftNames.length ? { notSent: leftNames } : {}), ...shape.summarise(items) } },
+      auditPayload: { note: text(said) || null, ...(leftNames.length ? { notSent: leftNames } : {}) },
     });
     if (moved.refused) return moved.refused;
     settle(effects, plan.id, who);

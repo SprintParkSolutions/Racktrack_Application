@@ -48,6 +48,29 @@ function plainName(name, rackName) {
   return m ? `${m[1]} on shelf U${Number(m[2])}` : out;
 }
 
+// What becomes of a check after it is sent, in the order it happens. The person
+// who walked to the rack used to read "Waiting on them" and nothing else until
+// the record changed; this is the same line the admin watches, in their words.
+const TRACK = [
+  { key: 'sent', label: 'Sent', at: ['submitted', 'triage'] },
+  { key: 'assigned', label: 'Assigned', at: ['assigned', 'accepted'] },
+  { key: 'started', label: 'Started', at: ['in_progress', 'pending'] },
+  { key: 'resolved', label: 'Resolved', at: ['resolved', 'verification_pending'] },
+  { key: 'verified', label: 'Verified', at: ['approval_pending'] },
+  { key: 'approved', label: 'Approved', at: ['approved', 'write_in_progress'] },
+  { key: 'written', label: 'Written to NetBox', at: ['written', 'completed'] },
+];
+const OFF_TRACK = {
+  rejected: 'The admin rejected this check.',
+  rework: 'The admin sent this back to be checked again.',
+  cancelled: 'This check was cancelled.',
+  duplicate: 'This was the same as another check, so it was closed.',
+  known_exception: 'This is a known exception, so nothing needs to change.',
+  write_failed: 'NetBox refused part of the write. The admin is looking at it.',
+  manual_review: 'The write is with a person to finish by hand.',
+  reopened: 'This check was opened again.',
+};
+
 // RackTrack's own bookkeeping, not a difference between the rack and the
 // record. When a person has said which record a rack is, the plan carries one
 // more line: write RackTrack's id onto that record so the next scan finds it
@@ -112,6 +135,50 @@ function diffLines(diff) {
 
 const show = (v) => (v === null || v === undefined || v === '' ? ' - ' : String(v));
 
+/**
+ * Where a sent check has got to: seven steps, the one it is on marked, and under
+ * it what is known - who holds it, the ServiceNow incident, what they found.
+ * Falls back to "Sent" when the workflow cannot be read, which is still true.
+ */
+function Progress({ flow, rackName }) {
+  const status = flow?.plan?.status || 'submitted';
+  const at = TRACK.findIndex((t) => t.at.includes(status));
+  const tickets = flow?.tickets || [];
+  const items = flow?.items || [];
+  const nameOf = (uid) => plainName((items.find((i) => i.uid === uid) || {}).name || uid, rackName);
+  return (
+    <div className={styles.progress}>
+      <ol className={styles.steps} aria-label="Progress of this check">
+        {TRACK.map((t, i) => (
+          <li key={t.key} className={`${styles.step} ${at >= 0 && i < at ? styles.stepDone : ''} ${i === at ? styles.stepNow : ''}`}
+              aria-current={i === at ? 'step' : undefined}>
+            <span className={styles.stepDot} aria-hidden="true" />
+            <span className={styles.stepLabel}>{t.label}</span>
+          </li>
+        ))}
+      </ol>
+      {at === -1 && OFF_TRACK[status] && <p className={styles.offTrack}>{OFF_TRACK[status]}</p>}
+      {status === 'pending' && <p className={styles.offTrack}>On hold{flow?.plan?.pendingReason ? `: ${String(flow.plan.pendingReason).replace(/_/g, ' ')}` : ''}.</p>}
+      {at === 0 && <p className={styles.trackNote}>The admin has it and will assign it to somebody.</p>}
+      {tickets.length > 0 && (
+        <ul className={styles.tickets}>
+          {tickets.map((t) => (
+            <li key={t.itemUid}>
+              <b>{nameOf(t.itemUid)}</b>
+              <span>
+                {t.assignee ? `With ${t.assignee}` : 'Not assigned yet'}
+                {t.external?.number ? ` - ${t.external.number}` : ''}
+                {t.status ? ` - ${String(t.status).replace(/_/g, ' ')}` : ''}
+              </span>
+              {t.finding && <span className={styles.found}>They found: {t.finding}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export default function DriftPage() {
   const { rackId } = useParams();
   const goBack = useSmartBack(`/results/${rackId}/report`);
@@ -127,6 +194,10 @@ export default function DriftPage() {
   const [needsSource, setNeedsSource] = useState(false);
   const [note, setNote] = useState('');
   const [sent, setSent] = useState(false);
+  // Which differences go to the admin. Everything, until the person says otherwise.
+  const [left, setLeft] = useState(() => new Set());
+  // The same check as the approval workflow holds it: its status and its tickets.
+  const [flow, setFlow] = useState(null);
   const [name, setName] = useState('');   // the person's name for this rack
   const [nameSaved, setNameSaved] = useState('');
 
@@ -145,6 +216,14 @@ export default function DriftPage() {
   const items = plan?.items || [];
   const changed = useMemo(() => items.filter((i) => i.decidable && !isHousekeeping(i)), [items]);
   const housekeeping = useMemo(() => items.some(isHousekeeping), [items]);
+  // What is ticked to go: everything that differs, less what the person unticked.
+  const picked = useMemo(() => changed.filter((i) => !left.has(i.uid)), [changed, left]);
+  const toggle = (uid) => setLeft((prev) => {
+    const next = new Set(prev);
+    if (next.has(uid)) next.delete(uid); else next.add(uid);
+    return next;
+  });
+  const toggleAll = () => setLeft(picked.length === changed.length ? new Set(changed.map((i) => i.uid)) : new Set());
 
   const load = useCallback(async () => {
     setBusy('Checking this rack against NetBox');
@@ -309,7 +388,8 @@ export default function DriftPage() {
       const r = await authFetch(apiUrl(`/api/nb/plans/${plan.id}/submit`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ note }),
+        // Everything, unless some were unticked: then the ones that stay ticked.
+        body: JSON.stringify(left.size ? { note, items: picked.map((i) => i.uid) } : { note }),
       });
       const out = await r.json();
       if (!r.ok) throw new Error(out.error || 'That did not go through');
@@ -322,6 +402,23 @@ export default function DriftPage() {
       setBusy('');
     }
   }
+
+  // After it is sent the check is followed, not just waited on: asked again
+  // every twenty seconds while this screen is open, so a technician standing at
+  // the rack sees "Assigned" turn into "Started" without pulling anything.
+  useEffect(() => {
+    if (!sent || !plan?.id) return undefined;
+    let dropped = false;
+    const ask = async () => {
+      try {
+        const r = await authFetch(apiUrl(`/api/approvals/plans/${plan.id}`));
+        if (!dropped && r.ok) setFlow(await r.json());
+      } catch { /* the line simply shows what is already known */ }
+    };
+    ask();
+    const t = setInterval(ask, 20000);
+    return () => { dropped = true; clearInterval(t); };
+  }, [sent, plan?.id]);
 
   const applied = plan?.status === 'applied';
   // The same check, in RackTrack Approvals. Offered only once it has been sent.
@@ -555,17 +652,20 @@ export default function DriftPage() {
         <div className={styles.waiting}>
           <h2>Sent to the admin</h2>
           <p>
-            {plan?.submittedBy ? `You sent this on ${new Date(plan.submittedAt).toLocaleString()}.` : 'Waiting on them.'}
-            {' '}They decide what reaches NetBox. Nothing has been written.
+            {plan?.submittedBy ? `You sent this on ${new Date(plan.submittedAt).toLocaleString()}.` : 'It is with the admin now.'}
           </p>
-          {spoc && (
-            <p className={styles.spoc}>
-              Anything they cannot judge goes to <strong>{spoc.name}</strong>
-              {spoc.email ? ` (${spoc.email})` : ''}.
-            </p>
-          )}
+          <Progress flow={flow} rackName={decided && (decided.rack.name || decided.rack.facilityId)} />
           {track}
         </div>
+      )}
+
+      {plan && !busy && !sent && changed.length > 1 && (
+        <label className={styles.pickAll}>
+          <input type="checkbox" checked={picked.length === changed.length}
+                 ref={(el) => { if (el) el.indeterminate = picked.length > 0 && picked.length < changed.length; }}
+                 onChange={toggleAll} />
+          <span>{picked.length === changed.length ? 'All selected' : `${picked.length} of ${changed.length} selected`}</span>
+        </label>
       )}
 
       <ul className={styles.list}>
@@ -575,6 +675,11 @@ export default function DriftPage() {
           return (
             <li key={item.uid} className={`${styles.item} ${styles[item.decision] || ''}`}>
               <div className={styles.itemTop}>
+                {!sent && changed.length > 1 && (
+                  <input type="checkbox" className={styles.pickOne} checked={!left.has(item.uid)}
+                         aria-label={`Send ${plainName(item.name, decided && (decided.rack.name || decided.rack.facilityId))}`}
+                         onChange={() => toggle(item.uid)} />
+                )}
                 <strong className={styles.name}>
                   {plainName(item.name, decided && (decided.rack.name || decided.rack.facilityId))}
                 </strong>
@@ -625,8 +730,10 @@ export default function DriftPage() {
           <textarea id="note" className={styles.textarea} value={note}
                     placeholder="For example: the router is on shelf U20"
                     onChange={(e) => setNote(e.target.value)} />
-          <button type="button" className={styles.primary} disabled={!!busy} onClick={send}>
-            Send to the admin
+          <button type="button" className={styles.primary} disabled={!!busy || picked.length === 0} onClick={send}>
+            {picked.length === changed.length ? 'Send to the admin'
+              : picked.length === 0 ? 'Choose at least one to send'
+                : `Send ${picked.length} of ${changed.length} to the admin`}
           </button>
         </div>
       )}
