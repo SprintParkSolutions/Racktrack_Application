@@ -79,6 +79,12 @@ describe('<DriftPage>', () => {
     expect(screen.getByLabelText('Note for the SPOC (optional)')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Raise incident' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /^Send/ })).toBeNull();
+    // sending it is one action, so it is one block: who it goes to, the note for
+    // them and the button, with the drift report the quiet thing after it
+    const action = screen.getByRole('button', { name: 'Raise incident' }).closest('div').parentElement;
+    expect(action.contains(screen.getByText('Goes to'))).toBe(true);
+    expect(action.contains(screen.getByLabelText('Note for the SPOC (optional)'))).toBe(true);
+    expect(action.nextElementSibling.textContent).toMatch(/^Drift report/);
     expect(buttonNames().filter((n) => FORBIDDEN.test(n))).toEqual([]);
     expect(document.body.textContent).not.toMatch(/Write the approved|Assign to|Approve\b/);
     // the answer is one sentence, and no strip of big numbers says it again

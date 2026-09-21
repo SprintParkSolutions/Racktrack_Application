@@ -768,30 +768,6 @@ export default function DriftPage() {
         </div>
       )}
 
-      {/* Who it goes to, said before anything is sent: the SPOC of the site, by
-          name. Where the site has none, or the person sending IS the SPOC, it
-          says so and says an admin will choose - nobody should learn that only
-          after pressing Send. A server that names nobody leaves this out. */}
-      {plan && !busy && changed.length > 0 && !sent && (toAdmin || spoc) && (
-        <div className={styles.goesTo}>
-          <span className={styles.goesToLabel}>Goes to</span>
-          {toAdmin ? (
-            <>
-              <strong className={styles.goesToName}>An organization admin</strong>
-              <span className={styles.goesToWhy}>
-                {whyText ? `${whyText} ` : ''}An admin will choose who decides it.
-              </span>
-            </>
-          ) : (
-            <>
-              <strong className={styles.goesToName}>{spoc.name}</strong>
-              {spoc.title && <span className={styles.goesToRole}>{spoc.title}</span>}
-              {spoc.email && <span className={styles.goesToMail}>{spoc.email}</span>}
-            </>
-          )}
-        </div>
-      )}
-
       {/* Once sent, the same block until the end: the incident number, large,
           and one line under it that says where the check is - With <name>,
           Approved, Written to NetBox, Rejected, Needs an admin. Under that the
@@ -912,23 +888,51 @@ export default function DriftPage() {
 
       {plan && !busy && <PortsCheck ports={ports} />}
 
-      {!sent && reportRow}
-
+      {/* Sending it is one action, so it is one block: who it goes to, the note
+          for them, and the button. Who decides a difference used to be said at
+          the top of the page and the button was at the bottom of it. */}
       {plan && changed.length > 0 && !sent && (
-        <div className={styles.footer}>
-          <label className={styles.label} htmlFor="note">
-            {toAdmin ? 'Note for the admin (optional)' : 'Note for the SPOC (optional)'}
-          </label>
-          <textarea id="note" className={styles.textarea} value={note}
-                    placeholder="For example: the router is on shelf U20"
-                    onChange={(e) => setNote(e.target.value)} />
-          <button type="button" className={styles.primary} disabled={!!busy || picked.length === 0} onClick={send}>
-            {picked.length === changed.length ? 'Raise incident'
-              : picked.length === 0 ? 'Choose at least one to send'
-                : `Raise incident for ${picked.length} of ${changed.length}`}
-          </button>
+        <div className={styles.send}>
+          {/* The SPOC of the site, by name. Where the site has none, or the
+              person sending IS the SPOC, it says so and says an admin will
+              choose - nobody should learn that only after pressing Send. A
+              server that names nobody leaves this out. */}
+          {!busy && (toAdmin || spoc) && (
+            <div className={styles.goesTo}>
+              <span className={styles.goesToLabel}>Goes to</span>
+              {toAdmin ? (
+                <>
+                  <strong className={styles.goesToName}>An organization admin</strong>
+                  <span className={styles.goesToWhy}>
+                    {whyText ? `${whyText} ` : ''}An admin will choose who decides it.
+                  </span>
+                </>
+              ) : (
+                <>
+                  <strong className={styles.goesToName}>{spoc.name}</strong>
+                  {spoc.title && <span className={styles.goesToRole}>{spoc.title}</span>}
+                  {spoc.email && <span className={styles.goesToMail}>{spoc.email}</span>}
+                </>
+              )}
+            </div>
+          )}
+          <div className={styles.footer}>
+            <label className={styles.label} htmlFor="note">
+              {toAdmin ? 'Note for the admin (optional)' : 'Note for the SPOC (optional)'}
+            </label>
+            <textarea id="note" className={styles.textarea} value={note}
+                      placeholder="For example: the router is on shelf U20"
+                      onChange={(e) => setNote(e.target.value)} />
+            <button type="button" className={styles.primary} disabled={!!busy || picked.length === 0} onClick={send}>
+              {picked.length === changed.length ? 'Raise incident'
+                : picked.length === 0 ? 'Choose at least one to send'
+                  : `Raise incident for ${picked.length} of ${changed.length}`}
+            </button>
+          </div>
         </div>
       )}
+
+      {!sent && reportRow}
 
       {reportOpen && (
         <ReportViewer

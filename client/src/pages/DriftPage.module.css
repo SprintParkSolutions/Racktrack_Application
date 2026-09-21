@@ -76,7 +76,7 @@
 .verdict p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--muted-1); }
 .tick { color: var(--good); font-size: 20px; line-height: 1; }
 
-.waiting, .done { margin: 0; padding: 14px var(--gutter); border-top: 1px solid var(--hair); }
+.waiting, .done { margin: 0; padding: 2px var(--gutter) 14px; }
 .waiting h2, .done h2 { margin: 0 0 4px; font-size: 16px; font-weight: 700; }
 .done h2 { color: var(--good); }
 .waiting p, .done p { margin: 0 0 4px; font-size: 14px; line-height: 1.5; color: var(--muted-1); }
@@ -130,8 +130,9 @@
 
 /* Before sending: who this drift check will go to - the SPOC of the site, or
    an admin and the reason why. */
+.send { border-top: 1px solid var(--hair); }
 .goesTo { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px;
-          padding: 12px var(--gutter); border-top: 1px solid var(--hair); font-size: 14px; }
+          padding: 14px var(--gutter) 4px; font-size: 14px; }
 .goesToLabel { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); min-width: 60px; }
 .goesToName { font-weight: 600; }
 .goesToRole { color: var(--muted-1); }
@@ -140,7 +141,7 @@
 .goesToNote { display: none; }
 .goesToWhy { flex: 1 1 100%; margin-left: 68px; font-size: 13px; line-height: 1.45; color: var(--muted-1); }
 
-.footer { padding: 16px var(--gutter) 0; border-top: 1px solid var(--hair); }
+.footer { padding: 14px var(--gutter) 0; }
 .label { display: block; margin-bottom: 6px; font-size: 11px; letter-spacing: .08em;
          text-transform: uppercase; color: var(--muted-2); font-weight: 600; }
 .textarea {
@@ -244,7 +245,7 @@
 .dotOk { background: var(--good); } .dotIdle { background: #c9ced4; }
 
 /* The report: one quiet button and what it is for. */
-.reportRow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 14px var(--gutter); border-bottom: 1px solid var(--hair); }
+.reportRow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 14px var(--gutter); border-top: 1px solid var(--hair); }
 .secondaryBtn { min-height: 40px; padding: 0 16px; border-radius: 6px; border: 1px solid #121212; background: var(--bg, #fff);
                 color: #121212; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
 .secondaryBtn:disabled { opacity: .55; cursor: default; }
