@@ -1,16 +1,39 @@
+/* ══════════════════════════════════════════════════════════════════════
+   Operations Console.
+
+   Built for a phone first: one header row, one control row, figures two
+   across, and lists whose rows are one line each. It used to open with a
+   Live pill, a Refresh button, two tabs and eight boxed figures squeezed
+   four to a 390px screen - labels wrapping to three lines, one of them
+   clipped, no two boxes the same height - and then a live feed with its own
+   inner scroller whose times were pushed out of the card.
+
+   Every size and weight here comes from the scale in index.css. The only
+   raw number is the figure's own value, which is a display number and sits
+   above the scale on purpose.
+   ══════════════════════════════════════════════════════════════════════ */
+
 .page {
-  max-width: none;
-  margin: 0 auto;
-  /* This page is a flex item of #root, and `margin: 0 auto` gives it auto
-     cross-axis margins, which suppress the normal stretch-to-fill. It then
-     shrink-to-fits its content's preferred width - 551px, driven by the
-     subtitle's max-width:60ch - inside a 320px phone. #root clips the
-     overflow rather than scrolling it, so the right-hand stat column and
-     half the subtitle were simply invisible. width:100% restores the fill. */
   width: 100%;
-  padding: 20px 18px 48px;
+  min-width: 0;
+  margin: 0 auto;
+  max-width: none;
   color: var(--md-on-surface, #1c1c1c);
   font-family: var(--font);
+}
+
+/* The header spans the screen; the body carries the side padding, and keeps
+   the floating bottom bar's space clear at the end of the page. */
+.body {
+  padding: 16px 14px var(--nav-clear);
+  min-width: 0;
+}
+
+/* On a wide screen DesktopShell draws the header, so the page's own one is
+   hidden and its controls portal into the shell's actions slot. */
+@media (min-width: 768px) {
+  .ownHeader { display: none; }
+  .body { padding: 20px 18px 48px; }
 }
 
 .center {
@@ -20,25 +43,32 @@
   justify-content: center;
   color: var(--muted, #666666);
   font-size: var(--fs-section);
+  line-height: var(--lh-section);
 }
 
-/* Console tab switcher (Operations | Logs) */
-.tabBar {
+/* ── One control row: the two tabs, and Refresh at the end ────────────── */
+.controls {
   display: flex;
-  gap: 6px;
-  margin-bottom: 20px;
+  align-items: flex-end;
+  gap: 8px;
+  min-width: 0;
+  margin-bottom: 14px;
   border-bottom: 1px solid var(--md-outline-variant, rgba(0,0,0,0.1));
 }
+.tabBar { display: flex; gap: 2px; min-width: 0; }
 .tab {
   appearance: none;
   border: none;
   background: transparent;
   cursor: pointer;
   font-family: inherit;
-  font-size: var(--fs-section);
-  font-weight: var(--fw-title);
+  font-size: var(--fs-item);
+  line-height: var(--lh-item);
+  font-weight: var(--fw-label);
   color: var(--muted, #666666);
-  padding: 9px 16px;
+  min-height: 44px;
+  padding: 0 14px;
+  white-space: nowrap;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
   transition: color 0.12s ease, border-color 0.12s ease;
@@ -46,22 +76,26 @@
 .tab:hover { color: var(--md-on-surface, #1c1c1c); }
 .tabActive {
   color: var(--md-on-surface, #1c1c1c);
-  border-bottom-color: var(--md-primary, #2563c9);
+  font-weight: var(--fw-title);
+  border-bottom-color: var(--accent, #121212);
 }
-
-.opsWrap { display: block; }
+.controlsEnd { margin-left: auto; padding-bottom: 6px; flex: none; }
 
 .liveBtn, .refreshBtn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
   border: 1px solid var(--md-outline-variant, rgba(0,0,0,0.12));
   background: var(--md-surface-container, rgba(0,0,0,0.04));
   color: var(--md-on-surface, #1c1c1c);
   border-radius: 999px;
-  padding: 8px 14px;
+  min-height: 44px;
+  padding: 0 14px;
   font-size: var(--fs-body);
-  font-weight: var(--fw-title);
+  line-height: var(--lh-body);
+  font-weight: var(--fw-label);
+  white-space: nowrap;
   cursor: pointer;
   font-family: inherit;
 }
@@ -80,191 +114,354 @@
 }
 @media (prefers-reduced-motion: reduce) { .liveOn .liveDot { animation: none; } }
 
-/* ── Stat cards ─────────────────────────────────────────── */
-.stats {
+/* ── The page's own column ────────────────────────────────────────────── */
+.opsWrap { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+/* ── Figures ──────────────────────────────────────────────────────────
+   Two across on a phone, six across on a desktop. grid-auto-rows keeps
+   every box the same height, and the note line is always drawn - so a box
+   with a note is no taller than one without. Labels never wrap. */
+.figures {
   display: grid;
-  /* Eight numbers in two rows on a phone and one on a desktop - not eight
-     cards in four rows. auto-fit at 140px gave two per row on a 390px screen. */
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 10px;
+  min-width: 0;
 }
-.stat {
+@media (min-width: 620px) { .figures { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 980px) { .figures { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+
+.figure {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
   background: var(--md-surface-container-lowest, #fff);
   border: 1px solid var(--md-outline-variant, rgba(0,0,0,0.08));
-  border-radius: 16px;
-  padding: 16px 16px 14px;
+  border-radius: 14px;
+  padding: 12px 12px 11px;
 }
-.statValue {
-  font-size: 1.7rem;
+/* A display number: above the type scale on purpose, like the splash count. */
+.figValue {
+  font-size: 26px;
   font-weight: var(--fw-title);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
   font-variant-numeric: tabular-nums;
-  line-height: 1.1;
 }
-.statLabel {
-  margin-top: 4px;
-  font-size: var(--fs-sub);
+.figLabel {
+  margin-top: 7px;
+  font-size: var(--fs-label);
+  line-height: var(--lh-label);
   font-weight: var(--fw-label);
-  color: var(--muted, #666666);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--md-on-surface-variant, #6b6b6b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.statSub { margin-top: 3px; font-size: var(--fs-sub); color: var(--muted, #828282); }
-.accent { background: linear-gradient(180deg, #f4f4f4, #ffffff); border-color: rgba(18,18,18,0.22); }
-.accent .statValue { color: #121212; }
-.good   .statValue { color: #121212; }
-.warn   { border-color: rgba(18,18,18,0.22); background: #ffffff; }
-.warn   .statValue { color: #121212; }
+.figNote {
+  margin-top: 5px;
+  min-height: calc(var(--fs-sub) * var(--lh-sub));
+  font-size: var(--fs-sub);
+  line-height: var(--lh-sub);
+  color: var(--muted, #828282);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Today's number, and a number that wants looking at: a firmer edge, no hue. */
+.accent { border-color: rgba(18,18,18,0.22); }
+.warn   { border-color: rgba(18,18,18,0.22); }
+.warn .figNote { color: var(--md-on-surface, #121212); }
 
-/* ── Layout grid ────────────────────────────────────────── */
+/* ── Cards ────────────────────────────────────────────────────────────── */
 .grid {
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 16px;
+  grid-template-columns: 1fr;
+  gap: 12px;
   align-items: start;
+  min-width: 0;
 }
-@media (max-width: 860px) {
-  .grid { grid-template-columns: 1fr; }
+@media (min-width: 860px) {
+  .grid { grid-template-columns: 1.1fr 0.9fr; }
 }
-.sideCol { display: flex; flex-direction: column; gap: 16px; }
+.sideCol { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 
 .card {
+  min-width: 0;
   background: var(--md-surface-container-lowest, #fff);
   border: 1px solid var(--md-outline-variant, rgba(0,0,0,0.08));
   border-radius: 16px;
-  padding: 16px 18px;
+  padding: 14px 16px;
 }
+/* The heading row stays inside the card's corner: the title gives way, the
+   count never wraps. */
 .cardHead {
-  display: flex; align-items: baseline; justify-content: space-between;
-  margin-bottom: 12px;
-}
-.cardHead h2 { font-size: var(--fs-section); font-weight: var(--fw-title); margin: 0; letter-spacing: -0.01em; }
-.cardMeta { font-size: var(--fs-sub); color: var(--muted, #828282); }
-
-/* ── Live feed ──────────────────────────────────────────── */
-.feedCard { min-height: 420px; }
-.feed { display: flex; flex-direction: column; max-height: 640px; overflow-y: auto; }
-.feedRow {
   display: flex;
+  align-items: baseline;
+  justify-content: space-between;
   gap: 10px;
-  align-items: flex-start;
-  padding: 9px 2px;
-  border-bottom: 1px solid var(--md-outline-variant, rgba(0,0,0,0.06));
+  min-width: 0;
+  margin-bottom: 8px;
 }
-.feedRow:last-child { border-bottom: none; }
-.statusPill {
+.cardHead h2 {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--fs-section);
+  line-height: var(--lh-section);
+  font-weight: var(--fw-title);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cardMeta {
   flex: none;
+  font-size: var(--fs-label);
+  line-height: var(--lh-label);
+  color: var(--muted, #828282);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── One row, one line ────────────────────────────────────────────────
+   [ who and what .......... ] [ when ]
+   [ the failure, or where it was                ]
+   The second line is the exception - a failure's detail, a scan's site -
+   and the time keeps its own column, so it can never be pushed out. */
+.rows { display: flex; flex-direction: column; min-width: 0; }
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 10px;
+  align-items: baseline;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--md-outline-variant, rgba(0,0,0,0.06));
+  min-width: 0;
+}
+.row:last-child { border-bottom: none; }
+.rowLine {
+  grid-column: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rowWho {
+  font-size: var(--fs-item);
+  line-height: var(--lh-item);
+  font-weight: var(--fw-label);
+  color: var(--md-on-surface, #121212);
+}
+.rowWhat {
+  margin-left: 6px;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--md-on-surface-variant, #474747);
+}
+.rowMono {
+  font-family: var(--mono);
+  font-size: var(--fs-mono);
+  line-height: var(--lh-mono);
+  font-weight: var(--fw-label);
+  letter-spacing: 0.02em;
+}
+.rowTime {
+  grid-column: 2;
+  flex: none;
+  font-size: var(--fs-label);
+  line-height: var(--lh-label);
+  color: var(--muted, #929292);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.rowCount {
+  grid-column: 2;
+  font-size: var(--fs-item);
+  line-height: var(--lh-item);
+  font-weight: var(--fw-title);
+  font-variant-numeric: tabular-nums;
+}
+.rowFail,
+.rowWhere {
+  grid-column: 1 / -1;
   margin-top: 2px;
+  min-width: 0;
+  font-size: var(--fs-sub);
+  line-height: var(--lh-sub);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rowFail  { color: #c0392b; }
+.rowWhere { color: var(--muted, #828282); }
+.failTag {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: #ececec;
+  color: #c0392b;
   font-size: var(--fs-micro);
+  line-height: var(--lh-micro);
   font-weight: var(--fw-title);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 2px 7px;
-  border-radius: 6px;
+  letter-spacing: var(--ls-caps);
+  vertical-align: 1px;
 }
-.pillOk   { background: #f0f0f0; color: #0f7040; }
-.pillFail { background: #ececec; color: #c0392b; }
-.feedBody { flex: 1; min-width: 0; }
-.feedLine { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }
-.feedUser   { font-weight: var(--fw-title); font-size: var(--fs-item); }
-.feedId {
-  font-family: ui-monospace, Menlo, monospace; font-size: var(--fs-label); font-weight: var(--fw-title);
-  color: var(--md-primary, #2563c9); background: rgba(37,99,201,0.09);
-  border-radius: 5px; padding: 1px 6px;
+
+/* The way to the rest of a long list. */
+.more {
+  appearance: none;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  font-weight: var(--fw-label);
+  color: var(--md-on-surface, #121212);
+  min-height: 44px;
+  padding: 0;
+  margin-top: 2px;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--md-outline, rgba(18,18,18,0.14));
 }
-.feedGuest {
-  font-size: var(--fs-micro); font-weight: var(--fw-title); text-transform: uppercase; letter-spacing: 0.03em;
-  color: var(--muted, #666666); background: rgba(0,0,0,0.05); border-radius: 5px; padding: 1px 6px;
+.more:hover { text-decoration-color: var(--md-on-surface, #121212); }
+
+/* ── Rank lists (top scanners, by organization, by site, action mix) ──── */
+.rankList { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.rankRow {
+  display: grid;
+  grid-template-columns: minmax(70px, 38%) 1fr auto;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
 }
-.userId { font-family: ui-monospace, Menlo, monospace; font-size: var(--fs-mono); font-weight: var(--fw-title); }
-.feedAction { font-size: var(--fs-item); color: var(--md-on-surface-variant, #474747); }
-.feedOrg {
-  font-size: var(--fs-label); font-weight: var(--fw-label);
-  color: var(--muted, #666666);
-  background: var(--md-surface-container, rgba(0,0,0,0.05));
-  border-radius: 5px; padding: 1px 6px;
+.rankName {
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  font-weight: var(--fw-label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.feedTarget { font-size: var(--fs-sub); color: var(--muted, #828282); margin-top: 2px; font-variant-numeric: tabular-nums; }
-.feedError  { font-size: var(--fs-sub); color: #c0392b; margin-top: 3px; word-break: break-word; }
-.feedTime   { flex: none; font-size: var(--fs-label); color: var(--muted, #929292); white-space: nowrap; margin-top: 2px; }
-
-/* ── Errors ─────────────────────────────────────────────── */
-.errorList { display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto; }
-.errorRow {
-  border-left: 3px solid #e07a6b;
-  background: #f5f5f5;
-  border-radius: 0 10px 10px 0;
-  padding: 8px 10px;
+.rankBarWrap {
+  background: var(--md-surface-container-high, rgba(0,0,0,0.05));
+  border-radius: 999px;
+  height: 8px;
+  overflow: hidden;
 }
-.errorTop { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
-.errorAction { font-weight: var(--fw-title); font-size: var(--fs-body); }
-.errorMsg { font-size: var(--fs-sub); color: #a5352a; margin-top: 3px; word-break: break-word; }
-.errorWho { font-size: var(--fs-label); color: var(--muted, #828282); margin-top: 3px; }
+/* Ink, like every other bar in the app. */
+.rankBar { display: block; height: 100%; background: var(--accent, #121212); border-radius: 999px; }
+.rankNum {
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  font-weight: var(--fw-title);
+  font-variant-numeric: tabular-nums;
+  min-width: 2ch;
+  text-align: right;
+  white-space: nowrap;
+}
 
-/* ── Rank lists (top users / by org) ────────────────────── */
-.rankList { display: flex; flex-direction: column; gap: 9px; }
-.rankRow { display: grid; grid-template-columns: minmax(70px, 34%) 1fr auto; gap: 10px; align-items: center; }
-.rankName { font-size: var(--fs-body); font-weight: var(--fw-label); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rankBarWrap { background: var(--md-surface-container, rgba(0,0,0,0.05)); border-radius: 999px; height: 8px; overflow: hidden; }
-.rankBar { display: block; height: 100%; background: linear-gradient(90deg, #3b82f6, #6ea8fe); border-radius: 999px; }
-.rankNum { font-size: var(--fs-body); font-weight: var(--fw-title); font-variant-numeric: tabular-nums; min-width: 2ch; text-align: right; }
+/* The action mix keeps its two-part meter: what worked, what failed. */
+.actionMeter {
+  display: flex;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--md-surface-container-high, rgba(0,0,0,0.05));
+}
+.actionOk   { background: var(--accent, #121212); }
+.actionFail { background: #c0392b; }
+.actionFailNum {
+  color: #c0392b;
+  font-style: normal;
+  font-weight: var(--fw-label);
+  font-size: var(--fs-sub);
+}
 
-/* ── Action mix ─────────────────────────────────────────── */
-.actionList { display: flex; flex-direction: column; gap: 9px; }
-.actionRow { display: grid; grid-template-columns: minmax(90px, 38%) 1fr auto; gap: 10px; align-items: center; }
-.actionName { font-size: var(--fs-body); font-weight: var(--fw-label); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.actionMeter { display: flex; height: 8px; border-radius: 999px; overflow: hidden; background: var(--md-surface-container, rgba(0,0,0,0.05)); }
-.actionOk   { background: #2fa96a; }
-.actionFail { background: #e05a4d; }
-.actionNum  { font-size: var(--fs-sub); font-weight: var(--fw-title); font-variant-numeric: tabular-nums; }
-.actionFailNum { color: #c0392b; font-style: normal; font-weight: var(--fw-label); font-size: var(--fs-sub); }
+.empty {
+  color: var(--muted, #929292);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  padding: 8px 0;
+}
 
-.empty { color: var(--muted, #929292); font-size: var(--fs-body); padding: 8px 0; }
-
-/* ── Authentication strip ── */
-.authRow { display: flex; flex-wrap: wrap; gap: 22px; }
-.authStat { display: flex; flex-direction: column; }
-.authStat b { font-size: 1.5rem; font-weight: var(--fw-title); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
-.authStat span { font-size: var(--fs-sub); color: var(--muted, #666666); margin-top: 2px; }
+/* ── A label and a number, one line each (signing in) ─────────────────── */
+.pairList { display: flex; flex-direction: column; min-width: 0; }
+.pairRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--md-outline-variant, rgba(0,0,0,0.06));
+}
+.pairRow:last-child { border-bottom: none; }
+.pairLabel {
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--md-on-surface-variant, #474747);
+}
+.pairValue {
+  font-size: var(--fs-item);
+  line-height: var(--lh-item);
+  font-weight: var(--fw-title);
+  font-variant-numeric: tabular-nums;
+}
 .authFail { color: #c0392b; }
 
-/* ── Full data tables (all users / all orgs) ── */
-.tableWrap { overflow-x: auto; }
-.table { width: 100%; border-collapse: collapse; font-size: var(--fs-body); }
+/* ── The one data table left: every person, with their counts ─────────── */
+.tableWrap { overflow-x: auto; min-width: 0; }
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
 .table thead th {
-  text-align: left; font-size: var(--fs-label); font-weight: var(--fw-title); text-transform: uppercase;
-  letter-spacing: 0.04em; color: var(--muted, #828282);
-  padding: 6px 10px; border-bottom: 1px solid var(--md-outline-variant, rgba(0,0,0,0.1));
-  white-space: nowrap; position: sticky; top: 0;
+  text-align: left;
+  font-size: var(--fs-label);
+  line-height: var(--lh-label);
+  font-weight: var(--fw-label);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-caps);
+  color: var(--muted, #828282);
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--md-outline-variant, rgba(0,0,0,0.1));
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
   background: var(--md-surface-container-lowest, #fff);
 }
 .table .thNum { text-align: right; }
 .table td {
-  padding: 7px 10px; border-bottom: 1px solid var(--md-outline-variant, rgba(0,0,0,0.05));
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--md-outline-variant, rgba(0,0,0,0.05));
   white-space: nowrap;
 }
-.table tbody tr:hover { background: var(--md-surface-container, rgba(0,0,0,0.03)); }
+.table tbody tr:last-child td { border-bottom: none; }
 .num { text-align: right; font-variant-numeric: tabular-nums; font-weight: var(--fw-label); }
 .dim { color: var(--muted, #828282); }
+.userId {
+  font-family: var(--mono);
+  font-size: var(--fs-mono);
+  line-height: var(--lh-mono);
+  font-weight: var(--fw-label);
+}
 .roleTag {
-  font-size: var(--fs-label); font-weight: var(--fw-title); text-transform: uppercase; letter-spacing: 0.03em;
-  padding: 2px 7px; border-radius: 5px;
-  background: var(--md-surface-container, rgba(0,0,0,0.06)); color: var(--md-on-surface-variant, #474747);
+  font-size: var(--fs-micro);
+  line-height: var(--lh-micro);
+  font-weight: var(--fw-title);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-caps);
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: var(--md-surface-container-high, rgba(0,0,0,0.06));
+  color: var(--md-on-surface-variant, #474747);
 }
 .inactive { color: #c0392b; font-size: var(--fs-sub); font-weight: var(--fw-label); }
-
-/* ── Desktop: the shared shell header (DesktopShell) draws [back] "Operations
-   Console" + a right-side actions slot, so the page's own header is redundant.
-   Hide it entirely at >=768px. The Live / Refresh controls move into the shell
-   header via <HeaderActions>; the Operations / Logs tab switcher (.tabBar) is a
-   separate element and stays visible. Below 768px nothing changes. ── */
-@media (min-width: 768px) {
-  .header { display: none; }
-}
-
-/* ── KPI strip: compact, number over word ── */
-.stats { gap: 8px; }
-@media (min-width: 900px) { .stats { grid-template-columns: repeat(8, minmax(0, 1fr)); } }
-.stats > * { min-width: 0; padding: 10px 10px 9px !important; border-radius: 10px !important; }
-.stats > * > :first-child { font-size: var(--fs-head) !important; line-height: 1.1 !important; }
-.stats > * > :nth-child(2) { font-size: var(--fs-micro) !important; letter-spacing: .04em; text-transform: uppercase; margin-top: 3px; }
-.stats > * > :nth-child(n+3) { display: none; }
