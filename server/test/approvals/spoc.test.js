@@ -122,6 +122,36 @@ describe('every way there is nobody to give it to', () => {
     }
   });
 
+  it('somebody of the organization who is not on the check\'s site, named by email or by id', () => {
+    // annex.member (45) is active and in the organization, but homed on Site 33:
+    // the drift report of a Site 32 rack would not open for them.
+    for (const row of [{ user_id: null, email: 'annex@dc007.example' }, { user_id: 45 }]) {
+      named(row);
+      const out = spoc.resolve(plan(), { sender: TECH });
+      assert.equal(out.ok, false);
+      assert.equal(out.why, 'spoc_invalid');
+      assert.equal(out.text, 'annex.member is named as the SPOC of Office-Sprintpark but is not on this site.');
+      assert.equal(spoc.ofSite(plan()).valid, false);
+    }
+    // An organization admin homed on Site 33 opens every rack, so still holds it.
+    named({ user_id: 44 });
+    assert.equal(spoc.resolve(plan(), { sender: TECH }).ok, true);
+    assert.equal(spoc.ofSite(plan()).valid, true);
+    // And a member of Site 32 still does.
+    named({ user_id: 42 });
+    assert.equal(spoc.resolve(plan(), { sender: TECH }).ok, true);
+  });
+
+  it('a check filed under no organization says so, and says nothing untrue about the SPOC', () => {
+    named({ user_id: 41 });
+    const out = spoc.resolve(plan({ orgId: null }), { sender: TECH });
+    assert.equal(out.ok, false);
+    assert.equal(out.why, 'no_site');
+    assert.equal(out.text, 'This check was sent from an account that belongs to no organization, so it has no SPOC.');
+    assert.doesNotMatch(out.text, /no longer an active account/);
+    assert.deepEqual(out.site, { id: 32, name: 'Office-Sprintpark' });
+  });
+
   it('the person sending it, by id and else by username', () => {
     named({ user_id: 39 });
     const out = spoc.resolve(plan(), { sender: TECH });
@@ -148,6 +178,11 @@ describe('what a screen is shown, and who an admin may choose', () => {
     named(null);
     assert.equal(spoc.ofSite(plan()), null);
     assert.equal(spoc.ofSite(plan({ tenantId: null })), null);
+  });
+
+  it('never shows the name or email of an account of another organization', () => {
+    named({ user_id: 50, email: 'spoc@elsewhere.example', username: 'stranger' });
+    assert.equal(spoc.ofSite(plan()), null);
   });
 
   it('offers the admins and the people on the check\'s own site, never an auditor or the sender', () => {

@@ -8,8 +8,12 @@
  * writes nothing and emits nothing: service.submit() acts on the answer.
  *
  * A SPOC is valid when the account exists, is active, belongs to the
- * organization that raised the check, and is not an auditor (an auditor writes
- * nothing, so cannot decide). And never the person who sent the check: nobody
+ * organization that raised the check, is not an auditor (an auditor writes
+ * nothing, so cannot decide), and is an admin or sits on the check's own Site:
+ * the drift report is authorised by rack, so somebody homed on another Site
+ * could not open what the decision rests on. Setup checks the Site when it
+ * saves a user id, but an email is saved for anybody and a person can be moved
+ * later. And never the person who sent the check: nobody
  * decides their own. Each "no" has a word and a sentence, because the check
  * then waits for an admin and the admin has to be told why.
  *
@@ -43,6 +47,10 @@ const siteWords = (site) => site.name || (site.id != null ? `Site ${site.id}` : 
 const mayHold = (user, orgId) => Boolean(user && user.active
   && Number(user.orgId) === Number(orgId) && user.role !== 'auditor');
 
+/** Can this account open the drift report of a check on this Site? */
+const onSite = (user, plan) => machine.isAdmin(user)
+  || (plan.tenantId != null && Number(user.tenantId) === Number(plan.tenantId));
+
 const no = (why, text, site) => ({ ok: false, why, text, site });
 
 /**
@@ -56,6 +64,10 @@ function resolve(plan, { sender = null } = {}) {
     return no('no_site', 'This check is not tied to a site, so it has no SPOC.', siteOf(null));
   }
   const site = siteOf(plan.tenantId);
+  if (plan.orgId == null) {
+    return no('no_site', 'This check was sent from an account that belongs to no organization, '
+      + 'so it has no SPOC.', site);
+  }
   const named = approverOf(plan.tenantId);
   if (!named || (named.user_id == null && !named.email)) {
     return no('no_spoc', `${siteWords(site)} has no SPOC yet.`, site);
@@ -64,6 +76,10 @@ function resolve(plan, { sender = null } = {}) {
     : store.userByEmail(plan.orgId, named.email);
   if (!mayHold(user, plan.orgId)) {
     return no('spoc_invalid', `The SPOC of ${siteWords(site)} is no longer an active account.`, site);
+  }
+  if (!onSite(user, plan)) {
+    return no('spoc_invalid', `${user.username} is named as the SPOC of ${siteWords(site)} `
+      + 'but is not on this site.', site);
   }
   const sentBy = { submittedById: plan.submittedById ?? (sender && sender.id) ?? null,
     submittedBy: plan.submittedBy ?? (sender && sender.username) ?? null };
@@ -79,7 +95,9 @@ function resolve(plan, { sender = null } = {}) {
 /**
  * The SPOC setup names for the check's Site, as a screen shows them, whether or
  * not the check can go to them: `valid` says if the account may hold a check at
- * all. Null when the check has no Site or the Site names nobody.
+ * all. Null when the check has no Site, the Site names nobody, or it names an
+ * account of another organization: that person's name and email are not this
+ * organization's to read.
  */
 function ofSite(plan) {
   if (!plan || plan.tenantId == null) return null;
@@ -88,11 +106,12 @@ function ofSite(plan) {
   const site = siteOf(plan.tenantId);
   const user = named.user_id != null ? store.userById(named.user_id)
     : store.userByEmail(plan.orgId, named.email);
+  if (user && Number(user.orgId) !== Number(plan.orgId)) return null;
   return { userId: user ? user.id : named.user_id ?? null,
     username: (user && user.username) || named.username || null,
     email: (user && user.email) || named.email || null,
     siteId: site.id, siteLabel: `Site ${site.id}`, siteName: site.name,
-    valid: mayHold(user, plan.orgId) };
+    valid: mayHold(user, plan.orgId) && onSite(user, plan) };
 }
 
 /**
@@ -105,8 +124,7 @@ function assignableUsers(plan) {
   if (!plan || plan.orgId == null) return [];
   return store.usersOfOrg(plan.orgId)
     .filter((u) => mayHold(u, plan.orgId))
-    .filter((u) => machine.isAdmin(u)
-      || (plan.tenantId != null && Number(u.tenantId) === Number(plan.tenantId)))
+    .filter((u) => onSite(u, plan))
     .filter((u) => !machine.isSender(plan, u))
     .map((u) => ({ id: u.id, username: u.username, email: u.email ?? null, role: u.role,
                    tenantId: u.tenantId ?? null, tenantName: u.tenantName ?? null }));
