@@ -84,6 +84,15 @@ function lowestUnit(dev) {
   return 10000 - y;   // no unit: rank below every unit-bearing device, bottom first
 }
 
+// The lines under the rack's name in the results header: the rack's other
+// name, then the room by the name the customer gave it. Where the phone stood
+// is no part of it - the site is chosen on the scan screen, and the position a
+// scan from an older build carries (its site, how far off it was) is not read
+// back to anybody.
+export function headerWhereLines(rackSaid, identity) {
+  return [rackSaid && rackSaid.also, identity && identity.spaceName].filter(Boolean);
+}
+
 export function buildDeviceLabels(devices, unitsDetected = [], pattern = null) {
   const counts = {};
   const padding = pattern?.padding || 2;
@@ -1623,9 +1632,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     };
   }, [identity]);
 
-  const takenAt = identity && identity.evidence && identity.evidence.location
-    && identity.evidence.location.verdict !== 'unknown'
-    ? identity.evidence.location : null;
+  const whereLines = headerWhereLines(rackSaid, identity);
   const [fetchedOcrLabels, setFetchedOcrLabels] = useState(null);
   const ocrLabels = fetchedOcrLabels;
   const [warningDismissed, setWarningDismissed] = useState(false);
@@ -4698,20 +4705,14 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           <h2 className={styles.headerTitle}>
             {rackSaid ? rackSaid.name : (rackId || scanId)}
           </h2>
-          {/* The site and the coordinates belong to the scan itself. On the
-              Timeline, Topology and Switches they were three more lines above
-              a screen that is not about where the photo was taken. */}
-          {tab === 'overview' && (rackSaid || takenAt || (identity && identity.spaceName)) && (
+          {/* Where the rack is belongs to the scan itself. On the Timeline,
+              Topology and Switches it was more lines above a screen that is
+              not about that. */}
+          {tab === 'overview' && (rackSaid || whereLines.length > 0) && (
             <div className={styles.headerWhere}>
-              {rackSaid && rackSaid.also && <span>{rackSaid.also}</span>}
-              {/* The site, and no more. How many metres the phone stood from
-                  the site's address is the ladder's working, not something the
-                  person at the rack needs read back to them. */}
-              {takenAt && takenAt.site && <span>{takenAt.site}</span>}
-              {/* The room, by the name the customer gave it. It replaced the
-                  coordinates: a person finds a rack by its room, not by a pair
-                  of numbers. */}
-              {identity && identity.spaceName && <span>{identity.spaceName}</span>}
+              {/* The rack's other name and the room. A person finds a rack by
+                  its room, not by a pair of numbers. */}
+              {whereLines.map((line) => <span key={line}>{line}</span>)}
               {rackSaid && !rackSaid.confirmed && (
                 <span className={styles.headerRackAsk}>read, not confirmed</span>
               )}

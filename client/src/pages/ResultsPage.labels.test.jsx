@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { buildDeviceLabels } from './ResultsPage.jsx';
+import { buildDeviceLabels, headerWhereLines } from './ResultsPage.jsx';
 
 /* Names minted for the boxes in a rack. Where a real sticker was read, the
    rack follows its convention - but the shelf in that sticker belongs to the
@@ -44,5 +44,26 @@ describe('buildDeviceLabels', () => {
 
   test('with no sticker read, a name is built from the shelf the box is on', () => {
     expect(buildDeviceLabels([dev('Switch', 13)], ['u13'])).toEqual(['U13-SW01']);
+  });
+});
+
+/* Under the rack's name the header says the room, never where the phone
+   stood: no coordinates, no site worked out from them, no distance. */
+describe('headerWhereLines', () => {
+  const OLD_BUILD_SCAN = {
+    spaceName: 'RM01',
+    evidence: { location: { verdict: 'away', site: 'Office-Sprintpark', distanceM: 412, accuracyM: 18,
+      at: { lat: 17.4474, lng: 78.3762 }, note: 'The photo was taken 412 m from Office-Sprintpark.' } },
+  };
+
+  test('the room is said, and nothing a position would give', () => {
+    const lines = headerWhereLines({ name: 'R1', also: 'SP-HYB-RM01-R01-R1', confirmed: true }, OLD_BUILD_SCAN);
+    expect(lines).toEqual(['SP-HYB-RM01-R01-R1', 'RM01']);
+    expect(lines.join(' ')).not.toMatch(/Office-Sprintpark|412|17\.4474|78\.3762/);
+  });
+
+  test('a scan with no room and no second name says nothing', () => {
+    expect(headerWhereLines(null, { evidence: OLD_BUILD_SCAN.evidence })).toEqual([]);
+    expect(headerWhereLines(null, null)).toEqual([]);
   });
 });
