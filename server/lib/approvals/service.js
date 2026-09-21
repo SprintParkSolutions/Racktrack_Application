@@ -427,6 +427,11 @@ function submit(planId, { note: said = null, items: chosen = null, actor, req = 
   }
   if (plan.status !== 'draft') return { plan: get(plan.id, who).plan, already: true };
 
+  // Who it goes to is settled before the transaction opens. The Site's record
+  // is read through estate.js's own database handle, and a handle that had to
+  // wait on the write lock we are about to take would stall the send.
+  const goesTo = spoc.resolve(plan, { sender: who });
+
   return run((effects) => {
     // The person at the rack may send some of what differs and leave the rest.
     // What they leave is not hidden: it stays on the check, marked as not sent
@@ -458,7 +463,6 @@ function submit(planId, { note: said = null, items: chosen = null, actor, req = 
       auditPayload: { note: text(said) || null, ...(leftNames.length ? { notSent: leftNames } : {}) },
     });
     if (moved.refused) return moved.refused;
-    const goesTo = spoc.resolve(moved.plan, { sender: who });
     if (goesTo.ok) {
       store.updatePlan(plan.id, { spocUserId: goesTo.holder.userId, needsAdmin: null,
         spoc: holderRecord(goesTo.holder, { source: 'site', by: SYSTEM }) });

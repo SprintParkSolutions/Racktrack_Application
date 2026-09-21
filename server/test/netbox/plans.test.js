@@ -363,10 +363,13 @@ describe('a technician hands it to an admin', () => {
     assert.equal(p.status, 'open', 'a fresh comparison is nobody else’s problem yet');
 
     const out = plans.submit(p.id, { by: 'ravi', note: 'U15 looks wrong to me' });
-    assert.equal(out.plan.status, 'submitted');
+    assert.equal(out.plan.status, 'submitted', 'still one synchronous call, and the word the phone reads');
     assert.equal(out.plan.submittedBy, 'ravi');
     assert.equal(out.plan.submittedNote, 'U15 looks wrong to me');
-    assert.ok(out.plan.events.some((e) => e.what === 'sent to the admin'));
+    assert.ok(out.plan.events.some((e) => e.what === 'sent'));
+    // A sent check goes to the SPOC of its site. This library is handed a name
+    // and no site to look a SPOC up for, so the check waits for an admin.
+    assert.equal(out.plan.state, 'triage');
   });
 
   it('shows up in the admin inbox, and an unsent one does not', () => {
@@ -389,7 +392,8 @@ describe('a technician hands it to an admin', () => {
     assert.equal(byUid['dev:u12'].decision, 'pending', 'the chosen one waits on the admin');
     assert.notEqual(byUid['dev:u15'].decision, 'pending', 'the one left out asks nothing of anybody');
     assert.match(byUid['dev:u15'].note, /Not sent by ravi/, 'and says who set it aside, so nothing is hidden');
-    assert.ok(out.plan.events.some((e) => e.what === 'sent to the admin'));
+    assert.ok(out.plan.events.some((e) => e.what === 'sent'));
+    assert.equal(out.plan.state, 'triage');
   });
 
   it('refuses to send nothing', () => {

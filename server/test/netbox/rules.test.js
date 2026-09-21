@@ -8,11 +8,12 @@
  *
  *   - a technician (member) reaches exactly eight routes and is refused the rest
  *   - a technician sees only the plans they raised
- *   - approve and reject are refused until the item has been assigned and
- *     has come back
- *   - the whole rack assigns as one move, one incident per item
- *   - the assignee is one NetBox contact: id and email stored, ambiguity refused
- *   - the assignee resolves their own ticket by email, not only by name
+ *   - a sent check goes straight to the SPOC of its site, who is told
+ *   - nothing is assigned from the phone's decide route any more: `ticketed`,
+ *     the whole rack and scope 'rack' are refused with a sentence
+ *   - the SPOC, or an organization admin, decides without a ticket finding;
+ *     the person who sent the check, and a site manager it is not with, do not
+ *   - the person a ticket went to resolves it; nobody else's site manager does
  *   - a write NetBox refused part of is write_failed, emailed, and retried
  *   - every step leaves an audit row
  */
@@ -65,9 +66,10 @@ const auth = require('../../auth');
 const mails = [];
 auth.sendNotice = async (m) => { mails.push(m); return true; };
 
-// The contacts NetBox knows. Two are named Sam Patel on purpose. The SPOC's
-// email is also a RackTrack user's below, stamped so a run never collides
-// with a row an earlier run, or a person, left in the shared auth.db.
+// The contacts NetBox knows. The check no longer goes to one of them - it goes
+// to the SPOC setup named for the site, a RackTrack user below - but the rack
+// is still recognised through NetBox. Emails are stamped so a run never
+// collides with a row an earlier run, or a person, left in the shared auth.db.
 const stamp = Date.now();
 const MEERA = { name: 'Meera Raghavan', email: `drift.meera.${stamp}@sprintpark.test`, title: 'DC lead',
                 phone: null, netboxId: 7 };
@@ -83,6 +85,7 @@ spoc.everyone = async () => [MEERA, SAM_A, SAM_B];
 
 const { app } = require('../../app');
 const audit = require('../../audit');
+const estate = require('../../lib/estate');
 const tenant = require('../../lib/tenant');
 
 function listen() {
@@ -146,7 +149,7 @@ test('the drift workflow holds its rules at every route', async (t) => {
   });
 
   // An organisation with a Site, an org admin, a member (the technician) and
-  // two site managers: one whose email is the SPOC's, one who is nobody's assignee.
+  // two site managers: one who is the SPOC of the Site, one who is nobody's.
   const ownerTok = auth.makeToken(seedOwner());
   const created = await call(port, ownerTok, 'POST', '/api/orgs', {
     name: `Drift Rules ${stamp}`, adminUsername: `drift.admin.${stamp}`,
@@ -226,15 +229,39 @@ test('the drift workflow holds its rules at every route', async (t) => {
   const notOwn = await call(port, memberTok, 'GET', `/api/nb/plans/${adminPlanId}`);
   assert.equal(notOwn.status, 404, 'somebody else\'s plan is, to a technician, not there');
 
+  // Setup names the SPOC of the Site, the way the product does it.
+  estate.setApprover(siteId, { user_id: meera.id }, admin.id);
   const contacts = await call(port, memberTok, 'GET', `/api/nb/plans/${planId}/contacts`);
   assert.equal(contacts.status, 200, contacts.raw);
-  assert.equal(contacts.json.spoc.name, MEERA.name);
+  assert.equal(contacts.json.goesTo, 'spoc');
+  assert.equal(contacts.json.spoc.name, meera.username, 'the SPOC of the site, not a NetBox contact');
+  assert.equal(contacts.json.spoc.email, MEERA.email);
+  assert.equal(contacts.json.siteSpoc.userId, meera.id);
+  assert.equal(contacts.json.siteSpoc.siteName, 'Drift Site');
+  assert.equal(contacts.json.matchedRack.name, 'RACK-01', 'the rack is still recognised through NetBox');
+  assert.equal(contacts.json.assignable, undefined);
 
+  mails.length = 0;
   const submitted = await call(port, memberTok, 'POST', `/api/nb/plans/${planId}/submit`,
     { note: 'U15 looks wrong to me' });
   assert.equal(submitted.status, 200, submitted.raw);
-  assert.equal(submitted.json.status, 'submitted');
+  assert.equal(submitted.json.status, 'submitted', 'the word the older phone builds read');
+  assert.equal(submitted.json.state, 'assigned', 'and it is with the SPOC already');
+  assert.equal(submitted.json.goesTo, 'spoc');
+  assert.deepEqual(submitted.json.assignee, { userId: meera.id, name: meera.username, email: MEERA.email });
+  assert.equal(submitted.json.needsAdmin, null);
+  assert.ok(submitted.json.incident == null || submitted.json.incident.system === 'none',
+    'no ServiceNow is configured for this org');
   assert.equal(rows('drift.submit', planId).length, 1, 'the hand-over is on the audit trail');
+  await new Promise((r) => setTimeout(r, 50));
+  const told = mails.filter((m) => m.to === MEERA.email);
+  assert.equal(told.length, 1, 'the SPOC is told once, by email as well');
+  assert.match(told[0].subject, /^Assigned to you: check /);
+  assert.match(told[0].text, /U15 looks wrong to me/);
+  assert.match(told[0].text, /What to do:/);
+  const again = await call(port, memberTok, 'POST', `/api/nb/plans/${planId}/submit`, {});
+  assert.equal(again.json.already, true);
+  assert.equal(again.json.state, 'assigned');
   const submitOther = await call(port, memberTok, 'POST', `/api/nb/plans/${adminPlanId}/submit`, {});
   assert.equal(submitOther.status, 404, 'a technician cannot submit a plan that is not theirs');
 
@@ -306,111 +333,84 @@ test('the drift workflow holds its rules at every route', async (t) => {
     assert.match(r.json.error, /for an admin/);
   }
 
-  // ---- 3. The admin cannot decide from a desk.
-  const early = await call(port, adminTok, 'POST', `/api/nb/plans/${planId}/decide`,
-    { decisions: [{ uid: DEV, decision: 'approved' }, { uid: DEV2, decision: 'rejected', note: 'no' }] });
-  assert.equal(early.status, 200, early.raw);
-  assert.equal(early.json.applied.length, 0);
-  assert.deepEqual(early.json.refused, [{ uid: DEV, why: 'assign first' }, { uid: DEV2, why: 'assign first' }]);
-  assert.equal(rows('drift.decide', planId).length, 0, 'nothing to audit: nothing was decided');
-
-  // ---- 4. Assigning names one NetBox contact, or is refused.
-  const nobody = await call(port, adminTok, 'POST', `/api/nb/plans/${planId}/decide`,
-    { decisions: [{ uid: DEV, decision: 'ticketed', assignee: 'Nobody Here' }] });
-  assert.equal(nobody.status, 400, nobody.raw);
-  assert.match(nobody.json.error, /no NetBox contact is named "Nobody Here"/);
-  const twoSams = await call(port, adminTok, 'POST', `/api/nb/plans/${planId}/decide`,
-    { decisions: [{ uid: DEV, decision: 'ticketed', assignee: 'Sam Patel' }] });
-  assert.equal(twoSams.status, 400, twoSams.raw);
-  assert.match(twoSams.json.error, /more than one NetBox contact is named "Sam Patel"/);
-  const untouched = await call(port, adminTok, 'GET', `/api/nb/plans/${planId}`);
-  assert.ok(untouched.json.items.every((i) => !i.ticket), 'a refused assign wrote nothing');
-  const byId = await call(port, adminTok, 'POST', `/api/nb/plans/${adminPlanId}/decide`,
-    { decisions: [{ uid: DEV, decision: 'ticketed', assignee: 'Sam Patel', assigneeId: 9 }] });
-  assert.equal(byId.status, 200, byId.raw);
-  const adminPlan = await call(port, adminTok, 'GET', `/api/nb/plans/${adminPlanId}`);
-  const sam = adminPlan.json.items.find((i) => i.uid === DEV).ticket;
-  assert.equal(sam.assigneeId, 9, 'the contact id picks between two people with one name');
-  assert.equal(sam.assigneeEmail, 'sam.b@sprintpark.com');
-
-  // ---- 5. The whole rack in one move: every pending item, one incident each.
-  mails.length = 0;
-  const rack = await call(port, adminTok, 'POST', `/api/nb/plans/${planId}/decide`,
-    { decisions: [{ uid: '*', decision: 'ticketed', assignee: MEERA.name, note: 'please check all of it' }] });
-  assert.equal(rack.status, 200, rack.raw);
-  assert.equal(rack.json.wholeRack, true);
-  assert.deepEqual(rack.json.applied, [{ uid: DEV, decision: 'ticketed' }, { uid: DEV2, decision: 'ticketed' }]);
-  const lead = rack.json.raised[0];
-  assert.equal(lead.scope, 'rack');
-  assert.equal(lead.uid, '*');
-  assert.deepEqual(lead.items, [DEV, DEV2]);
-  assert.equal(lead.count, 2);
-  assert.equal(lead.ticket.system, 'none', 'no ServiceNow is configured for this org');
-  assert.equal(lead.ticket.incidents.length, 2, 'one incident per item, not one for the rack');
-  assert.deepEqual(rack.json.raised.slice(1).map((r) => [r.uid, r.ports]), [[DEV, 2], [DEV2, 0]],
-    'the per-item entries follow, as before');
-  assert.equal(rack.json.summary.ticketed, 2);
-  assert.equal(rack.json.summary.pending, 0);
-
-  const assigned = await call(port, adminTok, 'GET', `/api/nb/plans/${planId}`);
-  const after = Object.fromEntries(assigned.json.items.map((i) => [i.uid, i]));
+  // ---- 3. The check is with the SPOC: a ticket for each item, all to them.
+  const held = await call(port, adminTok, 'GET', `/api/nb/plans/${planId}`);
+  const after = Object.fromEntries(held.json.items.map((i) => [i.uid, i]));
   for (const uid of [DEV, DEV2]) {
-    assert.equal(after[uid].ticket.assignee, MEERA.name);
-    assert.equal(after[uid].ticket.assigneeId, 7);
+    assert.equal(after[uid].decision, 'ticketed');
+    assert.equal(after[uid].ticket.assignee, meera.username);
     assert.equal(after[uid].ticket.assigneeEmail, MEERA.email);
     assert.equal(after[uid].ticket.status, 'open');
-    assert.equal(after[uid].ticket.scope, 'rack');
+    assert.equal(after[uid].ticket.scope, 'check');
   }
   assert.equal(after[`if:${DEV}:1`].ticket.sharedWith, DEV, 'the ports share the switch ticket');
-  assert.equal(after[`if:${DEV}:1`].ticket.assigneeId, 7);
-  assert.equal(mails.length, 1, 'one email to the one person');
-  assert.equal(mails[0].to, MEERA.email);
-  assert.match(mails[0].subject, /rack RACK-01 \(2 items\)/);
-  assert.match(mails[0].text, /SW-12/);
-  assert.match(mails[0].text, /FW-15/);
-  const assignRows = rows('drift.assign', planId);
-  assert.equal(assignRows.length, 2, 'one audit row per item assigned');
-  assert.deepEqual(new Set(assignRows.map((r) => r.payload.uid)), new Set([DEV, DEV2]));
-  assert.ok(assignRows.every((r) => r.payload.assigneeId === 7 && r.payload.assignee === MEERA.name));
-
-  const stillOpen = await call(port, adminTok, 'POST', `/api/nb/plans/${planId}/decide`,
-    { decisions: [{ uid: DEV, decision: 'approved' }] });
-  assert.deepEqual(stillOpen.json.refused, [{ uid: DEV, why: 'assign first' }],
-    'an open ticket cannot be overridden by a direct approve');
-  const again = await call(port, adminTok, 'POST', `/api/nb/plans/${planId}/decide`,
-    { decisions: [{ uid: '*', decision: 'ticketed', assignee: MEERA.name }] });
-  assert.equal(again.status, 409, 'nothing is pending any more, so the rack move has nothing to take');
-
+  assert.equal(held.json.summary.ticketed, 2);
   const all = await call(port, adminTok, 'GET', '/api/nb/plans/tickets/all');
   assert.equal(all.status, 200, all.raw);
   const mineTickets = all.json.tickets.filter((r) => r.planId === planId);
   assert.equal(mineTickets.length, 2);
-  assert.ok(mineTickets.every((r) => r.assigneeId === 7 && r.assigneeEmail === MEERA.email));
+  assert.ok(mineTickets.every((r) => r.assignee === meera.username && r.assigneeEmail === MEERA.email));
 
-  // ---- 6. The assignee resolves: matched by email, not only by name.
+  // ---- 4. Nothing is assigned from this door any more.
+  const GOES_TO_THE_SPOC = 'A check goes to the site SPOC when it is sent. '
+    + 'An organization admin reassigns it in Drift Desk.';
+  for (const body of [
+    { decisions: [{ uid: DEV, decision: 'ticketed', assignee: 'Sam Patel', assigneeId: 9 }] },
+    { decisions: [{ uid: '*', decision: 'ticketed', assignee: MEERA.name, note: 'please check all of it' }] },
+    { scope: 'rack', assignee: MEERA.name },
+  ]) {
+    const r = await call(port, adminTok, 'POST', `/api/nb/plans/${planId}/decide`, body);
+    assert.equal(r.status, 409, r.raw);
+    assert.deepEqual(r.json, { error: GOES_TO_THE_SPOC });
+  }
+  const mixed = await call(port, adminTok, 'POST', `/api/nb/plans/${planId}/decide`,
+    { decisions: [{ uid: '*', decision: 'ticketed', assignee: MEERA.name }, { uid: DEV, decision: 'approved' }] });
+  assert.equal(mixed.status, 400, 'a mixed body is still a malformed one');
+  const untouched = await call(port, adminTok, 'GET', `/api/nb/plans/${planId}`);
+  assert.ok(untouched.json.items.filter((i) => i.ticket && !i.ticket.sharedWith)
+    .every((i) => i.ticket.assignee === meera.username), 'a refused assign wrote nothing');
+
+  // ---- 5. The person who sent a check decides nothing on it, whoever they are.
+  const adminSent = await call(port, adminTok, 'POST', `/api/nb/plans/${adminPlanId}/submit`, {});
+  assert.equal(adminSent.status, 200, adminSent.raw);
+  assert.equal(adminSent.json.state, 'assigned');
+  const ownCheck = await call(port, adminTok, 'POST', `/api/nb/plans/${adminPlanId}/decide`,
+    { decisions: [{ uid: DEV, decision: 'approved' }] });
+  assert.equal(ownCheck.status, 403, ownCheck.raw);
+  assert.equal(ownCheck.json.error, 'You sent this check, so somebody else has to decide it.');
+  const notTheirs = await call(port, otherTok, 'POST', `/api/nb/plans/${planId}/decide`,
+    { decisions: [{ uid: DEV, decision: 'approved' }] });
+  assert.equal(notTheirs.status, 403, 'a site manager the check is not with');
+  assert.equal(notTheirs.json.error, 'Deciding this check is for its SPOC or an organization admin.');
+  const bySpoc = await call(port, meeraTok, 'POST', `/api/nb/plans/${adminPlanId}/decide`,
+    { decisions: [{ uid: DEV, decision: 'approved', note: 'seen on the report' }] });
+  assert.equal(bySpoc.status, 200, `the SPOC decides a check an admin sent: ${bySpoc.raw}`);
+  assert.deepEqual(bySpoc.json.applied, [{ uid: DEV, decision: 'approved' }]);
+  assert.equal(rows('drift.decide', planId).length, 0, 'nothing decided on the technician\'s check yet');
+
+  // ---- 6. A ticket is still resolved by the person it went to, and nobody else.
   const wrongPerson = await call(port, otherTok, 'POST', `/api/nb/plans/${planId}/tickets/${DEV}/resolve`,
     { finding: 'not mine to close' });
   assert.equal(wrongPerson.status, 403, `a site manager who is not the assignee: ${wrongPerson.raw}`);
-  const byEmail = await call(port, meeraTok, 'POST', `/api/nb/plans/${planId}/tickets/${DEV}/resolve`,
+  const claimed = await call(port, otherTok, 'POST',
+    `/api/nb/plans/${planId}/tickets/${DEV}/resolve?assigneeId=${encodeURIComponent(meera.username)}`,
+    { finding: 'not mine to close' });
+  assert.equal(claimed.status, 403, 'and nothing in the request makes them the assignee');
+  const byHolder = await call(port, meeraTok, 'POST', `/api/nb/plans/${planId}/tickets/${DEV}/resolve`,
     { finding: 'It is at U12. NetBox was wrong.', outcome: 'confirmed' });
-  assert.equal(byEmail.status, 200, byEmail.raw);
-  assert.equal(byEmail.json.decision, 'pending', 'a resolved ticket is not an approval');
-  assert.equal(byEmail.json.ticket.status, 'resolved');
-  const byAdmin = await call(port, adminTok, 'POST', `/api/nb/plans/${planId}/tickets/${DEV2}/resolve`,
-    { finding: 'FW-15 is at U15 now.' });
-  assert.equal(byAdmin.status, 200, byAdmin.raw);
-  assert.equal(rows('drift.resolve', planId).length, 2);
-
+  assert.equal(byHolder.status, 200, byHolder.raw);
+  assert.equal(byHolder.json.decision, 'pending', 'a resolved ticket is not an approval');
+  assert.equal(byHolder.json.ticket.status, 'resolved');
+  assert.equal(rows('drift.resolve', planId).length, 1);
   const back = await call(port, adminTok, 'GET', `/api/nb/plans/${planId}`);
-  assert.equal(back.json.summary.resolved, 2, 'both items are back with the admin');
-  assert.equal(back.json.summary.pending, 2);
+  assert.equal(back.json.state, 'assigned', 'the check stays with its holder; it does not follow its tickets');
   assert.equal(back.json.settled, false);
 
-  // ---- 7. Now the admin decides, with the findings in hand.
+  // ---- 7. An admin who did not send it decides, with or without a finding.
   const decided = await call(port, adminTok, 'POST', `/api/nb/plans/${planId}/decide`,
     { decisions: [{ uid: DEV, decision: 'approved' }, { uid: DEV2, decision: 'rejected', note: 'leave it at 14' }] });
   assert.equal(decided.status, 200, decided.raw);
-  assert.equal(decided.json.refused.length, 0);
+  assert.equal(decided.json.refused.length, 0, 'nobody is told to assign first any more');
   assert.equal(decided.json.settled, true);
   const decideRows = rows('drift.decide', planId);
   assert.equal(decideRows.length, 2);
@@ -421,6 +421,9 @@ test('the drift workflow holds its rules at every route', async (t) => {
   assert.equal(closed.status, 'closed', 'the decision closes the resolved ticket');
   assert.equal(closed.closedWith, 'approved');
   assert.equal(closed.finding, 'It is at U12. NetBox was wrong.', 'the finding survives');
+  const open = done.json.items.find((i) => i.uid === DEV2).ticket;
+  assert.equal(open.status, 'closed', 'and a ticket still open closes with the decision as its finding');
+  assert.equal(open.finding, 'leave it at 14');
 
   // ---- 8. The write: NetBox refuses one object, the plan is write_failed and
   // the admin who ran it is told; the retry goes through the fingerprint again.
@@ -441,11 +444,13 @@ test('the drift workflow holds its rules at every route', async (t) => {
   assert.equal(failedWrite.json.counts.fail, 1);
   assert.deepEqual(failedWrite.json.failures.map((f) => f.uid), [`if:${DEV}:2`]);
   assert.equal(failedWrite.json.emailed, true);
-  assert.equal(mails.length, 1, 'one email, to the admin who ran the write');
-  assert.equal(mails[0].to, admin.email);
-  assert.match(mails[0].subject, /did not finish/);
-  assert.match(mails[0].text, /Gi1\/0\/2/);
-  assert.match(mails[0].text, /Nothing else was changed/);
+  assert.deepEqual(mails.map((m) => m.to).sort(), [admin.email, MEERA.email].sort(),
+    'one email each, to the organization admin and to the SPOC the check is with');
+  for (const mail of mails) {
+    assert.match(mail.subject, /did not finish/);
+    assert.match(mail.text, /Gi1\/0\/2/);
+    assert.match(mail.text, /Nothing else was changed/);
+  }
   const halfWritten = await call(port, adminTok, 'GET', `/api/nb/plans/${planId}`);
   assert.equal(halfWritten.json.status, 'write_failed');
   assert.equal(halfWritten.json.summary.failed, 1);
@@ -464,7 +469,8 @@ test('the drift workflow holds its rules at every route', async (t) => {
   const retried = await call(port, adminTok, 'POST', `/api/nb/netbox/${scanId}/export`, { planId });
   assert.equal(retried.status, 200, `the retry is allowed on a write_failed plan: ${retried.raw}`);
   assert.equal(retried.json.planStatus, 'applied');
-  assert.equal(mails.length, 1, 'a clean write sends no failure email');
+  assert.equal(mails.filter((m) => /did not finish/.test(m.subject)).length, 2,
+    'a clean write sends no failure email');
   const written = await call(port, adminTok, 'GET', `/api/nb/plans/${planId}`);
   assert.equal(written.json.status, 'applied');
   assert.equal(written.json.appliedBy, admin.username);
@@ -476,8 +482,8 @@ test('the drift workflow holds its rules at every route', async (t) => {
   assert.equal(third.status, 409, 'an applied plan is closed');
 
   // The audit rows carry the plan's own tenant, the Site the rack was scanned under.
-  const anyRow = rows('drift.assign', planId)[0];
-  assert.ok(anyRow, 'an assign row exists');
+  const anyRow = rows('drift.decide', planId)[0];
+  assert.ok(anyRow, 'a decide row exists');
   const tenantOfRow = db.prepare('SELECT tenant_id FROM audit_log WHERE id = ?').get(anyRow.id);
   assert.equal(tenantOfRow.tenant_id, siteId);
 });
