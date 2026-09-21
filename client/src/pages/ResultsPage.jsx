@@ -7,7 +7,6 @@ import { getItem, getJSON, setItem, setJSON } from '../utils/safeStorage';
 import CmdbApprovalModal from '../components/CmdbApprovalModal.jsx';
 import BackButton from '../components/BackButton.jsx';
 import ScanTabBar from '../components/ScanTabBar.jsx';
-import { getRackFlow, setRackFlow } from '../utils/rackFlow';
 import { useIsDesktop } from '../hooks/useIsDesktop';
 import RackTabs from '../components/RackTabs.jsx';
 import StandardFeedback from '../components/StandardFeedback.jsx';
@@ -15,7 +14,6 @@ import { PortsContent } from './PortsPage.jsx';
 import { TopologyContent } from './TopologyPage.jsx';
 import { NetdiscoContent } from './NetdiscoPage.jsx';
 import { SwitchInfoContent } from './SwitchInformationPage.jsx';
-import { PortHistoryContent } from './PortHistoryPage.jsx';
 import AssetImg from '../components/AssetImg';
 import { useSmartBack } from '../hooks/useSmartBack';
 import { useTour } from '../TourContext.jsx';
@@ -1271,7 +1269,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // view instead of the default overview tab.
   const _initialTabFromHash = (() => {
     const h = (location.hash || '').replace(/^#/, '').toLowerCase();
-    return ['overview', 'topology', 'drift'].includes(h) ? h : 'overview';
+    return ['overview', 'topology', 'switches'].includes(h) ? h : 'overview';
   })();
   const [tab,         setTab]         = useState(_initialTabFromHash);
   // Once the user leaves the ticket-drift alert (picks another tab or dismisses
@@ -1303,19 +1301,13 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     // Network is the live switches, read from this phone over SNMP. It is a
     // page of its own rather than a tab of this one, because reading a switch
     // is work with its own state - credentials, a reading, where it sits in
-    // the rack - not another view of the photograph.
-    // Drift is the check against the record, which is a page of its own too.
-    // The tab used to open the older port-history view kept inside this page,
-    // so the same word led to two different screens depending on where it was
-    // tapped, and the bar never lit up on the one people meant.
-    // Timeline is the in-page view that carried the name Drift before: the
-    // port history and the switches read for this rack. Its state key is still
-    // 'drift', which the hash and the back stack already know.
-    // Result is this page in its port mode: the Overview tab under the name it
-    // has while a port is being looked up.
+    // the rack - not another view of the photograph. So are Report and Drift.
+    //
+    // Topology and Switches are not tabs. They are views of this page, opened
+    // from the two links on Overview, and the bar keeps Overview lit while one
+    // of them is up.
     if (newTab === 'result') newTab = 'overview';
-    if (newTab === 'timeline') newTab = 'drift';
-    else if (newTab === 'network' || newTab === 'report' || newTab === 'drift') {
+    if (newTab === 'network' || newTab === 'report' || newTab === 'drift') {
       // urlRackId first: it is the id in the address bar and is set before the
       // scan result has loaded, whereas `rackId` comes out of that result.
       navigate(`/results/${encodeURIComponent(urlRackId || rackId || scanId)}/${newTab}`);
@@ -1326,7 +1318,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       return newTab;
     });
     // Leaving the port-detail sub-view whenever the user picks a tab - // otherwise the `phase === 'port'` early return below swallows the
-    // new tab's content (notably the drift tab, which would render blank).
+    // new tab's content.
     setPhase('detect');
   };
   // Header back button:
@@ -1352,11 +1344,11 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   useEffect(() => {
     const onBack = (e) => {
       if (phase === 'port') { e.preventDefault(); leavePortView(); return; }
-      // A tab of the port flow (Switches, Topology, Timeline) steps back to its
-      // Result first; Back on Result is what leaves the flow. The other way
-      // round left the person on Switches under a bar that has no Switches.
-      if (portMode && tab === 'overview') { e.preventDefault(); leavePortFlow(); return; }
-      if (tab !== 'overview') { e.preventDefault(); handleHeaderBack(); }
+      // Topology and Switches are views of Overview, so Back steps out of them
+      // first and only then leaves the rack. The port lookup does the same: its
+      // own Back closes the picker and puts the two choices back.
+      if (tab !== 'overview') { e.preventDefault(); handleHeaderBack(); return; }
+      if (portMode) { e.preventDefault(); leavePortFlow(); }
     };
     window.addEventListener('rt:back', onBack);
     return () => window.removeEventListener('rt:back', onBack);
@@ -1387,14 +1379,21 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     setTab('overview');
     setPhase('detect');
   };
-  // React to subsequent hash changes too - e.g. user clicks Drift in the
-  // sidebar while already on the rack page, no remount happens.
+  // React to subsequent hash changes too - e.g. a sidebar link tapped while
+  // already on the rack page, where no remount happens.
   useEffect(() => {
     const h = (location.hash || '').replace(/^#/, '').toLowerCase();
+    // The Timeline used to be this page under the hash #drift. It is a section
+    // of the Network page now, so an older link or bookmark lands there.
+    if (h === 'drift' || h === 'timeline') {
+      navigate(`/results/${encodeURIComponent(urlRackId || rackId || scanId)}/network#timeline`,
+        { replace: true });
+      return;
+    }
     // An empty / unknown hash means the plain rack root → the Overview tab.
-    // Without this fallback, navigating Drift (#drift) → Overview (no hash)
-    // left `tab` stuck on 'drift' because empty wasn't a recognised value.
-    const next = ['overview', 'topology', 'drift'].includes(h)
+    // Without this fallback, leaving a hashed view for Overview (no hash) left
+    // `tab` stuck where it was, because empty was not a recognised value.
+    const next = ['overview', 'topology', 'switches'].includes(h)
       ? h : 'overview';
     setTab(curr => {
       if (curr !== next) tabHistoryRef.current.push(curr);
@@ -1404,6 +1403,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     // Otherwise an earlier `phase === 'port'` early-return path would keep
     // showing the port-detail view and swallow the tab content.
     setPhase('detect');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.hash]);
   const [resultImg,   setResultImg]   = useState(null);
   const [portInfo,    setPortInfo]    = useState(null);
@@ -1474,21 +1474,17 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // <select>, so the open/closed state is ours to hold - see the note where it
   // is rendered.
   const [deviceListOpen, setDeviceListOpen] = useState(false);
-  // Which of the two things the person chose to do with this rack. Until they
-  // choose, the page is the photograph and the choice - nothing else.
-  // It is also which of the rack's two tab bars is up - Analyse the network, or
-  // Look up a port - and Network is a page of its own in both, so the choice is
-  // remembered for this rack (utils/rackFlow) and picked up again on the way
-  // back. A rack drawn inside another page (two racks side by side) has no bar.
-  const [portMode, setPortMode] = useState(() => !embeddedProp && getRackFlow(urlRackId) === 'port');
-  useEffect(() => { setPortMode(!embeddedProp && getRackFlow(urlRackId) === 'port'); }, [urlRackId, embeddedProp]);
-  const enterPortFlow = () => {
-    setRackFlow(urlRackId || rackId || scanId, 'port');
-    setPortMode(true); setDeviceListOpen(true);
-  };
-  // That screen's own Back: out of the port flow, back to the two choices.
+  // Whether the person is looking up a port on this rack. It is a view of this
+  // page - the photograph, the device picker and the located port - entered by
+  // the "Look up a port" button on Overview and left by that view's own Back.
+  // It used to be remembered in the session store because it also chose which
+  // of two tab bars was up; there is one bar now, so it is plain page state.
+  // A rack drawn inside another page (two racks side by side) has no bar.
+  const [portMode, setPortMode] = useState(false);
+  useEffect(() => { setPortMode(false); }, [urlRackId]);
+  const enterPortFlow = () => { setPortMode(true); setDeviceListOpen(true); };
+  // That screen's own Back: out of the port lookup, back to the two choices.
   const leavePortFlow = () => {
-    setRackFlow(urlRackId || rackId || scanId, 'analyse');
     setPortMode(false); setDeviceListOpen(false); setSelectedIdx(null);
   };
   const [shareStatus, setShareStatus] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'error'
@@ -3432,8 +3428,6 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             located port meant going back first. Picking a tab leaves the view. */}
         {!isDesktop && !embeddedProp && (
           <ScanTabBar
-            rackId={rackId}
-            flow={portMode ? 'port' : 'analyse'}
             activeTab="overview"
             onTabChange={(key) => { leavePortView(); handleTabChange(key); }}
           />
@@ -4716,9 +4710,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           <span className={styles.headerKind}>{
             tab === 'switches' ? 'Switches'
             : tab === 'topology' ? 'Topology'
-            : tab === 'network'  ? 'Discovery'
-            : tab === 'drift'    ? 'Timeline'
-            :                       'Scan results'
+            :                      'Scan results'
           }</span>
           <h2 className={styles.headerTitle}>
             {rackSaid ? rackSaid.name : (rackId || scanId)}
@@ -4750,9 +4742,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           either one brings the tabs in, and they stay for the rest of the rack. */}
       {!isDesktop && !embeddedProp && (
         <ScanTabBar
-          rackId={rackId}
-          flow={portMode ? 'port' : 'analyse'}
-          activeTab={tab === 'drift' ? 'timeline' : tab}
+          activeTab={tab}
           onTabChange={handleTabChange}
           badges={{
             ports: devices.filter(d => d.class_name === 'Switch').reduce((s, d) => s + (d.port_count || 0), 0) || undefined,
@@ -5064,6 +5054,29 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
               onClick={enterPortFlow}
             >
               Look up a port
+            </button>
+          </div>
+        )}
+
+        {/* The two screens that are not steps: the rack in three dimensions,
+            and what the record holds about its switches. They used to sit in a
+            More menu on the tab bar; the bar is four tabs and no menu now, so
+            they are named here, on the page they belong to. Back returns here. */}
+        {!ticketMode && phase !== 'all' && !portMode && (
+          <div className={styles.stepChoices}>
+            <button
+              type="button"
+              className={`${styles.stepChoice} ${styles.stepChoiceSecondary}`}
+              onClick={() => handleTabChange('topology')}
+            >
+              Topology
+            </button>
+            <button
+              type="button"
+              className={`${styles.stepChoice} ${styles.stepChoiceSecondary}`}
+              onClick={() => handleTabChange('switches')}
+            >
+              Switches
             </button>
           </div>
         )}
@@ -5380,13 +5393,6 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       {tab === 'switches' && (
         <div className={styles.tabContent}>
           <SwitchInfoContent rackId={rackId || scanId} />
-        </div>
-      )}
-
-      {/* ── Tab: Drift (continuous SSH telemetry from monitored switches) ── */}
-      {tab === 'drift' && (
-        <div className={styles.tabContent} style={{ minHeight: '60vh', padding: '16px' }}>
-          <PortHistoryContent rackId={urlRackId || rackId || scanId} />
         </div>
       )}
 

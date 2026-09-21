@@ -1,8 +1,8 @@
 /* ══════════════════════════════════════════════════════════════════════
-   ScanTabBar - fixed bottom nav for the Results page. White surface,
-   hairline top border, 5 inline slots (Overview / Switches / Ports /
-   Topology / More). Active tab gets a circular black icon and a tiny
-   dot under the label, matching the BottomNav aesthetic.
+   ScanTabBar - the rack's bottom bar. White surface, hairline top border,
+   four inline slots (Overview / Network / Report / Drift). The active tab
+   gets a circular black icon and a tiny dot under the label, matching the
+   BottomNav aesthetic.
    ══════════════════════════════════════════════════════════════════════ */
 
 .tabBar {
@@ -120,73 +120,3 @@
   font-weight: 700;
   line-height: 1;
 }
-
-/* ══════════════════════════════════════════════════════════════════════
-   "More" sheet - floats above the More tab when open.
-   ══════════════════════════════════════════════════════════════════════ */
-
-.moreWrap {
-  flex: 1 0 0;
-  min-width: 0;
-  position: relative;
-  display: flex;
-  align-items: stretch;
-}
-.moreWrap .tab { flex: 1; }
-
-.moreSheet {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 8px);
-  min-width: 180px;
-  background: #ffffff;
-  border: 1px solid var(--md-outline-variant);
-  border-radius: 12px;
-  padding: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  box-shadow: none;
-  animation: moreSheetIn 0.14s ease-out;
-}
-@keyframes moreSheetIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.moreItem {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border: none;
-  background: transparent;
-  border-radius: 8px;
-  cursor: pointer;
-  color: var(--md-on-surface);
-  font-family: var(--font);
-  font-size: 13px;
-  font-weight: 600;
-  text-align: left;
-  -webkit-tap-highlight-color: transparent;
-  transition: background-color 0.14s;
-}
-.moreItem:hover { background: var(--md-surface-container-highest); }
-.moreItemActive {
-  background: var(--md-surface-container-highest);
-  color: var(--md-primary);
-}
-
-.moreItemIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  color: var(--md-on-surface-variant);
-  flex-shrink: 0;
-}
-.moreItemActive .moreItemIcon { color: var(--md-primary); }
-
-.moreItemLabel { flex: 1; min-width: 0; }
-
