@@ -35,8 +35,6 @@ import { getItem, setItem } from '../utils/safeStorage';
 // person has done it before, and someone handed a second phone genuinely has
 // not. "Show again" in the sheet clears it, which is the only route back.
 const FIRST_SCAN_KEY = 'racktrack.scan.tipsSeen';
-// The space (hall, room, floor) the technician picked, remembered per Site.
-const SPACE_KEY_PREFIX = 'racktrack.scan.space.';
 
 // Four instructions, each one thing to do. "Step back if needed" said the same
 // as "full rack in frame", and the explanatory half of every line ("keep the top
@@ -984,25 +982,6 @@ export default function ScanPage() {
   // choose. Until the list answers nobody can say which, so the tour waits.
   const siteSettled = sitesAsked && !needsSite;
 
-  // Which space this scan belongs to (organisation setup). The list is the
-  // chosen Site's own, so it changes with the Site and is empty without one.
-  // Remembered per Site so a technician in the same hall does not re-pick
-  // every time. Never blocks a scan: with nothing picked, nothing is sent.
-  const spaces = useMemo(() => {
-    const site = sites.find((s) => String(s.id) === siteId);
-    return (site?.spaces || []).map((sp) => ({ id: sp.id, name: sp.name, depth: sp.depth || 0 }));
-  }, [sites, siteId]);
-  const [spaceId, setSpaceId] = useState('');
-  useEffect(() => {
-    const kept = siteId ? (getItem(SPACE_KEY_PREFIX + siteId) || '') : '';
-    // A remembered space that no longer exists is dropped rather than sent.
-    setSpaceId(kept && spaces.some((sp) => String(sp.id) === String(kept)) ? kept : '');
-  }, [siteId, spaces]);
-  const chooseSpace = (id) => {
-    setSpaceId(id);
-    if (siteId) setItem(SPACE_KEY_PREFIX + siteId, id);
-  };
-
 
   // Starting a new scan clears the previous rack context, so the sidebar's
   // rack tabs (Overview / Ports / Topology / Network / Switches / Drift) stop
@@ -1198,10 +1177,6 @@ export default function ScanPage() {
       // The chosen Site goes with every kind of scan. With none chosen the
       // field is absent and the server falls back to the caller's own Site.
       if (siteId) body.append('siteId', siteId);
-      // Bind the scan to the space picked above. /api/analyze checks that the
-      // space belongs to the chosen Site and records the rack in it. With
-      // nothing picked the field is absent and the request is unchanged.
-      if (endpoint === '/api/analyze' && spaceId) body.append('spaceId', String(spaceId));
 
       // Remember this scan so it can be reclaimed if iOS suspends the app
       // mid-analysis (the request below dies, but the scan finishes on the
@@ -1561,21 +1536,6 @@ export default function ScanPage() {
         <SitePicker sites={sites} value={siteId} onChange={chooseSite} className={styles.siteBlock}
           data-tour={needsSite || siteWasAsked ? 'site-picker' : undefined}
           data-tour-bypass={tourActive && needsSite && tour?.currentStep?.id !== 'choose-site' ? 'true' : undefined} />
-
-        {/* Space picker - organisation setup. Shown only when the chosen
-            Site has spaces; a scan is never blocked on it. */}
-        {spaces.length > 0 && (
-          <div className={styles.spaceBlock}>
-            <label htmlFor="scan-space" className={styles.spaceLabel}>Space</label>
-            <select id="scan-space" className={styles.spaceSelect} value={spaceId}
-              onChange={(e) => chooseSpace(e.target.value)}>
-              <option value="">Not chosen</option>
-              {spaces.map((sp) => (
-                <option key={sp.id} value={String(sp.id)}>{'\u00a0\u00a0'.repeat(sp.depth) + sp.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
 
         {/* Media box - also the guided tour's "add a photo" anchor. It wraps
             whichever picker is showing (upload / video / tall-rack / camera),

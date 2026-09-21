@@ -1609,7 +1609,6 @@
   .scanContentDesktop .eyebrowCapture { order: 20; }
   .scanContentDesktop .tabs           { order: 21; }
   .scanContentDesktop .siteBlock      { order: 24; }
-  .scanContentDesktop .spaceBlock     { order: 25; }
   .scanContentDesktop .ticketHeadline { order: 29; }
   .scanContentDesktop .incidentBlock  { order: 30; }
   .scanContentDesktop .errBox         { order: 40; }
@@ -1914,25 +1913,12 @@
 
 /* ── Site picker ───────────────────────────────────────────────────────
    The control is components/SitePicker; this file only places it. It sits
-   directly above the Space picker, whose list it decides (order 24 in the
-   laptop rail). The hint is the line above Analyze while several Sites are
-   on offer and none is chosen. */
+   directly above the media box (order 24 in the laptop rail). The hint is
+   the line above Analyze while several Sites are on offer and none is
+   chosen. */
 .siteBlock { flex-shrink: 0; }
 .siteHint {
   margin: 0 0 -12px; text-align: center;
   font-family: var(--font); font-size: 13px; line-height: 1.4; color: #6b6b6b;
 }
 
-/* ── Space picker (organisation setup) ─────────────────────────────────
-   A native <select> of the chosen Site's spaces, shown only when the Site
-   has any. Sits above the media box on a phone and in the right rail on
-   a laptop (order 25, between the capture tabs and the incident link). */
-.spaceBlock { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; text-align: left; }
-.spaceLabel {
-  font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--md-on-surface-variant);
-}
-.spaceSelect {
-  width: 100%; min-height: 44px; padding: 0 12px;
-  font-size: 15px; color: var(--md-on-surface); border-radius: 8px;
-}

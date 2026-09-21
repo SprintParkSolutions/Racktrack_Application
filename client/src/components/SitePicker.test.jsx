@@ -3,9 +3,9 @@ import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { useState } from 'react';
 import SitePicker, { rackLine, siteMatches } from './SitePicker.jsx';
 
-/* The site a scan is for: a dropdown like the Space picker - already chosen
-   when there is one site, waiting for a choice when there are several, and
-   absent when the server has none to offer. */
+/* The site a scan is for: a dropdown - already chosen when there is one
+   site, waiting for a choice when there are several, and absent when the
+   server has none to offer. */
 
 const OFFICE = {
   id: 32, siteId: 'Site 32', name: 'Office-Sprintpark', rackCount: 1,

@@ -25,7 +25,7 @@ vi.mock('../utils/validateMedia', () => ({ validateMedia: async () => ({ ok: tru
 
 import MultiRackNewPage from './MultiRackNewPage.jsx';
 
-// The site is a dropdown, the same control as Space.
+// The site is a dropdown, the only picker on the page.
 const sitePick = () => screen.getByLabelText(/^Site/);
 const siteIs = (id) => waitFor(() => expect(sitePick().value).toBe(String(id)));
 const chooseSite = (id) => fireEvent.change(sitePick(), { target: { value: String(id) } });

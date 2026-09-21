@@ -8,10 +8,9 @@ import styles from './SitePicker.module.css';
  * technician can answer in a tap. So the site is chosen here, by its number
  * and its name, and that choice goes with the photo.
  *
- * It is a dropdown, the same control as the Space picker under it, because
- * that is where the owner looked for it: "in scan page there should be space
- * and in dropdown sites should be present". By how many sites the server says
- * this person may scan for:
+ * It is a dropdown, and now the only picker on the scan page: the site is
+ * enough, so the space that used to sit under it is gone. By how many sites
+ * the server says this person may scan for:
  *   none    - nothing is drawn, and the scan goes as it always did. This is
  *             also what a server without the site list looks like.
  *   one     - the dropdown holds that one site, already chosen.

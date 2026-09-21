@@ -29,7 +29,7 @@ vi.mock('../utils/scanPrefetch', () => ({ prefetchScan: () => {} }));
 import ScanPage from './ScanPage.jsx';
 import { TOUR_STEPS } from '../tourSteps.js';
 
-// The site is a dropdown, the same control as Space.
+// The site is a dropdown, the only picker on the scan page.
 const sitePick = () => screen.getByLabelText(/^Site/);
 const siteIs = (id) => waitFor(() => expect(sitePick().value).toBe(String(id)));
 const chooseSite = (id) => fireEvent.change(sitePick(), { target: { value: String(id) } });
@@ -79,14 +79,15 @@ describe('<ScanPage> site', () => {
     mount();
     await siteIs(32);
     expect([...sitePick().options].map((o) => o.textContent)).toEqual(['Site 32 - Office-Sprintpark']);
-    // The spaces are the chosen site's own.
-    expect(screen.getByLabelText('Space').textContent).toContain('RM01');
+    // Site is enough: the page has no Space control, and none goes with the photo.
+    expect(screen.queryByLabelText('Space')).toBeNull();
 
     addPhoto();
     await waitFor(() => expect(analyzeButton().disabled).toBe(false));
     fireEvent.click(analyzeButton());
     await waitFor(() => expect(sent('/api/analyze')).toBeTruthy());
     expect(sent('/api/analyze').get('siteId')).toBe('32');
+    expect(sent('/api/analyze').has('spaceId')).toBe(false);
   });
 
   test('several sites: Analyze waits for a choice, the choice is made in the dropdown, sent and remembered', async () => {
