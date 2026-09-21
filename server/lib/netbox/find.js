@@ -28,7 +28,12 @@
  *      own text filters are looser than they look.
  *   4. An object already carrying a racktrack_uid that is not the one being
  *      asked about is NEVER returned. It belongs to another identity, and
- *      claiming it is the "one uid on two objects" trap.
+ *      claiming it is the "one uid on two objects" trap. One exception, and it
+ *      is at the bottom of the file: byName answers about a CATALOGUE object -
+ *      a site, a maker, a model, a role - whose name NetBox itself keeps unique
+ *      and on which nothing is ever written. A site is one site whatever a scan
+ *      called it, so the id another scan left on it is reported rather than
+ *      being a reason to ask NetBox for a second site of that name.
  *   5. Every answer carries a plain English sentence a person reads.
  *
  * Three shapes come back, and only three:
@@ -61,6 +66,14 @@ const DEVICES = '/api/dcim/devices/';
 
 /** Ask for two. One is an answer; two is a refusal that names both. */
 const LIMIT = 2;
+
+/**
+ * How many rows a "contains" lookup may answer with before the verification
+ * runs. Two is right for a filter that answers only the row that matches; a
+ * filter that also answers the rows around it needs room for the one that is
+ * really being asked about, or the answer is decided by NetBox's sort order.
+ */
+const LOOSE_LIMIT = 25;
 
 const text = (v) => String(v ?? '').trim();
 
@@ -598,11 +611,21 @@ async function byName(client, endpoint, {
   // lookup is asked the plain way instead, and the rows are verified either way.
   let res = await ask(client, endpoint, { ...where, [`${field}__ie`]: want });
   if (res.rows === null) res = await ask(client, endpoint, { ...where, [field]: want });
-  const rows = res.rows;
-  if (rows === null || rows === undefined) {
+  if (res.rows === null) {
     return none(`the record could not be asked about ${asked}. ${blockedBy(res.error)}`, true);
   }
-  const real = rows.filter((r) => text(r[field]).toLowerCase() === want.toLowerCase());
+  /** A row whose own field really is this name, either side's spaces ignored. */
+  const is = (r) => text(r[field]).toLowerCase() === want.toLowerCase();
+  // Exact said nothing. A name typed with a space on the end is still that
+  // name, so ask the looser way once - contains, case-insensitive - and let the
+  // verification above decide, which is what it is for. More rows are asked for
+  // here because "contains" answers with neighbours: "Office" matches every
+  // office there is, and the one that IS this name has to be among them.
+  if (!res.rows.some(is)) {
+    const loose = await ask(client, endpoint, { ...where, [`${field}__ic`]: want }, LOOSE_LIMIT);
+    if (loose.rows && loose.rows.some(is)) res = loose;
+  }
+  const real = res.rows.filter(is);
   if (!real.length) return none(`nothing in the record has ${asked}`);
   if (real.length > 1) {
     return ambiguous(real, `${real.length} records have ${asked}: ${real.map(label).join(' and ')}. `

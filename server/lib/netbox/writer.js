@@ -207,10 +207,18 @@ function alreadyExists(err) {
  *   - Exactly one hit. Two is ambiguous and is left as a failure.
  *   - An object already carrying somebody else's uid is never taken. That is
  *     the "one uid on two objects" trap, and it stops here.
+ *   - Our id is stamped on a port or a socket we would have made ourselves, and
+ *     NOT on the customer's catalogue - their site, their maker, their model,
+ *     their role. Their name and their slug are theirs: an id of ours on an
+ *     object whose name or slug is not the one we would have minted turns the
+ *     NEXT comparison into an offer to rename it, which is how a shelf move
+ *     would come to carry a rename of the customer's site. A catalogue object is
+ *     found by its name every time instead, which costs one read and cannot
+ *     propose anything.
  */
-async function adopt(client, spec, payload, uid, err) {
+async function adopt(client, spec, payload, uid, err, { stamp = true } = {}) {
   if (!alreadyExists(err)) return null;
-  const byKey = await adoptByKey(client, spec, payload, uid);
+  const byKey = await adoptByKey(client, spec, payload, uid, stamp);
   if (byKey) return byKey;
   // The last line of defence, and the one the live write needed. The key that
   // made NetBox refuse is not always a key we can ask with: the scan's slug for
@@ -225,8 +233,8 @@ async function adopt(client, spec, payload, uid, err) {
     : null;
 }
 
-/** Adopt by the key that made NetBox refuse, stamping our id on what it finds. */
-async function adoptByKey(client, spec, payload, uid) {
+/** Adopt by the key that made NetBox refuse: our id on it, unless it is theirs. */
+async function adoptByKey(client, spec, payload, uid, stamp = true) {
   if (typeof spec.naturalKey !== 'function') return null;
   const key = spec.naturalKey(payload);
   if (!key || !Object.keys(key).length) return null;
@@ -242,12 +250,14 @@ async function adoptByKey(client, spec, payload, uid) {
   const carried = (found.custom_fields || {})[UID_FIELD];
   // Already ours, under this very uid: nothing to stamp, just use it.
   if (carried && carried !== uid) return null;
+  if (!stamp) return { id: found.id, by: Object.keys(key).join(' and '), stamped: false,
+                       why: `the record already holds it under its ${Object.keys(key).join(' and ')}` };
   if (!carried) {
     try {
       await client.patch(spec.endpoint, found.id, { custom_fields: { [UID_FIELD]: uid } });
     } catch { return null; }
   }
-  return { id: found.id, by: Object.keys(key).join(' and '), stamped: !carried };
+  return { id: found.id, by: Object.keys(key).join(' and '), stamped: true };
 }
 
 /**
@@ -1679,7 +1689,8 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
           // NetBox refused because it already holds this object under its own
           // name. That is a match, not a failure: the thing we were about to
           // create is already there, it simply has never carried our uid.
-          const claimed = await adopt(client, spec, payload, obj.uid, err);
+          const claimed = await adopt(client, spec, payload, obj.uid, err,
+            { stamp: !SCAFFOLDING.has(spec.field) });
           if (claimed) {
             resolved.set(obj.uid, claimed.id);
             // Claimed by its own name, with nothing written on it. There is no
