@@ -23,26 +23,7 @@
   -webkit-overflow-scrolling: touch;
   display: flex; flex-direction: column; gap: 16px;
   padding-top: 12px;
-  padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
-}
-
-/* ── Header ── */
-.header {
-  display: flex; align-items: center; gap: 10px;
-  padding: max(20px, calc(env(safe-area-inset-top, 0px) + 16px)) 16px 4px;
-}
-.backBtn {
-  width: 38px; height: 38px; flex: none;
-  display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 10px;
-  background: #121212; border: 1px solid #121212; color: #ffffff;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.title {
-  flex: 1; margin: 0;
-  font-size: 20px; font-weight: 650; letter-spacing: -0.01em;
-  color: var(--text);
+  padding-bottom: var(--nav-clear);
 }
 
 /* ── Intro ── */
@@ -53,7 +34,7 @@
   border-radius: 12px;
   background: var(--card2);
 }
-.intro p { margin: 0 0 8px; font-size: 14px; line-height: 1.55; color: var(--text); }
+.intro p { margin: 0 0 8px; font-size: var(--fs-item); line-height: 1.55; color: var(--text); }
 .intro p:last-child { margin-bottom: 0; }
 
 /* ── Notes: something to read before going on ── */
@@ -63,9 +44,9 @@
   margin: 0; padding: 12px 13px;
   border-radius: 11px;
   display: flex; flex-direction: column; gap: 5px;
-  font-size: 13.5px; line-height: 1.5; color: var(--text);
+  font-size: var(--fs-body); line-height: 1.5; color: var(--text);
 }
-.note b { font-size: 14px; font-weight: 650; }
+.note b { font-size: var(--fs-item); font-weight: var(--fw-title); }
 .note span { overflow-wrap: anywhere; }
 .noteWarn { background: rgba(180,83,9,.07); border: 1px solid rgba(180,83,9,.3); }
 .noteWarn b { color: #b45309; }
@@ -75,7 +56,7 @@
 /* ── Working ── */
 .working {
   display: flex; align-items: center; gap: 9px;
-  margin: 0 16px; font-size: 13.5px; color: var(--muted);
+  margin: 0 16px; font-size: var(--fs-body); color: var(--muted);
 }
 .spinner {
   width: 14px; height: 14px; flex: none;
@@ -95,8 +76,8 @@
   border: 1px dashed var(--border, rgba(0,0,0,.18));
   border-radius: 12px;
 }
-.empty h2 { margin: 0; font-size: 17px; font-weight: 650; color: var(--text); }
-.empty p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; max-width: 36ch; }
+.empty h2 { margin: 0; font-size: var(--fs-head); font-weight: var(--fw-title); color: var(--text); }
+.empty p { margin: 0; color: var(--muted); font-size: var(--fs-item); line-height: 1.5; max-width: 36ch; }
 .emptyActions {
   width: 100%; margin-top: 8px;
   display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
@@ -129,10 +110,10 @@
   padding: 12px 14px;
   border-bottom: 1px solid var(--border, rgba(0,0,0,.08));
 }
-.paneTitle { margin: 0; font-size: 15px; font-weight: 650; color: var(--text); }
+.paneTitle { margin: 0; font-size: var(--fs-section); font-weight: var(--fw-title); color: var(--text); }
 .paneBody { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
 .paneBody + .paneBody { border-top: 1px dashed var(--border, rgba(0,0,0,.14)); }
-.paneBlank { margin: 0; padding: 18px 14px; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+.paneBlank { margin: 0; padding: 18px 14px; color: var(--muted); font-size: var(--fs-body); line-height: 1.5; }
 .paneFoot {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   padding: 10px 14px;
@@ -145,7 +126,7 @@
 .pill {
   display: inline-block;
   padding: 3px 9px; border-radius: 999px;
-  font-size: 11.5px; font-weight: 600; letter-spacing: .02em;
+  font-size: var(--fs-label); font-weight: var(--fw-label); letter-spacing: .02em;
   background: var(--bg2); color: var(--muted);
   border: 1px solid var(--border, rgba(0,0,0,.12));
   white-space: nowrap;
@@ -164,19 +145,19 @@
 }
 .swHead { display: flex; align-items: flex-start; gap: 10px; }
 .swWho { flex: 1; min-width: 0; }
-.swWho h3 { margin: 0; font-size: 16px; font-weight: 650; color: var(--text); overflow-wrap: anywhere; }
-.swWho p { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); }
+.swWho h3 { margin: 0; font-size: var(--fs-section); font-weight: var(--fw-title); color: var(--text); overflow-wrap: anywhere; }
+.swWho p { margin: 2px 0 0; font-size: var(--fs-sub); color: var(--muted); }
 .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 
 .says { display: flex; flex-direction: column; gap: 2px; }
 .k {
   margin: 0;
-  font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase;
-  color: var(--muted); font-weight: 600;
+  font-size: var(--fs-label); letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted); font-weight: var(--fw-label);
 }
-.saysModel { font-size: 15px; font-weight: 650; color: var(--text); overflow-wrap: anywhere; }
-.dim { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
-.unstated { font-style: italic; font-weight: 400; color: var(--muted); }
+.saysModel { font-size: var(--fs-section); font-weight: var(--fw-title); color: var(--text); overflow-wrap: anywhere; }
+.dim { font-size: var(--fs-sub); color: var(--muted); overflow-wrap: anywhere; }
+.unstated { font-style: italic; font-weight: var(--fw-body); color: var(--muted); }
 
 /* The list and the picture write the same value; both live on one line. */
 .matchCell { display: flex; gap: 8px; align-items: stretch; }
@@ -186,7 +167,7 @@
   border: 1px solid var(--border, rgba(0,0,0,.22));
   border-radius: 10px;
   background: var(--bg); color: var(--text);
-  font-size: 16px;   /* 16px or iOS zooms the page on focus */
+  font-size: var(--fs-section);   /* 16px or iOS zooms the page on focus */
 }
 .select:disabled { opacity: .5; }
 .pickBtn {
@@ -196,7 +177,7 @@
   border-radius: 10px;
   background: transparent; border: 1px solid var(--border, rgba(0,0,0,.22));
   color: var(--text);
-  font-size: 14px; font-weight: 600;
+  font-size: var(--fs-item); font-weight: var(--fw-label);
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 .pickBtn:disabled { opacity: .5; cursor: default; }
@@ -223,8 +204,8 @@
 
 .rackSide { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 .listSide { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
-.rackHint { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
-.rackWarn { margin: 0; font-size: 12.5px; line-height: 1.45; color: #b45309; font-weight: 600; }
+.rackHint { margin: 0; font-size: var(--fs-sub); line-height: 1.45; color: var(--muted); }
+.rackWarn { margin: 0; font-size: var(--fs-sub); line-height: 1.45; color: #b45309; font-weight: var(--fw-label); }
 
 /* The switch the picture is showing. */
 .swOn { border-color: var(--text); box-shadow: 0 0 0 1px var(--text) inset; }
@@ -235,7 +216,7 @@
 .conf {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 3px 10px; border-radius: 999px;
-  font-size: 13px; font-weight: 650;
+  font-size: var(--fs-body); font-weight: var(--fw-title);
   border: 1px solid var(--border, rgba(0,0,0,.14));
   background: var(--bg2); color: var(--text);
 }
@@ -255,10 +236,10 @@
 .barOn { opacity: 1; }
 .barOff { opacity: .22; }
 
-.why { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text); }
+.why { margin: 0; font-size: var(--fs-body); line-height: 1.5; color: var(--text); }
 .whyDetail {
   margin: 0;
-  font-family: var(--mono); font-size: 12px; line-height: 1.45;
+  font-family: var(--mono); font-size: var(--fs-mono); line-height: 1.45;
   color: var(--muted); overflow-wrap: anywhere;
 }
 .advice {
@@ -266,10 +247,10 @@
   display: flex; flex-direction: column; gap: 3px;
   border-radius: 10px;
   background: rgba(180,83,9,.07); border: 1px solid rgba(180,83,9,.28);
-  font-size: 13px; line-height: 1.5; color: var(--text);
+  font-size: var(--fs-body); line-height: 1.5; color: var(--text);
 }
-.advice b { font-size: 12px; font-weight: 650; color: #b45309; }
-.settledLine { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+.advice b { font-size: var(--fs-sub); font-weight: var(--fw-title); color: #b45309; }
+.settledLine { margin: 0; font-size: var(--fs-sub); line-height: 1.45; color: var(--muted); }
 
 /* ── Confirming, one switch at a time ── */
 .confirmRow {
@@ -277,11 +258,11 @@
   padding-top: 10px;
   border-top: 1px dashed var(--border, rgba(0,0,0,.16));
 }
-.confirmHint { margin: 0; flex: 1; min-width: 140px; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+.confirmHint { margin: 0; flex: 1; min-width: 140px; font-size: var(--fs-sub); line-height: 1.45; color: var(--muted); }
 .confirmedLine {
   margin: 0; flex: 1; min-width: 140px;
   display: flex; align-items: baseline; gap: 6px;
-  font-size: 13px; line-height: 1.45; color: #0f7b4f; font-weight: 600;
+  font-size: var(--fs-body); line-height: 1.45; color: #0f7b4f; font-weight: var(--fw-label);
 }
 
 /* ── Summary strip: the outcome in one glance ── */
@@ -296,14 +277,14 @@
   background: var(--bg);
 }
 .summary b {
-  font-size: 22px; font-weight: 700; letter-spacing: -.02em;
+  font-size: var(--fs-page); font-weight: var(--fw-title); letter-spacing: -.02em;
   color: var(--text); line-height: 1.1; font-variant-numeric: tabular-nums;
 }
 .summary span {
-  font-size: 11.5px; letter-spacing: .04em; text-transform: uppercase;
+  font-size: var(--fs-label); letter-spacing: .04em; text-transform: uppercase;
   color: var(--muted); margin-top: 2px;
 }
-.summary small { font-size: 11.5px; color: var(--muted); margin-top: 4px; overflow-wrap: anywhere; }
+.summary small { font-size: var(--fs-label); color: var(--muted); margin-top: 4px; overflow-wrap: anywhere; }
 
 /* ── What will be written: a manifest, read down the left edge for a device
    and across for what it gets ── */
@@ -316,19 +297,19 @@
 .writeDev {
   padding: 6px 12px;
   background: var(--bg2);
-  font-size: 12.5px; font-weight: 650; color: var(--text);
+  font-size: var(--fs-sub); font-weight: var(--fw-title); color: var(--text);
   border-bottom: 1px solid var(--border, rgba(0,0,0,.08));
   overflow-wrap: anywhere;
 }
 .writeRow {
   display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
   padding: 6px 12px;
-  font-size: 13.5px;
+  font-size: var(--fs-body);
 }
 .writeRow + .writeRow { border-top: 1px solid var(--border, rgba(0,0,0,.08)); }
-.writeField { flex: none; width: 11ch; font-size: 12px; color: var(--muted); }
+.writeField { flex: none; width: 11ch; font-size: var(--fs-sub); color: var(--muted); }
 .writeVal { flex: 1; min-width: 0; font-family: var(--mono); color: var(--text); overflow-wrap: anywhere; }
-.writeWas { flex: none; font-size: 12px; color: var(--muted); }
+.writeWas { flex: none; font-size: var(--fs-sub); color: var(--muted); }
 
 .cables {
   list-style: none; margin: 0; padding: 0;
@@ -339,18 +320,18 @@
 .cable {
   display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px;
   padding: 8px 12px;
-  font-size: 13px; color: var(--text);
+  font-size: var(--fs-body); color: var(--text);
 }
 .cable + .cable { border-top: 1px solid var(--border, rgba(0,0,0,.08)); }
 .cable .mono { overflow-wrap: anywhere; }
 
-.dimText { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+.dimText { margin: 0; font-size: var(--fs-body); line-height: 1.5; color: var(--muted); }
 
 /* ── Buttons ── */
 .primary, .secondary {
   flex: 1 1 auto; min-height: 44px;
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  border-radius: 10px; font-size: 14.5px; font-weight: 600;
+  border-radius: 10px; font-size: var(--fs-item); font-weight: var(--fw-label);
   cursor: pointer; -webkit-tap-highlight-color: transparent;
   padding: 0 16px;
   text-decoration: none;
@@ -358,10 +339,10 @@
 .primary { background: #121212; border: 1px solid #121212; color: #fff; }
 .secondary { background: transparent; border: 1px solid var(--border, rgba(0,0,0,.22)); color: var(--text); }
 .primary:disabled, .secondary:disabled { opacity: .5; cursor: default; }
-.small { flex: 0 0 auto; min-height: 40px; font-size: 13.5px; padding: 0 14px; }
+.small { flex: 0 0 auto; min-height: 40px; font-size: var(--fs-body); padding: 0 14px; }
 
 .nav { display: flex; gap: 10px; flex-wrap: wrap; }
-.navHint { margin: 0; width: 100%; font-size: 12.5px; color: var(--muted); }
+.navHint { margin: 0; width: 100%; font-size: var(--fs-sub); color: var(--muted); }
 
 /* ══════════════════════════════════════════════════════════════════════════
    Pick a device off the photograph.
@@ -406,8 +387,8 @@
   border-bottom: 1px solid var(--border, rgba(0,0,0,.12));
 }
 .pickTitle { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.pickTitle b { font-size: 16px; font-weight: 650; color: var(--text); overflow-wrap: anywhere; }
-.pickTitle span { font-size: 12.5px; color: var(--muted); }
+.pickTitle b { font-size: var(--fs-section); font-weight: var(--fw-title); color: var(--text); overflow-wrap: anywhere; }
+.pickTitle span { font-size: var(--fs-sub); color: var(--muted); }
 .pickClose {
   margin-left: auto; flex: none;
   width: 38px; height: 38px;
@@ -435,7 +416,7 @@
 .stageEmpty {
   margin: 0; padding: 0 16px;
   text-align: center;
-  color: var(--muted); font-size: 13.5px; line-height: 1.5;
+  color: var(--muted); font-size: var(--fs-body); line-height: 1.5;
 }
 /* One element for the photograph and the boxes drawn on it. Sized to the
    stage; the viewBox does the fitting. */
@@ -478,8 +459,8 @@
    eating into it. */
 .devLabel {
   font-family: var(--mono);
-  font-size: 15px;   /* overridden inline, in image pixels */
-  font-weight: 600;
+  font-size: var(--fs-section);   /* overridden inline, in image pixels */
+  font-weight: var(--fw-label);
   fill: #ffffff;
   stroke: rgba(0, 0, 0, 0.75);
   stroke-width: 4;
@@ -496,6 +477,6 @@
 }
 .pickHint {
   flex: 1; min-width: 0;
-  font-size: 13px; color: var(--text);
+  font-size: var(--fs-body); color: var(--text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }

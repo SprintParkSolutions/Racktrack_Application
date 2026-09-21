@@ -50,11 +50,11 @@
    Four steps. Labels are the small uppercase key, meta is secondary
    text, body is readable copy, and only headings go large. */
 .mkt-label {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.10em;
+  font-size: var(--fs-micro); font-weight: var(--fw-title); letter-spacing: 0.10em;
   text-transform: uppercase; color: var(--mkt-muted);
 }
-.mkt-meta  { font-size: 12px; color: var(--mkt-muted); line-height: 1.45; }
-.mkt-body  { font-size: 13.5px; color: var(--mkt-ink); line-height: 1.55; }
+.mkt-meta  { font-size: var(--fs-sub); color: var(--mkt-muted); line-height: 1.45; }
+.mkt-body  { font-size: var(--fs-body); color: var(--mkt-ink); line-height: 1.55; }
 .mkt-mono  {
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   font-variant-numeric: tabular-nums;
@@ -71,7 +71,7 @@
   border: 1px solid var(--mkt-line);
   background: var(--mkt-surface);
   color: var(--mkt-ink);
-  font: inherit; font-size: 12.5px; font-weight: 600;
+  font: inherit; font-size: var(--fs-sub); font-weight: var(--fw-label);
   white-space: nowrap; cursor: pointer; text-decoration: none;
   transition: var(--mkt-t);
 }
@@ -94,14 +94,14 @@
   background: var(--mkt-surface);
 }
 
-.mkt-btn--sm    { height: 28px; padding: 0 10px; font-size: 11.5px; }
+.mkt-btn--sm    { height: 28px; padding: 0 10px; font-size: var(--fs-label); }
 .mkt-btn--block { width: 100%; }
-.mkt-btn--tall  { height: 42px; font-size: 13.5px; }
+.mkt-btn--tall  { height: 42px; font-size: var(--fs-body); }
 
 /* Quiet text button - for tertiary actions like "Report listing". */
 .mkt-linkBtn {
   background: none; border: none; padding: 0;
-  font: inherit; font-size: 12px; font-weight: 500;
+  font: inherit; font-size: var(--fs-sub); font-weight: var(--fw-label);
   color: var(--mkt-muted); cursor: pointer;
   text-decoration: underline; text-underline-offset: 3px;
   transition: color .14s ease;
@@ -116,7 +116,7 @@
   border: 1px solid var(--mkt-line);
   background: var(--mkt-surface);
   color: var(--mkt-ink);
-  font: inherit; font-size: 16px;
+  font: inherit; font-size: var(--fs-section);
   transition: var(--mkt-t);
 }
 .mkt-field::placeholder { color: var(--mkt-muted); opacity: 0.8; }
@@ -130,7 +130,7 @@ select.mkt-field {
 }
 
 .mkt-fieldGroup { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.mkt-hint { font-size: 11.5px; color: var(--mkt-muted); line-height: 1.45; }
+.mkt-hint { font-size: var(--fs-label); color: var(--mkt-muted); line-height: 1.45; }
 
 /* ── Surfaces ────────────────────────────────────────────────────────
    One card. Hover darkens the hairline to ink - the whole interaction
@@ -152,7 +152,7 @@ select.mkt-field {
   gap: 12px; flex-wrap: wrap; margin-bottom: 10px;
 }
 .mkt-sectionTitle {
-  margin: 0; font-size: 14px; font-weight: 700;
+  margin: 0; font-size: var(--fs-item); font-weight: var(--fw-title);
   letter-spacing: -0.01em; color: var(--mkt-ink);
 }
 
@@ -163,7 +163,7 @@ select.mkt-field {
   height: 22px; padding: 0 9px; border-radius: 999px;
   border: 1px solid var(--mkt-line);
   background: var(--mkt-surface);
-  font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em;
+  font-size: var(--fs-micro); font-weight: var(--fw-title); letter-spacing: 0.04em;
   text-transform: uppercase; white-space: nowrap; color: var(--mkt-ink);
 }
 .mkt-pill__dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
@@ -190,7 +190,7 @@ select.mkt-field {
   height: 30px; padding: 0 14px;
   border: none; border-radius: 6px; background: transparent;
   color: var(--mkt-muted);
-  font: inherit; font-size: 12.5px; font-weight: 600;
+  font: inherit; font-size: var(--fs-sub); font-weight: var(--fw-label);
   cursor: pointer; white-space: nowrap;
   transition: var(--mkt-t);
 }
@@ -200,7 +200,7 @@ select.mkt-field {
   background: rgba(18, 18, 18, 0.06);
   color: var(--mkt-ink);
   box-shadow: inset 0 0 0 1.5px var(--mkt-ink);
-  font-weight: 700;
+  font-weight: var(--fw-title);
 }
 .mkt-segment:disabled { opacity: 0.4; cursor: not-allowed; }
 
@@ -210,7 +210,7 @@ select.mkt-field {
   padding: 11px 14px; border-radius: var(--mkt-r-sm);
   border: 1px solid var(--mkt-line);
   background: var(--mkt-surface);
-  font-size: 12.5px; line-height: 1.5; color: var(--mkt-ink);
+  font-size: var(--fs-sub); line-height: 1.5; color: var(--mkt-ink);
 }
 .mkt-banner--error   { border-color: rgba(180, 35, 24, 0.35); color: var(--mkt-neg); }
 .mkt-banner--success { border-color: rgba(22, 163, 74, 0.35); color: var(--mkt-pos); }
@@ -223,8 +223,8 @@ select.mkt-field {
   background: var(--mkt-surface);
 }
 .mkt-empty__icon  { color: var(--mkt-ink); opacity: 0.18; }
-.mkt-empty__title { margin: 0; font-size: 14px; font-weight: 700; color: var(--mkt-ink); }
-.mkt-empty__text  { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--mkt-muted); max-width: 42ch; }
+.mkt-empty__title { margin: 0; font-size: var(--fs-item); font-weight: var(--fw-title); color: var(--mkt-ink); }
+.mkt-empty__text  { margin: 0; font-size: var(--fs-sub); line-height: 1.55; color: var(--mkt-muted); max-width: 42ch; }
 
 .mkt-spinner {
   width: 22px; height: 22px; border-radius: 50%;
@@ -264,18 +264,18 @@ select.mkt-field {
   margin-top: -1px;
   margin-inline-start: -1px;
 }
-.mkt-fact__key { font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--mkt-muted); }
-.mkt-fact__val { font-size: 13px; font-weight: 600; color: var(--mkt-ink); overflow-wrap: anywhere; }
+.mkt-fact__key { font-size: var(--fs-micro); font-weight: var(--fw-title); letter-spacing: 0.10em; text-transform: uppercase; color: var(--mkt-muted); }
+.mkt-fact__val { font-size: var(--fs-body); font-weight: var(--fw-label); color: var(--mkt-ink); overflow-wrap: anywhere; }
 
 /* A single-column key→value row, right-aligned value (totals, receipts). */
 .mkt-row {
   display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
-  padding: 9px 0; font-size: 13px;
+  padding: 9px 0; font-size: var(--fs-body);
   border-bottom: 1px solid var(--mkt-line);
 }
 .mkt-row:last-child { border-bottom: 0; }
 .mkt-row__key { color: var(--mkt-muted); }
-.mkt-row__val { font-weight: 600; color: var(--mkt-ink); text-align: right; overflow-wrap: anywhere; }
-.mkt-row--total { padding-top: 13px; font-size: 15px; }
-.mkt-row--total .mkt-row__key { color: var(--mkt-ink); font-weight: 600; }
-.mkt-row--total .mkt-row__val { font-weight: 700; font-size: 18px; }
+.mkt-row__val { font-weight: var(--fw-label); color: var(--mkt-ink); text-align: right; overflow-wrap: anywhere; }
+.mkt-row--total { padding-top: 13px; font-size: var(--fs-section); }
+.mkt-row--total .mkt-row__key { color: var(--mkt-ink); font-weight: var(--fw-label); }
+.mkt-row--total .mkt-row__val { font-weight: var(--fw-title); font-size: var(--fs-head); }

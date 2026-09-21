@@ -5,6 +5,7 @@ import { useConnections } from '../ConnectionsContext.jsx';
 import { TYPE_INFO } from '../utils/connectionsApi';
 import { apiUrl, authFetch } from '../utils/api';
 import ThemeToggle from '../components/ThemeToggle.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 
 const DEFAULT_TYPE = 'servicenow';
 
@@ -169,19 +170,7 @@ export default function ConnectionsPage() {
   return (
     <div className={`page page-full ${styles.page}`}>
       {/* ─── Header band ─── */}
-      <header className={styles.header}>
-        <button
-          type="button"
-          className={styles.backBtn}
-          onClick={() => navigate(-1)}
-          aria-label="Back">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-        </button>
-        <h1 className={styles.title}>Data Sources</h1>
-        <ThemeToggle />
-      </header>
+      <PageHeader title="Data Sources" back={() => navigate(-1)} action={<ThemeToggle />} />
 
       {error && <p className={styles.bad}>{error}</p>}
       {refreshing && (

@@ -18,7 +18,7 @@
   padding: 8px 14px;
   background: linear-gradient(90deg, rgba(0,0,0,0.15), rgba(0,0,0,0.05));
   border-bottom: 1px solid rgba(0,0,0,0.30);
-  font-size: 12px;
+  font-size: var(--fs-sub);
   color: #1c1c1c;
   flex-shrink: 0;
 }
@@ -30,30 +30,12 @@
 .banner > span:nth-child(2) { flex: 1; }
 .bannerClose {
   background: transparent; border: 0; color: inherit;
-  cursor: pointer; font-size: 18px; line-height: 1;
+  cursor: pointer; font-size: var(--fs-head); line-height: 1;
   padding: 0 6px; opacity: 0.6;
 }
 .bannerClose:hover { opacity: 1; }
 
-/* ─── Header ───────────────────────────────────────────────────────── */
-.header {
-  display: flex; align-items: center; gap: 10px;
-  padding: 12px 14px;
-  border-bottom: 1px solid rgba(0,0,0,0.10);
-  flex-shrink: 0;
-}
-:global([data-theme="dark"]) .header { border-bottom-color: rgba(255,255,255,0.06); }
-.header h2 {
-  margin: 0; font-size: 15px; font-weight: 700;
-  color: #000000;
-  flex: 1; min-width: 0;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-:global([data-theme="dark"]) .header h2 {
-  background: linear-gradient(135deg, #000000 0%, #474747 100%);
-  -webkit-background-clip: text; background-clip: text;
-}
-.crumb { font-weight: 500; font-size: 12px; opacity: 0.7; -webkit-text-fill-color: currentColor; }
+.crumb { font-weight: var(--fw-label); font-size: var(--fs-sub); opacity: 0.7; -webkit-text-fill-color: currentColor; }
 
 .back, .treeToggleBtn {
   width: 32px; height: 32px; border-radius: 7px;
@@ -61,7 +43,7 @@
   border: 1px solid rgba(0,0,0,0.20);
   color: #000000;
   display: flex; align-items: center; justify-content: center;
-  font-size: 17px; cursor: pointer; flex-shrink: 0;
+  font-size: var(--fs-head); cursor: pointer; flex-shrink: 0;
 }
 :global([data-theme="dark"]) .back, :global([data-theme="dark"]) .treeToggleBtn {
   background: rgba(0,0,0,0.10);
@@ -76,7 +58,7 @@
 }
 .srcBtn {
   background: transparent; color: inherit; border: none;
-  padding: 5px 10px; font-size: 11px; font-weight: 600; cursor: pointer;
+  padding: 5px 10px; font-size: var(--fs-label); font-weight: var(--fw-label); cursor: pointer;
 }
 .srcBtn:not(:last-child) { border-right: 1px solid rgba(0,0,0,0.22); }
 .srcBtnActive { background: rgba(0,0,0,0.15); color: #000000; }
@@ -87,14 +69,14 @@
 /* Summary pill */
 .summary { display: flex; gap: 5px; flex-shrink: 0; }
 .sm {
-  font-size: 11px; padding: 4px 8px; border-radius: 999px;
+  font-size: var(--fs-label); padding: 4px 8px; border-radius: 999px;
   background: rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.06);
   white-space: nowrap;
 }
 :global([data-theme="dark"]) .sm {
   background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08);
 }
-.sm b { font-weight: 700; margin-right: 3px; }
+.sm b { font-weight: var(--fw-title); margin-right: 3px; }
 .smOk { color: #1c1c1c; }  .smWarn { color: #1c1c1c; }
 .smMute { color: #1c1c1c; } .smErr  { color: #1c1c1c; }
 :global([data-theme="dark"]) .smOk { color: #474747; }
@@ -123,11 +105,11 @@
   background: rgba(255,255,255,0.02);
 }
 .treeHead {
-  font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+  font-size: var(--fs-label); font-weight: var(--fw-title); letter-spacing: 0.5px;
   text-transform: uppercase; opacity: 0.55;
   padding: 12px 14px 6px;
 }
-.treeBody { padding: 4px 0 14px; font-size: 13px; }
+.treeBody { padding: 4px 0 14px; font-size: var(--fs-body); }
 /* Caret and row are two separate buttons side by side - the indent lives on
    the caret so the row still lines up the way the old padding-left did. */
 .treeRowWrap { display: flex; align-items: center; }
@@ -144,26 +126,26 @@
 .treeRow:hover { background: rgba(0,0,0,0.07); }
 .treeRowSel {
   background: rgba(0,0,0,0.14);
-  color: #000000; font-weight: 600;
+  color: #000000; font-weight: var(--fw-label);
 }
 :global([data-theme="dark"]) .treeRowSel {
   background: rgba(0,0,0,0.16); color: #c6c6c6;
 }
 .treeCaret {
   background: transparent; border: 0; color: inherit;
-  width: 16px; height: 16px; cursor: pointer; font-size: 10px;
+  width: 16px; height: 16px; cursor: pointer; font-size: var(--fs-micro);
   padding: 0; opacity: 0.65;
 }
 .treeCaretBlank { display: inline-block; width: 16px; height: 16px; }
 .treeIcon {
   display: inline-block; width: 16px; text-align: center;
-  opacity: 0.55; font-size: 11px;
+  opacity: 0.55; font-size: var(--fs-label);
 }
 .treeIcon[data-type="rack"] { color: #000000; opacity: 0.9; }
 .treeLabel {
   flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.treeCount { font-size: 11px; opacity: 0.5; }
+.treeCount { font-size: var(--fs-label); opacity: 0.5; }
 
 /* ─── Canvas wrapper ───────────────────────────────────────────────── */
 .canvasWrap {
@@ -208,7 +190,7 @@
   opacity: 0.7;
   border: 0;
   cursor: pointer;
-  font-size: 13px; font-weight: 600;
+  font-size: var(--fs-body); font-weight: var(--fw-label);
   font-family: inherit;
   transition: background 0.15s, color 0.15s, opacity 0.15s;
 }
@@ -221,7 +203,7 @@
 }
 .modeBtnActive:hover { background: #000000; }
 .modeBarHelp {
-  font-size: 12px;
+  font-size: var(--fs-sub);
   opacity: 0.6;
   padding: 0 4px;
   font-style: italic;
@@ -243,11 +225,11 @@
 }
 .floorBlockHead {
   display: flex; align-items: center; gap: 8px;
-  font-size: 13px; margin-bottom: 8px;
+  font-size: var(--fs-body); margin-bottom: 8px;
 }
 .floorBlockHead span:not(.floorBlockMeta) { opacity: 0.4; }
 .floorBlockMeta {
-  margin-left: auto; font-size: 11px; opacity: 0.55;
+  margin-left: auto; font-size: var(--fs-label); opacity: 0.55;
   background: rgba(0,0,0,0.04); padding: 2px 8px; border-radius: 999px;
 }
 :global([data-theme="dark"]) .floorBlockMeta { background: rgba(255,255,255,0.05); }
@@ -266,14 +248,14 @@
 .gridLine { stroke: rgba(0,0,0,0.05); stroke-width: 0.01; }
 :global([data-theme="dark"]) .gridLine { stroke: rgba(255,255,255,0.04); }
 .rowLabel {
-  font-size: 0.35px; font-weight: 600;
+  font-size: 0.35px; font-weight: var(--fw-label);
   fill: rgba(0,0,0,0.4); font-family: system-ui, sans-serif;
 }
 :global([data-theme="dark"]) .rowLabel { fill: rgba(255,255,255,0.45); }
 .rackG { cursor: pointer; }
 .rackG:hover rect { stroke-width: 0.10; }
 .rackLbl {
-  font-size: 0.16px; font-weight: 700; fill: #ffffff;
+  font-size: 0.16px; font-weight: var(--fw-title); fill: #ffffff;
   pointer-events: none;
 }
 
@@ -314,7 +296,7 @@
   stroke: #c6c6c6;
 }
 .treeNodeText {
-  font-size: 11px; font-weight: 600;
+  font-size: var(--fs-label); font-weight: var(--fw-label);
   fill: currentColor;
   pointer-events: none;
 }
@@ -342,11 +324,11 @@
 }
 .table {
   width: 100%; border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--fs-body);
 }
 .table th {
   text-align: left;
-  font-weight: 600; font-size: 11px;
+  font-weight: var(--fw-label); font-size: var(--fs-label);
   text-transform: uppercase; letter-spacing: 0.5px;
   opacity: 0.6;
   padding: 10px 12px;
@@ -419,12 +401,12 @@
   border-radius: 999px;
   padding: 8px 18px;
   display: inline-flex; align-items: center; gap: 12px;
-  font-size: 12px;
+  font-size: var(--fs-sub);
   backdrop-filter: blur(8px);
   z-index: 2;
   border: 1px solid rgba(255,255,255,0.05);
 }
-.r3dCaptionLabel { font-weight: 700; color: #ffffff; }
+.r3dCaptionLabel { font-weight: var(--fw-title); color: #ffffff; }
 .r3dCaptionMeta { opacity: 0.65; }
 
 /* ─── Detail panel ─────────────────────────────────────────────────── */
@@ -445,21 +427,21 @@
   position: absolute; top: 10px; right: 10px;
   width: 28px; height: 28px; border-radius: 7px;
   background: rgba(0,0,0,0.05); border: 0;
-  cursor: pointer; font-size: 18px; color: inherit;
+  cursor: pointer; font-size: var(--fs-head); color: inherit;
 }
 :global([data-theme="dark"]) .panelClose { background: rgba(255,255,255,0.06); }
 .panelHead { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .panelDot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
-.panelTitle { font-weight: 700; font-size: 15px; }
-.panelSub { font-size: 10px; opacity: 0.55; font-family: ui-monospace, monospace; word-break: break-all; }
+.panelTitle { font-weight: var(--fw-title); font-size: var(--fs-section); }
+.panelSub { font-size: var(--fs-micro); opacity: 0.55; font-family: ui-monospace, monospace; word-break: break-all; }
 .kv {
   display: flex; justify-content: space-between; gap: 12px;
-  padding: 7px 0; font-size: 12px;
+  padding: 7px 0; font-size: var(--fs-sub);
   border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 :global([data-theme="dark"]) .kv { border-bottom-color: rgba(255,255,255,0.05); }
 .kv span { opacity: 0.55; }
-.kv b { font-weight: 600; text-align: right; }
+.kv b { font-weight: var(--fw-label); text-align: right; }
 .notes {
   margin-top: 12px; padding: 10px; border-radius: 8px;
   background: rgba(0,0,0,0.08);
@@ -470,17 +452,17 @@
   border-color: rgba(0,0,0,0.18);
 }
 .notesTitle {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+  font-size: var(--fs-micro); font-weight: var(--fw-title); letter-spacing: 0.5px;
   text-transform: uppercase; opacity: 0.7; margin-bottom: 6px;
 }
-.notes ul { margin: 0; padding-left: 16px; font-size: 11px; line-height: 1.5; }
+.notes ul { margin: 0; padding-left: 16px; font-size: var(--fs-label); line-height: 1.5; }
 
 /* ─── Footer legend ────────────────────────────────────────────────── */
 .legend {
   display: flex; flex-wrap: wrap; gap: 14px;
   padding: 8px 16px;
   border-top: 1px solid #f0f0f0;
-  font-size: 11px;
+  font-size: var(--fs-label);
   background: #ffffff;
   flex-shrink: 0;
 }
@@ -494,7 +476,7 @@
 .empty {
   flex: 1;
   display: flex; align-items: center; justify-content: center;
-  font-size: 13px; opacity: 0.55;
+  font-size: var(--fs-body); opacity: 0.55;
   padding: 40px;
 }
 

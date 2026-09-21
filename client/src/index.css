@@ -158,6 +158,81 @@
   --font: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
+  /* ══ TYPE - eight sizes for words, one for the mono, three weights ═════
+     Before this block the app set 83 different font sizes and 15 different
+     weights across 68 stylesheets, which is why no two headers looked like
+     the same product. Every size below is one the app already used a lot, so
+     adopting the scale moves type by half a pixel in most places and never
+     more than two.
+
+     Each size carries the line-height it wants. Use the pair.
+
+       --fs-page     a page title - the one heading that names the screen
+       --fs-head     a header title, and the heading of a panel that leads one
+       --fs-section  a section heading inside a page
+       --fs-item     the name of a row, a card or a field
+       --fs-body     running text, buttons, inputs - the default
+       --fs-sub      a supporting line under a title, a caption, a hint
+       --fs-label    a small label in capitals, a tag, a nav label
+       --fs-micro    the smallest mark that still has to be read: a badge,
+                     a count, a rack-unit number
+       --fs-mono     rack ids, shelves, ports and incident numbers, in
+                     --mono. It sits at --fs-sub because Geist Mono runs
+                     wider than Geist and matches it a size down.
+
+     Two places do NOT draw from this scale, on purpose: display numbers
+     above 22px (the splash, a hero count) and text inside an SVG viewBox,
+     where the size is in user units, not pixels. ══════════════════════ */
+  --fs-page:    22px;   --lh-page:    1.2;
+  --fs-head:    18px;   --lh-head:    1.25;
+  --fs-section: 15px;   --lh-section: 1.3;
+  --fs-item:    14px;   --lh-item:    1.35;
+  --fs-body:    13px;   --lh-body:    1.5;
+  --fs-sub:     12px;   --lh-sub:     1.4;
+  --fs-label:   11px;   --lh-label:   1.2;
+  --fs-micro:   10px;   --lh-micro:   1.1;
+  --fs-mono:    12px;   --lh-mono:    1.35;
+
+  /* Three weights, named for the job. 400 is the only one that reads as
+     text; 600 marks a name or a label; 700 is a heading or a number the eye
+     has to land on first. There is no 500, 650 or 800 any more - those were
+     the same intention typed four ways. */
+  --fw-body:  400;
+  --fw-label: 600;
+  --fw-title: 700;
+
+  /* The capitals treatment that goes with --fs-label and --fs-micro. Small
+     uppercase needs the extra tracking or it sets as a solid block. */
+  --ls-caps: 0.06em;
+
+  /* ══ THE BOTTOM BAR ═══════════════════════════════════════════════════
+     The app's bar (BottomNav) and the rack's tabs (ScanTabBar) are one bar
+     drawn twice, so both read these and cannot drift apart again. They were a
+     23px bare icon against a 32px filled chip with two different active
+     marks, which is why walking into a rack read as changing app.
+
+     It floats: a white pill held in from both edges with a gap under it,
+     lifted off the page by a soft shadow, four items around a centre action
+     that stands proud of the pill and carries the one thing that surface is
+     for - taking a scan in the app, looking up a port in a rack.
+     ══════════════════════════════════════════════════════════════════════ */
+  --nav-h:      60px;   /* the pill itself */
+  --nav-inset:  12px;   /* how far it is held in from the left and right */
+  --nav-gap:    10px;   /* the gap under it, above the safe-area inset */
+  --nav-lift:   14px;   /* how far the centre action stands above the pill */
+  --nav-glyph:  21px;   /* an item's icon */
+  --nav-act:    54px;   /* the centre action - bigger than an item, and round */
+  /* Soft, wide, low-contrast, and true greyscale like every other shadow in
+     this file. A floating surface casts downward, so this one does not take
+     the top-left light of --lift. */
+  --nav-shadow: 0 8px 24px rgba(17, 17, 17, 0.10), 0 2px 6px rgba(17, 17, 17, 0.05);
+  /* What a page keeps clear at the bottom so nothing ends up under the bar:
+     the gap below it, the pill, the part of the centre action that stands
+     above the pill, and a little air. Every page's scroll container reserves
+     this - it is the one number to change if the bar ever moves. */
+  --nav-clear:  calc(var(--nav-h) + var(--nav-gap) + var(--nav-lift) + 12px
+                     + env(safe-area-inset-bottom, 0px));
+
   /* Radii - opened back up slightly: soft-depth surfaces want gently
      rounded corners; crisp 4px corners fight the shadow language. */
   --r1: 0.375rem;

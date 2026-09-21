@@ -46,8 +46,8 @@
 
 .eyebrow {
   margin: 0 0 4px;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-title);
   /* Tracking is shared with the step cards in TourOverlay.module.css so the
      small uppercase labels across the tour read as one type system. (This
      used to name .bubbleStepLabel, a class that no longer exists.) */
@@ -58,15 +58,15 @@
 
 .heading {
   margin: 0 0 10px;
-  font-size: 21px;
-  font-weight: 700;
+  font-size: var(--fs-page);
+  font-weight: var(--fw-title);
   letter-spacing: -0.01em;
   color: var(--md-on-surface, #121417);
 }
 
 .body {
   margin: 0 0 20px;
-  font-size: 14px;
+  font-size: var(--fs-item);
   line-height: 1.5;
   color: var(--md-on-surface-variant, #4c4546);
 }

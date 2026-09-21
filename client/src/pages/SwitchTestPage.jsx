@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import ThemeToggle from '../components/ThemeToggle.jsx';
-import { BackIcon } from '../components/BackButton.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 import PlacePicker from '../components/PlacePicker.jsx';
 import { PortHistoryContent } from './PortHistoryPage.jsx';
 import { getJSON, setJSON } from '../utils/safeStorage';
@@ -1405,18 +1405,7 @@ export default function SwitchTestPage() {
 
   return (
     <div className={`page page-full ${styles.page}`}>
-      <header className={styles.header}>
-        <button
-          type="button"
-          className={styles.backBtn}
-          onClick={() => navigate(-1)}
-          aria-label="Back"
-        >
-          <BackIcon />
-        </button>
-        <h1 className={styles.title}>Network</h1>
-        <ThemeToggle />
-      </header>
+      <PageHeader title="Network" back={() => navigate(-1)} action={<ThemeToggle />} />
 
       {/* Two halves of one page: the switches as they are now, and what has
           changed on their ports over time. */}

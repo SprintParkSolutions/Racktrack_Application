@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './HistoryPage.module.css';
+import PageHeader from '../components/PageHeader.jsx';
 import { apiUrl, authFetch } from '../utils/api';
-import BackButton from '../components/BackButton.jsx';
 import { HeaderActions } from '../components/ShellHeader.jsx';
 import Icon from '../components/Icon';
 import AssetImg from '../components/AssetImg';
@@ -200,13 +200,13 @@ export default function HistoryPage() {
         <button className={styles.newScanBtn} onClick={() => navigate('/scan')}>New scan</button>
       </HeaderActions>
 
-      <header className={styles.topbar}>
-        <div className={styles.topbarLeft}>
-          <BackButton fallback="/profile" always />
-          <h1 className={styles.topbarTitle}>Scan history</h1>
-        </div>
-        <span className={styles.countPill}>{scans.length}</span>
-      </header>
+      <PageHeader
+        title="Scan history"
+        backFallback="/profile"
+        backAlways
+        sticky
+        action={<span className={styles.countPill}>{scans.length}</span>}
+      />
 
       <main className={styles.main}>
         {/* ── One panel: the archive's totals over the controls that narrow

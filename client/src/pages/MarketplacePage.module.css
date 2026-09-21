@@ -48,7 +48,7 @@
 .results { display: flex; flex-direction: column; }
 
 .count {
-  margin-left: 10px; font-size: 12px; font-weight: 500;
+  margin-left: 10px; font-size: var(--fs-sub); font-weight: var(--fw-label);
   color: var(--mkt-muted, #717171);
   font-variant-numeric: tabular-nums;
 }
@@ -127,7 +127,7 @@
 
 .cardTitle {
   margin: 0;
-  font-size: 13.5px; font-weight: 650; line-height: 1.3;
+  font-size: var(--fs-body); font-weight: var(--fw-title); line-height: 1.3;
   letter-spacing: -0.005em;
   color: var(--mkt-ink, #121212);
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
@@ -135,7 +135,7 @@
 }
 
 .cardVendor {
-  margin: 0; font-size: 11.5px; line-height: 1.35;
+  margin: 0; font-size: var(--fs-label); line-height: 1.35;
   color: var(--mkt-muted, #717171);
   overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
 }
@@ -145,14 +145,14 @@
   gap: 8px; margin-top: 6px;
 }
 .cardPrice {
-  font-size: 15.5px; font-weight: 700; letter-spacing: -0.015em;
+  font-size: var(--fs-section); font-weight: var(--fw-title); letter-spacing: -0.015em;
   color: var(--mkt-ink, #121212);
   font-variant-numeric: tabular-nums;
 }
-.cardAge { font-size: 11px; color: var(--mkt-muted, #717171); white-space: nowrap; }
+.cardAge { font-size: var(--fs-label); color: var(--mkt-muted, #717171); white-space: nowrap; }
 
 .cardSeller {
-  margin: 0; font-size: 11px; color: var(--mkt-muted, #717171);
+  margin: 0; font-size: var(--fs-label); color: var(--mkt-muted, #717171);
   overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
 }
 
@@ -205,19 +205,19 @@
 .rowInfo { grid-area: info; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .rowTitleLine { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .rowTitle {
-  margin: 0; font-size: 13.5px; font-weight: 650;
+  margin: 0; font-size: var(--fs-body); font-weight: var(--fw-title);
   color: var(--mkt-ink, #121212);
   overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
   min-width: 0;
 }
 .rowMeta {
-  margin: 0; font-size: 11.5px; color: var(--mkt-muted, #717171);
+  margin: 0; font-size: var(--fs-label); color: var(--mkt-muted, #717171);
   overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
 }
 
 .rowPrice {
   grid-area: price; align-self: start;
-  font-size: 14px; font-weight: 700; white-space: nowrap;
+  font-size: var(--fs-item); font-weight: var(--fw-title); white-space: nowrap;
   color: var(--mkt-ink, #121212);
   font-variant-numeric: tabular-nums;
 }
@@ -229,7 +229,7 @@
   margin-top: 6px;
 }
 .rowConfirmText {
-  font-size: 12px; font-weight: 600;
+  font-size: var(--fs-sub); font-weight: var(--fw-label);
   color: var(--mkt-ink, #121212);
 }
 
@@ -304,20 +304,20 @@
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
 }
 .modalTitle {
-  margin: 0; font-size: 20px; font-weight: 700;
+  margin: 0; font-size: var(--fs-head); font-weight: var(--fw-title);
   line-height: 1.25; letter-spacing: -0.02em;
   color: var(--mkt-ink, #121212);
   overflow-wrap: anywhere;
 }
-.modalVendor { margin: -4px 0 0; font-size: 13px; color: var(--mkt-muted, #717171); }
+.modalVendor { margin: -4px 0 0; font-size: var(--fs-body); color: var(--mkt-muted, #717171); }
 .modalPrice {
   margin: 2px 0 4px;
-  font-size: 26px; font-weight: 700; letter-spacing: -0.025em;
+  font-size: 26px; font-weight: var(--fw-title); letter-spacing: -0.025em;
   color: var(--mkt-ink, #121212);
   font-variant-numeric: tabular-nums;
 }
 .modalDesc {
-  margin: 0; font-size: 13.5px; line-height: 1.6;
+  margin: 0; font-size: var(--fs-body); line-height: 1.6;
   color: var(--mkt-ink, #121212);
   white-space: pre-wrap; overflow-wrap: anywhere;
 }
@@ -335,7 +335,7 @@
   border-radius: var(--mkt-r-sm, 8px);
   background: var(--mkt-surface, #ffffff);
 }
-.confirmText { font-size: 12.5px; line-height: 1.5; color: var(--mkt-ink, #121212); }
+.confirmText { font-size: var(--fs-sub); line-height: 1.5; color: var(--mkt-ink, #121212); }
 .confirmBtns { display: flex; gap: 8px; justify-content: flex-end; }
 
 /* Inline report form - replaces window.prompt(). */
@@ -360,7 +360,7 @@
   padding: 22px 0 4px;
 }
 .pageLabel {
-  font-size: 12px; font-weight: 600; min-width: 64px; text-align: center;
+  font-size: var(--fs-sub); font-weight: var(--fw-label); min-width: 64px; text-align: center;
   color: var(--mkt-muted, #717171);
   font-variant-numeric: tabular-nums;
 }
@@ -379,7 +379,7 @@
 }
 .partnerCopy { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .partnerText {
-  margin: 0; font-size: 12.5px; line-height: 1.45;
+  margin: 0; font-size: var(--fs-sub); line-height: 1.45;
   color: var(--mkt-muted, #717171);
 }
 .partnerControls {
@@ -396,5 +396,5 @@
   .partnerControls { justify-content: flex-start; }
   .partnerInput { max-width: none; }
   .modalBody { padding: 16px 16px 22px; }
-  .modalPrice { font-size: 23px; }
+  .modalPrice { font-size: var(--fs-page); }
 }

@@ -39,36 +39,36 @@
 }
 .back { flex: none; width: 44px; height: 44px; margin-left: -12px; display: grid; place-items: center;
         border: none; background: none; color: inherit; cursor: pointer; }
-.title { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+.title { margin: 0; font-size: var(--fs-head); font-weight: var(--fw-title); letter-spacing: -0.01em; }
 
-.busy, .error { margin: 14px var(--gutter); font-size: 14px; }
+.busy, .error { margin: 14px var(--gutter); font-size: var(--fs-item); }
 .busy { color: var(--muted-1); }
 .error { color: var(--bad); }
 
 /* Which rack this is, under the title: the rack's own name in the mono face the
    app uses for ids, and one sentence on how the app knows. */
 .rack { display: grid; gap: 2px; padding: 4px var(--gutter) 2px; }
-.rackName { font-family: var(--mono, ui-monospace, Menlo, monospace); font-size: 19px; font-weight: 700;
+.rackName { font-family: var(--mono, ui-monospace, Menlo, monospace); font-size: var(--fs-head); font-weight: var(--fw-title);
             color: var(--text, #1c1c1c); overflow-wrap: anywhere; }
-.rackUnknown { font-size: 14px; font-weight: 600; color: var(--text, #1c1c1c); }
-.rackWhy, .againstWhy { font-size: 13.5px; color: var(--muted-1); line-height: 1.45; }
+.rackUnknown { font-size: var(--fs-item); font-weight: var(--fw-label); color: var(--text, #1c1c1c); }
+.rackWhy, .againstWhy { font-size: var(--fs-body); color: var(--muted-1); line-height: 1.45; }
 /* What is still open about it: a suggestion nobody has confirmed, a tie, or a
    rack the record has never heard of. */
-.rackOpen { margin-top: 2px; font-size: 13.5px; color: var(--warn); line-height: 1.45; }
+.rackOpen { margin-top: 2px; font-size: var(--fs-body); color: var(--warn); line-height: 1.45; }
 
 /* The last step of all: a person picks from the short list the steps above left. */
 .pick { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--hair); }
-.pickLabel { display: block; margin-bottom: 8px; font-size: 11px; letter-spacing: .08em;
-             text-transform: uppercase; color: var(--muted-2); font-weight: 600; }
+.pickLabel { display: block; margin-bottom: 8px; font-size: var(--fs-label); letter-spacing: .08em;
+             text-transform: uppercase; color: var(--muted-2); font-weight: var(--fw-label); }
 .pickRow { display: flex; flex-wrap: wrap; gap: 8px; }
 .pickBtn {
   flex: 1 1 auto; min-height: 44px; padding: 0 14px; border: 1px solid var(--accent);
   border-radius: 6px; background: var(--bg, #fff); color: var(--accent);
-  font-size: 14.5px; font-weight: 600; font-family: inherit; cursor: pointer;
+  font-size: var(--fs-item); font-weight: var(--fw-label); font-family: inherit; cursor: pointer;
 }
 .pickBtn:disabled { border-color: var(--hair); color: var(--muted-2); cursor: default; }
-.pickNote { display: block; margin-top: 8px; font-size: 12.5px; color: var(--muted-1); line-height: 1.45; }
-.pickError { margin: 8px 0 0; font-size: 13.5px; color: var(--bad); }
+.pickNote { display: block; margin-top: 8px; font-size: var(--fs-sub); color: var(--muted-1); line-height: 1.45; }
+.pickError { margin: 8px 0 0; font-size: var(--fs-body); color: var(--bad); }
 
 /* Every section on this page is closed by one hairline under it, never by a line
    over the next one: a top border and a bottom border used to meet in one place
@@ -77,18 +77,18 @@
 
 /* the answer, before the detail */
 .verdict { padding: 18px var(--gutter) 14px; }
-.verdict h2 { margin: 0 0 4px; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+.verdict h2 { margin: 0 0 4px; font-size: var(--fs-page); font-weight: var(--fw-title); letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
 /* The answer sits a step under the rack's name, which is the headline. */
-.answer { font-size: 16px !important; font-weight: 600 !important; margin: 0 !important; }
-.verdict p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--muted-1); }
-.tick { color: var(--good); font-size: 20px; line-height: 1; }
+.answer { font-size: var(--fs-section) !important; font-weight: var(--fw-label) !important; margin: 0 !important; }
+.verdict p { margin: 0; font-size: var(--fs-item); line-height: 1.5; color: var(--muted-1); }
+.tick { color: var(--good); font-size: var(--fs-head); line-height: 1; }
 
 .waiting, .done { margin: 0; padding: 2px var(--gutter) 14px; border-bottom: 1px solid var(--hair); }
-.waiting h2, .done h2 { margin: 0 0 4px; font-size: 16px; font-weight: 700; }
+.waiting h2, .done h2 { margin: 0 0 4px; font-size: var(--fs-section); font-weight: var(--fw-title); }
 .done h2 { color: var(--good); }
-.waiting p, .done p { margin: 0 0 4px; font-size: 14px; line-height: 1.5; color: var(--muted-1); }
+.waiting p, .done p { margin: 0 0 4px; font-size: var(--fs-item); line-height: 1.5; color: var(--muted-1); }
 /* the one way out: the same check in RackTrack Approvals */
-.track { display: inline-block; margin-top: 4px; font-size: 14px; font-weight: 600;
+.track { display: inline-block; margin-top: 4px; font-size: var(--fs-item); font-weight: var(--fw-label);
          color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
 
 /* Read more: the working, for whoever wants it. Closed by default, so the
@@ -97,7 +97,7 @@
 /* A thumb has to find this, so the line it sits on is 44px tall whatever the
    type does. */
 .more > summary { display: inline-flex; align-items: center; min-height: 44px; list-style: none;
-                  cursor: pointer; font-size: 13px; font-weight: 600; color: var(--accent); }
+                  cursor: pointer; font-size: var(--fs-body); font-weight: var(--fw-label); color: var(--accent); }
 .more > summary::-webkit-details-marker { display: none; }
 /* A small chevron drawn from two borders; it turns over when the section opens. */
 .more > summary::after {
@@ -108,10 +108,10 @@
 .more[open] > summary::after { transform: rotate(-135deg); margin-bottom: -1px; }
 @media (prefers-reduced-motion: reduce) { .more > summary::after { transition: none; } }
 .more > span, .more > ul { display: block; margin-top: 6px; }
-.moreLabel { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); }
-.how { margin: 6px 0 0; padding-left: 18px; font-size: 13.5px; line-height: 1.5; color: var(--muted-1); }
+.moreLabel { font-size: var(--fs-label); letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); }
+.how { margin: 6px 0 0; padding-left: 18px; font-size: var(--fs-body); line-height: 1.5; color: var(--muted-1); }
 .how li { margin-bottom: 2px; }
-.means { margin: 4px 0 0; font-size: 13.5px; line-height: 1.45; color: var(--muted-1); }
+.means { margin: 4px 0 0; font-size: var(--fs-body); line-height: 1.45; color: var(--muted-1); }
 
 /* the differences, as rows - the substance of the page */
 .list { list-style: none; margin: 0; padding: 0; }
@@ -120,20 +120,20 @@
 .item.rejected .what { color: var(--bad); }
 
 .itemTop { display: flex; align-items: baseline; gap: 8px; }
-.name { flex: 1 1 auto; min-width: 0; font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
-.what { flex: none; font-size: 12.5px; font-weight: 600; color: var(--warn); white-space: nowrap; }
+.name { flex: 1 1 auto; min-width: 0; font-size: var(--fs-section); font-weight: var(--fw-label); overflow-wrap: anywhere; }
+.what { flex: none; font-size: var(--fs-sub); font-weight: var(--fw-label); color: var(--warn); white-space: nowrap; }
 
 /* One difference per row, in three fixed columns, so a long value wraps inside
    its own column instead of dropping to the left edge under the field name. */
 .diff { list-style: none; margin: 6px 0 0; padding: 0; }
 .diff li { display: grid; grid-template-columns: 68px minmax(0, 1fr) minmax(0, 1fr); gap: 2px 10px;
-           padding: 2px 0; font-size: 13px; align-items: baseline; }
+           padding: 2px 0; font-size: var(--fs-body); align-items: baseline; }
 .field { font-family: ui-monospace, Menlo, monospace; color: var(--muted-2); overflow-wrap: anywhere; }
 .from { color: var(--muted-1); overflow-wrap: anywhere; }
-.to { color: var(--text, #1c1c1c); font-weight: 600; overflow-wrap: anywhere; }
+.to { color: var(--text, #1c1c1c); font-weight: var(--fw-label); overflow-wrap: anywhere; }
 
-.state { margin: 6px 0 0; font-size: 13px; font-weight: 600; color: var(--muted-1); }
-.finding { margin: 4px 0 0; font-size: 13px; color: var(--good); }
+.state { margin: 6px 0 0; font-size: var(--fs-body); font-weight: var(--fw-label); color: var(--muted-1); }
+.finding { margin: 4px 0 0; font-size: var(--fs-body); color: var(--good); }
 
 /* Before sending: who this drift check will go to - the SPOC of the site, or
    an admin and the reason why. */
@@ -141,51 +141,51 @@
 /* One column, like the rack in the header and the label over the note: a
    label, a name, and what else is known about the person. The name used to sit
    beside the label with the address indented under nothing. */
-.goesTo { display: grid; gap: 2px; padding: 14px var(--gutter) 4px; font-size: 14px; }
-.goesToLabel { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); font-weight: 600; }
-.goesToName { font-weight: 600; }
-.goesToRole { font-size: 13.5px; color: var(--muted-1); }
-.goesToMail { font-size: 13px; color: var(--muted-1);
+.goesTo { display: grid; gap: 2px; padding: 14px var(--gutter) 4px; font-size: var(--fs-item); }
+.goesToLabel { font-size: var(--fs-label); letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); font-weight: var(--fw-label); }
+.goesToName { font-weight: var(--fw-label); }
+.goesToRole { font-size: var(--fs-body); color: var(--muted-1); }
+.goesToMail { font-size: var(--fs-body); color: var(--muted-1);
               font-family: var(--mono, ui-monospace, Menlo, monospace); word-break: break-all; }
-.goesToWhy { font-size: 13.5px; line-height: 1.45; color: var(--muted-1); }
+.goesToWhy { font-size: var(--fs-body); line-height: 1.45; color: var(--muted-1); }
 
 .footer { padding: 14px var(--gutter) 0; }
-.label { display: block; margin-bottom: 6px; font-size: 11px; letter-spacing: .08em;
-         text-transform: uppercase; color: var(--muted-2); font-weight: 600; }
+.label { display: block; margin-bottom: 6px; font-size: var(--fs-label); letter-spacing: .08em;
+         text-transform: uppercase; color: var(--muted-2); font-weight: var(--fw-label); }
 .textarea {
-  width: 100%; min-height: 72px; resize: vertical; padding: 10px 12px; font-size: 15px;
+  width: 100%; min-height: 72px; resize: vertical; padding: 10px 12px; font-size: var(--fs-section);
   font-family: inherit; border: 1px solid var(--hair); border-radius: 6px;
   background: var(--bg, #fff); color: inherit;
 }
 .textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
 .primary {
   width: 100%; margin-top: 12px; min-height: 46px; padding: 0 16px; border: none; border-radius: 6px;
-  background: #121212; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
+  background: #121212; color: #fff; font-size: var(--fs-section); font-weight: var(--fw-label); cursor: pointer;
 }
 .primary:disabled { background: #c9ced4; cursor: default; }
 
 /* optional rack name - only for a rack nothing has identified */
 .nameRow { margin-top: 12px; }
-.nameLabel { display: block; margin-bottom: 6px; font-size: 11px; letter-spacing: .08em;
-             text-transform: uppercase; color: var(--muted-2); font-weight: 600; }
+.nameLabel { display: block; margin-bottom: 6px; font-size: var(--fs-label); letter-spacing: .08em;
+             text-transform: uppercase; color: var(--muted-2); font-weight: var(--fw-label); }
 .nameInput {
-  width: 100%; padding: 10px 12px; font-size: 15px; font-family: inherit;
+  width: 100%; padding: 10px 12px; font-size: var(--fs-section); font-family: inherit;
   border: 1px solid var(--hair); border-radius: 6px; background: var(--bg, #fff); color: inherit;
 }
 .nameInput:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
-.nameHint { display: block; margin-top: 6px; font-size: 12.5px; color: var(--muted-2); }
+.nameHint { display: block; margin-top: 6px; font-size: var(--fs-sub); color: var(--muted-2); }
 
 /* No record system connected yet. Not a failure, a thing to set up: an admin
    gets the way there, a technician gets the person to ask. */
 .needsSource { padding: 16px var(--gutter); border-bottom: 1px solid var(--hair); }
-.needsSource h2 { margin: 0 0 4px; font-size: 16px; font-weight: 700; }
-.needsSource p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--muted-1); }
+.needsSource h2 { margin: 0 0 4px; font-size: var(--fs-section); font-weight: var(--fw-title); }
+.needsSource p { margin: 0; font-size: var(--fs-item); line-height: 1.5; color: var(--muted-1); }
 .connect { margin-top: 12px; min-height: 44px; padding: 0 16px; border: 0; border-radius: 6px;
-  background: #121212; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; }
+  background: #121212; color: #fff; font-size: var(--fs-item); font-weight: var(--fw-label); cursor: pointer; }
 
 /* Choosing what to send. A plain tick box, the platform's own, at the size a thumb can hit. */
 .pickAll { display: flex; align-items: center; gap: 10px; padding: 12px var(--gutter); border-bottom: 1px solid var(--hair);
-           font-size: 13.5px; color: var(--muted-1); cursor: pointer; }
+           font-size: var(--fs-body); color: var(--muted-1); cursor: pointer; }
 .pickAll input, .pickOne { width: 20px; height: 20px; flex: none; margin: 0; accent-color: #121212; cursor: pointer; }
 .pickOne { align-self: center; }
 
@@ -194,20 +194,20 @@
    them; it has been the incident number and one line under it since, and the
    rules that drew the steps went with them. */
 .offWord { display: inline-block; margin-right: 8px; padding: 1px 8px; border: 1px solid var(--warn); border-radius: 4px;
-           font-size: 12px; font-weight: 600; color: var(--warn); white-space: nowrap; }
+           font-size: var(--fs-sub); font-weight: var(--fw-label); color: var(--warn); white-space: nowrap; }
 
 /* The incident number is the heading of a sent check, in the page's own large
    type (the verdict above it). */
-.waiting h2.incidentBig, .done h2.incidentBig { font-size: 22px; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.waiting h2.incidentBig, .done h2.incidentBig { font-size: var(--fs-page); letter-spacing: -0.01em; overflow-wrap: anywhere; }
 /* The ServiceNow incident raised for the check: its number, and the way to it. */
 .waiting .incident, .done .incident { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 10px 0 4px;
             padding-top: 10px; border-top: 1px solid var(--hair); }
 .incidentOpen { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 1px solid #121212;
-                border-radius: 6px; font-size: 13.5px; font-weight: 600; color: #121212; text-decoration: none; }
+                border-radius: 6px; font-size: var(--fs-body); font-weight: var(--fw-label); color: #121212; text-decoration: none; }
 .waiting .incidentNone, .done .incidentNone { margin: 10px 0 4px; padding-top: 10px; border-top: 1px solid var(--hair); color: var(--warn); }
 .tickets { list-style: none; margin: 10px 0 0; padding: 10px 0 0; border-top: 1px solid var(--hair); }
-.tickets li { display: grid; gap: 1px; padding: 4px 0; font-size: 13.5px; color: var(--muted-1); }
-.tickets b { color: var(--text, #1c1c1c); font-weight: 600; }
+.tickets li { display: grid; gap: 1px; padding: 4px 0; font-size: var(--fs-body); color: var(--muted-1); }
+.tickets b { color: var(--text, #1c1c1c); font-weight: var(--fw-label); }
 .found { color: var(--good); }
 
 /* No strip of big numbers anywhere on this page. It said Matched, Unmatched and
@@ -218,25 +218,25 @@
 /* A closed box for each group that needs no attention. */
 .groupBox { border-bottom: 1px solid var(--hair); }
 .groupBox > summary { display: flex; align-items: center; gap: 10px; list-style: none; cursor: pointer; padding: 14px var(--gutter);
-                      font-size: 14.5px; font-weight: 600; color: var(--text, #1c1c1c); }
+                      font-size: var(--fs-item); font-weight: var(--fw-label); color: var(--text, #1c1c1c); }
 .groupBox > summary::-webkit-details-marker { display: none; }
 .groupBox > summary span { flex: 1 1 auto; }
 .groupBox > summary b { font: 600 13px ui-monospace, Menlo, monospace; color: var(--muted-1); }
 .groupBox > summary::after { content: ''; width: 7px; height: 7px; flex: none; margin-right: 3px;
   border-right: 2px solid var(--muted-2); border-bottom: 2px solid var(--muted-2); transform: rotate(45deg); transition: transform .15s ease; }
 .groupBox[open] > summary::after { transform: rotate(-135deg); }
-.groupNote { margin: -4px var(--gutter) 8px; font-size: 13px; line-height: 1.45; color: var(--muted-1); }
+.groupNote { margin: -4px var(--gutter) 8px; font-size: var(--fs-body); line-height: 1.45; color: var(--muted-1); }
 .rows { list-style: none; margin: 0; padding: 0 var(--gutter) 10px; }
-.rows li { display: grid; grid-template-columns: minmax(0, 1fr) auto 10px; gap: 2px 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--hair); font-size: 14px; }
-.rowName { font-weight: 600; overflow-wrap: anywhere; }
-.rowNote { font-size: 12.5px; color: var(--muted-1); text-align: right; overflow-wrap: anywhere; }
+.rows li { display: grid; grid-template-columns: minmax(0, 1fr) auto 10px; gap: 2px 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--hair); font-size: var(--fs-item); }
+.rowName { font-weight: var(--fw-label); overflow-wrap: anywhere; }
+.rowNote { font-size: var(--fs-sub); color: var(--muted-1); text-align: right; overflow-wrap: anywhere; }
 .dotOk, .dotIdle { width: 9px; height: 9px; border-radius: 50%; }
 .dotOk { background: var(--good); } .dotIdle { background: #c9ced4; }
 
 /* The report: one quiet button and what it is for. */
 .reportRow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 14px var(--gutter); }
 .secondaryBtn { min-height: 44px; padding: 0 16px; border-radius: 6px; border: 1px solid #121212; background: var(--bg, #fff);
-                color: #121212; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+                color: #121212; font: inherit; font-size: var(--fs-item); font-weight: var(--fw-label); cursor: pointer; }
 .secondaryBtn:disabled { opacity: .55; cursor: default; }
-.reportHint { flex: 1 1 160px; font-size: 12.5px; line-height: 1.4; color: var(--muted-1); }
+.reportHint { flex: 1 1 160px; font-size: var(--fs-sub); line-height: 1.4; color: var(--muted-1); }
 @media (prefers-reduced-motion: reduce) { .groupBox > summary::after { transition: none; } }

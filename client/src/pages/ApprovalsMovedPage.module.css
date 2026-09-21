@@ -6,12 +6,12 @@
   background: var(--bg, #fff);
   color: var(--text, #1c1c1c);
 }
-.title { margin: 0 0 8px; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
-.text { margin: 0 0 18px; font-size: 14.5px; line-height: 1.5; color: var(--muted, #5f6864); }
+.title { margin: 0 0 8px; font-size: var(--fs-page); font-weight: var(--fw-title); letter-spacing: -0.01em; }
+.text { margin: 0 0 18px; font-size: var(--fs-item); line-height: 1.5; color: var(--muted, #5f6864); }
 .primary {
   display: block; width: 100%; box-sizing: border-box; padding: 15px;
   border: none; border-radius: 10px; background: #0b6a44; color: #fff;
-  font-size: 16px; font-weight: 700; text-align: center; text-decoration: none; cursor: pointer;
+  font-size: var(--fs-section); font-weight: var(--fw-title); text-align: center; text-decoration: none; cursor: pointer;
 }
 .primary:hover { background: #095a3a; text-decoration: none; }
 

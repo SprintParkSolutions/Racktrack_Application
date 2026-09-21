@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './ProfilePage.module.css';
+import PageHeader from '../components/PageHeader.jsx';
 import { useAuth } from '../AuthContext.jsx';
 import { useConnections } from '../ConnectionsContext.jsx';
 import { TYPE_INFO } from '../utils/connectionsApi';
 import { apiUrl, authFetch } from '../utils/api';
 import Avatar from '../components/Avatar.jsx';
 import { AVATARS, resolveAvatarIndex } from '../utils/avatars';
-import BackButton from '../components/BackButton.jsx';
 import Icon from '../components/Icon';
 import AssetImg from '../components/AssetImg';
 
@@ -142,26 +142,23 @@ export default function ProfilePage() {
 
   return (
     <div className={`page page-full ${styles.profile}`}>
-      <header className={styles.topbar}>
-        {/* Grouped with the title so the header stays left-aligned whether or
-            not the back button renders - it only appears when you arrived
-            from somewhere, since tapping Profile in the nav has nowhere to
-            go back to. */}
-        <div className={styles.topbarLeft}>
-          <BackButton fallback="/" />
-          <h1 className={styles.topbarTitle}>Profile</h1>
-        </div>
-        {/* Kept even though the identity block below carries the account
-            actions: on a phone the sidebar is a bottom bar with no sign-out,
-            so removing this would leave that surface with no way out. */}
-        <button
-          type="button"
-          className={styles.topbarIconBtn}
-          onClick={() => setConfirmingSignOut(true)}
-          aria-label="Sign out">
-          <Icon name="logout" />
-        </button>
-      </header>
+      <PageHeader
+        title="Profile"
+        backFallback="/"
+        sticky
+        /* Kept even though the identity block below carries the account
+           actions: on a phone the sidebar is a bottom bar with no sign-out,
+           so removing this would leave that surface with no way out. */
+        action={(
+          <button
+            type="button"
+            className={styles.topbarIconBtn}
+            onClick={() => setConfirmingSignOut(true)}
+            aria-label="Sign out">
+            <Icon name="logout" />
+          </button>
+        )}
+      />
 
       <main className={styles.main}>
         {/* ── Identity ──
@@ -423,8 +420,8 @@ export default function ProfilePage() {
               boxShadow: '0 -10px 40px rgba(0,0,0,.28)' }}
           >
             <div style={{ width: 38, height: 4, borderRadius: 2, background: 'rgba(128,128,128,.35)', margin: '0 auto 16px' }} />
-            <h3 style={{ margin: '0 0 4px', fontSize: 17, fontWeight: 750, textAlign: 'center' }}>Choose your picture</h3>
-            <p style={{ margin: '0 0 18px', fontSize: 13.5, opacity: .6, textAlign: 'center' }}>Pick a look - tap to save.</p>
+            <h3 style={{ margin: '0 0 4px', fontSize: 'var(--fs-head)', fontWeight: 'var(--fw-title)', textAlign: 'center' }}>Choose your picture</h3>
+            <p style={{ margin: '0 0 18px', fontSize: 'var(--fs-body)', opacity: .6, textAlign: 'center' }}>Pick a look - tap to save.</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, justifyItems: 'center' }}>
               {AVATARS.map((_, idx) => (
                 <Avatar
@@ -442,7 +439,7 @@ export default function ProfilePage() {
             <button
               onClick={() => !savingAvatar && setPickerOpen(false)}
               style={{ width: '100%', marginTop: 22, padding: '13px', borderRadius: 13, border: '1px solid rgba(128,128,128,.28)',
-                background: 'transparent', color: 'inherit', fontSize: 15, fontWeight: 650, cursor: 'pointer' }}
+                background: 'transparent', color: 'inherit', fontSize: 'var(--fs-section)', fontWeight: 'var(--fw-title)', cursor: 'pointer' }}
             >
               {savingAvatar ? 'Saving…' : 'Close'}
             </button>

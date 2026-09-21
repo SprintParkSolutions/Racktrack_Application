@@ -20,41 +20,9 @@
   min-height: 100vh;
   /* No background here: `.page-full` is forced transparent, so the white
      ground shows through. */
-  padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  padding-bottom: var(--nav-clear);
 }
 
-/* ── Sticky phone header (the shell draws its own from 768px) ─────── */
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(18, 18, 18, 0.07);
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-  padding-top: env(safe-area-inset-top, 0px);
-}
-.topbarLeft {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-.topbarTitle {
-  font-family: var(--font);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  line-height: 16px;
-  text-transform: uppercase;
-  color: #121212;
-  margin: 0;
-}
 .countPill {
   min-width: 30px;
   height: 26px;
@@ -63,8 +31,8 @@
   background: #121212;
   color: #ffffff;
   font-family: var(--font);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--fs-sub);
+  font-weight: var(--fw-title);
   font-variant-numeric: tabular-nums;
   display: inline-flex;
   align-items: center;
@@ -80,8 +48,8 @@
   background: #121212;
   color: #ffffff;
   font-family: var(--font);
-  font-size: 11.5px;
-  font-weight: 700;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-title);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
@@ -138,7 +106,7 @@
 .statValue {
   font-family: var(--font);
   font-size: clamp(18px, 5.2vw, 28px);
-  font-weight: 700;
+  font-weight: var(--fw-title);
   letter-spacing: -0.035em;
   font-variant-numeric: tabular-nums;
   color: #121212;
@@ -153,7 +121,7 @@
 .statLabel {
   font-family: var(--font);
   font-size: 9px;
-  font-weight: 700;
+  font-weight: var(--fw-title);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #9a9a9a;
@@ -178,7 +146,7 @@
 .searchIcon {
   position: absolute;
   left: 15px;
-  font-size: 17px;
+  font-size: var(--fs-head);
   color: #9a9a9a;
   pointer-events: none;
   transition: color 0.18s;
@@ -196,15 +164,15 @@
   background: #ffffff;
   font-family: var(--font);
   /* 16px floor: anything smaller makes iOS Safari zoom the page on focus. */
-  font-size: 16px;
-  font-weight: 500;
+  font-size: var(--fs-section);
+  font-weight: var(--fw-label);
   color: #121212;
   outline: none;
   transition: border-color 0.2s;
   -webkit-appearance: none;
   appearance: none;
 }
-.search::placeholder { color: #9a9a9a; font-weight: 450; }
+.search::placeholder { color: #9a9a9a; font-weight: var(--fw-body); }
 .search:hover { border-color: rgba(18, 18, 18, 0.20); }
 .search:focus {
   border-color: #121212;
@@ -220,7 +188,7 @@
   border-radius: 9999px;
   background: #ffffff;
   color: #6b6b6b;
-  font-size: 15px;
+  font-size: var(--fs-section);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -251,8 +219,8 @@
   background: #ffffff;
   color: #6b6b6b;
   font-family: var(--font);
-  font-size: 12px;
-  font-weight: 650;
+  font-size: var(--fs-sub);
+  font-weight: var(--fw-title);
   cursor: pointer;
   transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.16s;
   -webkit-tap-highlight-color: transparent;
@@ -266,7 +234,7 @@
   background: rgba(18, 18, 18, 0.06);
   border: 1.5px solid #121212;
   color: #121212;
-  font-weight: 700;
+  font-weight: var(--fw-title);
 }
 
 .sortWrap {
@@ -280,7 +248,7 @@
   display: none;
   font-family: var(--font);
   font-size: 9.5px;
-  font-weight: 700;
+  font-weight: var(--fw-title);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #9a9a9a;
@@ -302,8 +270,8 @@
   background-size: 14px;
   font-family: var(--font);
   /* 16px floor: anything smaller makes iOS Safari zoom the page on focus. */
-  font-size: 16px;
-  font-weight: 620;
+  font-size: var(--fs-section);
+  font-weight: var(--fw-label);
   color: #121212;
   cursor: pointer;
   outline: none;
@@ -317,8 +285,8 @@
 /* ── Result line ─────────────────────────────────────────────────── */
 .resultLine {
   font-family: var(--font);
-  font-size: 10px;
-  font-weight: 700;
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-title);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #9a9a9a;
@@ -345,8 +313,8 @@
 }
 .groupLabel {
   font-family: var(--font);
-  font-size: 10.5px;
-  font-weight: 700;
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-title);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #121212;
@@ -361,8 +329,8 @@
 }
 .groupCount {
   font-family: var(--font);
-  font-size: 10px;
-  font-weight: 650;
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-title);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #9a9a9a;
@@ -458,7 +426,7 @@
   color: #121212;
   font-family: var(--font);
   font-size: 8.5px;
-  font-weight: 700;
+  font-weight: var(--fw-title);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
@@ -491,8 +459,8 @@
 
 .rackId {
   font-family: var(--font);
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--fs-item);
+  font-weight: var(--fw-title);
   line-height: 18px;
   letter-spacing: -0.015em;
   text-transform: uppercase;
@@ -509,8 +477,8 @@
   gap: 8px;
   margin: 0;
   font-family: var(--font);
-  font-size: 11px;
-  font-weight: 550;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-label);
   color: #6b6b6b;
   min-width: 0;
 }
@@ -574,16 +542,16 @@
 }
 .emptyTitle {
   font-family: var(--font);
-  font-size: 17px;
-  font-weight: 700;
+  font-size: var(--fs-head);
+  font-weight: var(--fw-title);
   letter-spacing: -0.015em;
   color: #121212;
   margin: 0;
 }
 .emptyText {
   font-family: var(--font);
-  font-size: 13.5px;
-  font-weight: 450;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-body);
   line-height: 19px;
   color: #6b6b6b;
   margin: 0;
@@ -598,8 +566,8 @@
   color: #ffffff;
   border: none;
   font-family: var(--font);
-  font-size: 11.5px;
-  font-weight: 700;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-title);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
@@ -616,8 +584,8 @@
   border: 1px solid rgba(18, 18, 18, 0.12);
   color: #121212;
   font-family: var(--font);
-  font-size: 13px;
-  font-weight: 620;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-label);
   cursor: pointer;
   transition: border-color 0.2s;
 }
@@ -631,8 +599,8 @@
   box-shadow: var(--lift), inset 3px 0 0 #121212;
   color: #121212;
   font-family: var(--font);
-  font-size: 13px;
-  font-weight: 550;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-label);
 }
 
 /* ── Pager ───────────────────────────────────────────────────────── */
@@ -659,8 +627,8 @@
   background: #ffffff;
   color: #121212;
   font-family: var(--font);
-  font-size: 13px;
-  font-weight: 650;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-title);
   font-variant-numeric: tabular-nums;
   display: inline-flex;
   align-items: center;
@@ -670,7 +638,7 @@
   transition: transform 0.16s, box-shadow 0.18s, background 0.18s, color 0.18s;
   -webkit-tap-highlight-color: transparent;
 }
-.pageArrow { font-size: 16px; }
+.pageArrow { font-size: var(--fs-section); }
 .pageArrow:hover:not(:disabled),
 .pageNum:hover { transform: translateY(-1px); }
 .pageArrow:active:not(:disabled),
@@ -692,7 +660,7 @@
   text-align: center;
   color: #c6c6c6;
   font-family: var(--font);
-  font-size: 13px;
+  font-size: var(--fs-body);
 }
 
 /* ══ Tablet / desktop ════════════════════════════════════════════ */
@@ -717,7 +685,7 @@
   .stat:first-child { padding-left: 0; }
   .stat + .stat { box-shadow: inset 1px 0 0 rgba(18, 18, 18, 0.08); }
   .statValue { font-size: 34px; }
-  .statValueWord { font-size: 23px; }
+  .statValueWord { font-size: var(--fs-page); }
 
   /* Search, chips and sort on one line - the toolbar stops being a stack. */
   .controls {
@@ -742,8 +710,8 @@
     gap: 20px;
   }
   .caption { padding: 13px 15px 15px; }
-  .rackId { font-size: 15px; }
-  .stamp { font-size: 11.5px; }
+  .rackId { font-size: var(--fs-section); }
+  .stamp { font-size: var(--fs-label); }
 
   .pager { justify-content: flex-start; margin-top: 10px; }
   .empty { padding: 76px 24px 84px; }

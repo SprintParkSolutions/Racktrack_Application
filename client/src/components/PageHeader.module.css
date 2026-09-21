@@ -1,0 +1,112 @@
+/* ══════════════════════════════════════════════════════════════════════
+   The one page header. See PageHeader.jsx for what it holds.
+
+   The numbers here are the ones most of the old headers already used - a row
+   56px tall, 12px of side padding, 8px between the controls - so pages that
+   move onto it barely shift. Everything type-related comes from the scale in
+   index.css; there is no font-size in this file that is not a token.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 56px;
+  padding: 8px 12px;
+  background: var(--md-surface-container-lowest);
+  border-bottom: 1px solid var(--md-outline-variant);
+  flex-shrink: 0;
+  /* A page is a flex item, and a flex item refuses to shrink below its own
+     content. Without this a long rack id pushes the header wider than the
+     phone and the action on the right goes off the edge. */
+  min-width: 0;
+}
+
+.sticky {
+  position: sticky;
+  top: 0;
+  /* Above a page's own sticky rows and the rack picture, below the bottom
+     navigation (200) and any modal. */
+  z-index: 60;
+}
+
+.plain { border-bottom: 0; }
+
+/* The words. One column that takes the space the controls leave, and gives
+   it back by truncating rather than wrapping - a header is one row tall. */
+.text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: var(--font);
+  font-size: var(--fs-label);
+  line-height: var(--lh-label);
+  font-weight: var(--fw-label);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--md-on-surface-variant);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font);
+  font-size: var(--fs-head);
+  line-height: var(--lh-head);
+  font-weight: var(--fw-title);
+  letter-spacing: -0.01em;
+  color: var(--md-on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sub,
+.subMono {
+  margin: 0;
+  color: var(--md-on-surface-variant);
+  font-weight: var(--fw-body);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sub {
+  font-family: var(--font);
+  font-size: var(--fs-sub);
+  line-height: var(--lh-sub);
+}
+
+/* A rack id, a shelf, a port, an incident number. */
+.subMono {
+  font-family: var(--mono);
+  font-size: var(--fs-mono);
+  line-height: var(--lh-mono);
+  letter-spacing: 0.02em;
+}
+
+/* Whatever the page does from its header. It never shrinks - the title gives
+   way first - and it lines its own controls up on the right. */
+.action {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+/* On a wide screen the desktop shell draws its own top bar, so a page's
+   header would be a second one. It stays - it carries the page's actions -
+   but it gives up the sticky position and the extra height. */
+@media (min-width: 1180px) {
+  .sticky { position: static; }
+}

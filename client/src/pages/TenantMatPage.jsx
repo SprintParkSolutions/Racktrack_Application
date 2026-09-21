@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiUrl } from '../utils/api';
 import styles from './TenantMatPage.module.css';
+import PageHeader from '../components/PageHeader.jsx';
 
 // Lazy-load the real 3D scene used by /results/:rackId/topology and
 // /multi-rack/.../topology - keeps three.js out of the initial bundle.
@@ -89,24 +90,32 @@ export default function TenantMatPage() {
           <button className={styles.bannerClose} onClick={() => setCmdbPending(false)} aria-label="Dismiss CMDB notice">×</button>
         </div>
       )}
-      <header className={styles.header}>
-        <button className={styles.back} onClick={() => navigate(-1)} aria-label="Back">‹</button>
-        <button
-          className={styles.treeToggleBtn}
-          onClick={() => setTreeOpen(o => !o)}
-          title={treeOpen ? 'Hide tree' : 'Show tree'}
-          aria-label={treeOpen ? 'Hide the container tree' : 'Show the container tree'}
-          aria-expanded={treeOpen}
-        ><IcSidebar /></button>
-        <h2>
-          {data.tenant.name}
-          {selectedNode && selectedNode.type !== 'tenant' && (
-            <span className={styles.crumb}> / {selectedNode.label}</span>
-          )}
-        </h2>
-        <SourceToggle source={source} onChange={setSource} />
-        <SummaryPill summary={data.summary} />
-      </header>
+      <PageHeader
+        back={() => navigate(-1)}
+        lead={(
+          <button
+            className={styles.treeToggleBtn}
+            onClick={() => setTreeOpen(o => !o)}
+            title={treeOpen ? 'Hide tree' : 'Show tree'}
+            aria-label={treeOpen ? 'Hide the container tree' : 'Show the container tree'}
+            aria-expanded={treeOpen}
+          ><IcSidebar /></button>
+        )}
+        title={(
+          <>
+            {data.tenant.name}
+            {selectedNode && selectedNode.type !== 'tenant' && (
+              <span className={styles.crumb}> / {selectedNode.label}</span>
+            )}
+          </>
+        )}
+        action={(
+          <>
+            <SourceToggle source={source} onChange={setSource} />
+            <SummaryPill summary={data.summary} />
+          </>
+        )}
+      />
 
       <div className={styles.body}>
         {treeOpen && (
@@ -690,10 +699,7 @@ function Legend() {
 function ErrorView({ err, onBack }) {
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <button className={styles.back} onClick={onBack} aria-label="Back">‹</button>
-        <h2>Tenant topology</h2>
-      </header>
+      <PageHeader title="Tenant topology" back={onBack} />
       <div className={styles.empty}>Failed to load demo data: {err}</div>
     </div>
   );

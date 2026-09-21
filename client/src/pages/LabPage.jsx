@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { apiUrl, authFetch } from '../utils/api';
 import { useAuth } from '../AuthContext';
 import styles from './LabPage.module.css';
+import PageHeader from '../components/PageHeader.jsx';
 
 // Owner-only lab view - the client side of /api/lab/*.
 //
@@ -303,13 +304,12 @@ export default function LabPage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate(-1)} aria-label="Back">‹</button>
-        <div className={styles.headerCenter}>
-          <h1 className={styles.headerTitle}>Lab</h1>
-          <p className={styles.headerSub}>Owner-only · EVE-NG switches</p>
-        </div>
-      </header>
+      <PageHeader
+        title="Lab"
+        sub="Owner-only · EVE-NG switches"
+        back={() => navigate(-1)}
+        sticky
+      />
 
       <main className={styles.main}>
 

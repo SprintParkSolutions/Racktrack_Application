@@ -17,7 +17,7 @@
   flex-direction: column;
   min-height: 100vh;
   background: #ffffff;
-  padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  padding-bottom: var(--nav-clear);
 
   --pf-line:      #E6E7EB;
   --pf-line-soft: #F0F1F4;
@@ -27,28 +27,6 @@
   --pf-danger:    #C0392B;
 }
 
-/* ── Sticky white header ─────────────────────────────────────────── */
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background: #ffffff;
-  border-bottom: 1px solid #f0f0f0;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-  padding-top: env(safe-area-inset-top, 0px);
-}
-/* Back button + title as one left-hand group, so the title does not slide to
-   the centre on the visits where the back button is present. */
-.topbarLeft { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.topbarTitle {
-  font-family: var(--font);
-  font-size: 12px; font-weight: 700; letter-spacing: 0.10em; line-height: 16px;
-  text-transform: uppercase; color: var(--md-on-surface); margin: 0;
-}
 .topbarIconBtn {
   width: 40px; height: 40px;
   display: inline-flex; align-items: center; justify-content: center;
@@ -111,33 +89,33 @@
   display: grid; place-items: center;
   background: #121212; color: #fff;
   border: 3px solid #fff;
-  font-size: 15px;
+  font-size: var(--fs-section);
 }
 
 .idText { min-width: 0; }
 .name {
   font-family: var(--font);
-  font-size: 22px; font-weight: 640; line-height: 1.2; letter-spacing: -.015em;
+  font-size: var(--fs-page); font-weight: var(--fw-label); line-height: 1.2; letter-spacing: -.015em;
   color: var(--pf-ink); margin: 0;
 }
 .email {
   display: flex; align-items: center; gap: 6px;
   margin: 6px 0 0;
-  font-size: 13.5px; color: var(--pf-ink-2); min-width: 0;
+  font-size: var(--fs-body); color: var(--pf-ink-2); min-width: 0;
 }
 .emailText { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .copyBtn {
   flex: none; width: 24px; height: 24px;
   display: grid; place-items: center;
   border: none; border-radius: 6px; background: none;
-  color: var(--pf-ink-3); font-size: 14px; cursor: pointer;
+  color: var(--pf-ink-3); font-size: var(--fs-item); cursor: pointer;
   transition: background-color .15s, color .15s;
 }
 .copyBtn:hover { background: var(--pf-line-soft); color: var(--pf-ink); }
-.copied { font-size: 12px; color: #067647; }
+.copied { font-size: var(--fs-sub); color: #067647; }
 .metaLine {
   margin: 8px 0 0;
-  font-size: 11px; font-weight: 650; letter-spacing: .07em; text-transform: uppercase;
+  font-size: var(--fs-label); font-weight: var(--fw-title); letter-spacing: .07em; text-transform: uppercase;
   color: var(--pf-ink-3);
 }
 
@@ -153,7 +131,7 @@
 .blockH {
   margin: 0; padding: 14px 16px;
   font-family: var(--font);
-  font-size: 13px; font-weight: 620; letter-spacing: -.005em; color: var(--pf-ink);
+  font-size: var(--fs-body); font-weight: var(--fw-label); letter-spacing: -.005em; color: var(--pf-ink);
   border-bottom: 1px solid var(--pf-line-soft);
 }
 
@@ -181,33 +159,33 @@
   display: grid; place-items: center;
   border-radius: 8px;
   background: var(--pf-line-soft); color: var(--pf-ink-2);
-  font-size: 19px;
+  font-size: var(--fs-head);
 }
 .rowThumb {
   width: 44px; height: 44px; flex: none;
   display: grid; place-items: center;
   border-radius: 8px; overflow: hidden;
   background: var(--pf-line-soft); color: var(--pf-ink-3);
-  font-size: 18px;
+  font-size: var(--fs-head);
 }
 .rowThumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 .rowMain { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .rowTitle {
-  font-size: 14px; font-weight: 560; line-height: 1.35; color: var(--pf-ink);
+  font-size: var(--fs-item); font-weight: var(--fw-label); line-height: 1.35; color: var(--pf-ink);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .rowTitleMono { font-variant-numeric: tabular-nums; letter-spacing: -.005em; }
 .rowMeta {
-  font-size: 12.5px; line-height: 1.4; color: var(--pf-ink-2);
+  font-size: var(--fs-sub); line-height: 1.4; color: var(--pf-ink-2);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .ok { color: #067647; }
 
 .rowEnd { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-.rowTime { font-size: 12px; color: var(--pf-ink-3); white-space: nowrap; }
+.rowTime { font-size: var(--fs-sub); color: var(--pf-ink-3); white-space: nowrap; }
 .rowChevron {
-  font-size: 16px; color: var(--pf-ink-3); flex-shrink: 0;
+  font-size: var(--fs-section); color: var(--pf-ink-3); flex-shrink: 0;
   transition: color .15s, transform .15s;
 }
 
@@ -218,12 +196,12 @@
   padding: 10px 16px;
 }
 .detail + .detail { border-top: 1px solid var(--pf-line-soft); }
-.dt { font-size: 13px; color: var(--pf-ink-2); flex: none; }
+.dt { font-size: var(--fs-body); color: var(--pf-ink-2); flex: none; }
 /* dd carries a browser default margin-inline-start of 40px, which pushes the
    value out of the row on a narrow column. */
 .dd {
   margin: 0; text-align: right; min-width: 0;
-  font-size: 13px; font-weight: 520; color: var(--pf-ink);
+  font-size: var(--fs-body); font-weight: var(--fw-label); color: var(--pf-ink);
   overflow-wrap: anywhere;
 }
 
@@ -233,7 +211,7 @@
   width: 100%; box-sizing: border-box;
   display: flex; align-items: center; justify-content: center; gap: 8px;
   padding: 10px 16px;
-  font-family: inherit; font-size: 14px; font-weight: 540;
+  font-family: inherit; font-size: var(--fs-item); font-weight: var(--fw-label);
   color: var(--pf-danger); background: #fff;
   border: 1px solid #F0CFCB; border-radius: 8px;
   cursor: pointer;
@@ -241,18 +219,18 @@
 }
 .danger:hover:not(:disabled) { background: #FDF6F5; border-color: var(--pf-danger); }
 .danger:disabled { opacity: .55; cursor: default; }
-.dangerIcon { font-size: 16px; }
-.actionNote { margin: 10px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--pf-ink-3); }
+.dangerIcon { font-size: var(--fs-section); }
+.actionNote { margin: 10px 0 0; font-size: var(--fs-sub); line-height: 1.5; color: var(--pf-ink-3); }
 
 /* ── States ── */
-.note { padding: 16px; font-size: 13px; color: var(--pf-ink-3); }
+.note { padding: 16px; font-size: var(--fs-body); color: var(--pf-ink-3); }
 .empty { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 28px 16px; }
-.emptyText { font-size: 14px; color: var(--pf-ink-2); margin: 0; }
+.emptyText { font-size: var(--fs-item); color: var(--pf-ink-2); margin: 0; }
 .startBtn {
   padding: 10px 20px;
   border-radius: 8px; border: 1px solid var(--pf-line);
   background: #fff; color: var(--pf-ink);
-  font-family: var(--font); font-size: 13.5px; font-weight: 550;
+  font-family: var(--font); font-size: var(--fs-body); font-weight: var(--fw-label);
   cursor: pointer; transition: background-color .15s, border-color .15s;
 }
 .startBtn:hover { background: #FAFAFB; border-color: #D6D8DE; }
@@ -262,17 +240,17 @@
   width: 100%; padding: 12px 0;
   border: none; border-top: 1px solid var(--pf-line-soft);
   background: transparent; color: var(--pf-ink);
-  font-family: var(--font); font-size: 13px; font-weight: 550;
+  font-family: var(--font); font-size: var(--fs-body); font-weight: var(--fw-label);
   cursor: pointer; transition: background 0.15s;
 }
 .showAllBtn:hover { background: #FAFAFB; }
-.showAllChevron { font-size: 15px; color: var(--pf-ink-3); }
+.showAllChevron { font-size: var(--fs-section); color: var(--pf-ink-3); }
 
 .errBanner {
   padding: 12px 14px;
   border: 1px solid #F3C9C5; border-left: 3px solid var(--pf-danger); border-radius: 8px;
   background: #FDF6F5; color: #8E2B21;
-  font-family: var(--font); font-size: 13px; line-height: 1.5;
+  font-family: var(--font); font-size: var(--fs-body); line-height: 1.5;
 }
 
 /* ── Sign-out confirmation modal (unchanged) ─────────────────────── */
@@ -298,17 +276,17 @@
 }
 .confirmIcon :global(.appIcon) { font-size: 24px; }
 .confirmTitle {
-  font-family: var(--font); font-size: 18px; font-weight: 600;
+  font-family: var(--font); font-size: var(--fs-head); font-weight: var(--fw-label);
   color: var(--md-on-surface); margin: 0; text-align: center;
 }
 .confirmMsg {
-  font-family: var(--font); font-size: 14px; line-height: 1.55;
+  font-family: var(--font); font-size: var(--fs-item); line-height: 1.55;
   color: var(--md-on-surface-variant); margin: 0; text-align: center;
 }
 .confirmActions { display: flex; gap: 12px; width: 100%; margin-top: 12px; }
 .confirmCancel, .confirmGo {
   flex: 1; height: 44px; border-radius: 9999px;
-  font-family: var(--font); font-size: 13px; font-weight: 600;
+  font-family: var(--font); font-size: var(--fs-body); font-weight: var(--fw-label);
   letter-spacing: 0.08em; text-transform: uppercase;
   cursor: pointer; transition: background-color 0.18s, opacity 0.18s;
 }

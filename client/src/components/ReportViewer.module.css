@@ -37,12 +37,12 @@
 }
 .title {
   margin: 0; min-width: 0;
-  font-size: 18px; font-weight: 700; letter-spacing: -0.01em;
+  font-size: var(--fs-head); font-weight: var(--fw-title); letter-spacing: -0.01em;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
-.busy { margin: 14px var(--gutter); font-size: 14px; color: var(--muted-1); }
-.error { margin: 14px var(--gutter); font-size: 14px; color: var(--bad); }
+.busy { margin: 14px var(--gutter); font-size: var(--fs-item); color: var(--muted-1); }
+.error { margin: 14px var(--gutter); font-size: var(--fs-item); color: var(--bad); }
 
 /* White, not transparent: the report is a light document, and a frame that
    starts see-through flashes whatever is behind it before the page paints. */
@@ -63,13 +63,13 @@
 .foot button {
   min-height: 40px; padding: 0 16px; border: none; border-radius: 6px;
   background: #121212; color: #fff;
-  font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+  font: inherit; font-size: var(--fs-item); font-weight: var(--fw-label); cursor: pointer;
 }
 .foot button:disabled { background: #c9ced4; cursor: default; }
 
 /* The last resort, and dressed as one: a plain link, not a button. */
 .browser {
   margin-left: auto;
-  font-size: 13px; color: var(--muted-1);
+  font-size: var(--fs-body); color: var(--muted-1);
   text-decoration: underline; text-underline-offset: 3px;
 }

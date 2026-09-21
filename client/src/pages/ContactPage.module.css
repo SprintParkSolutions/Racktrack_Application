@@ -64,23 +64,23 @@
   display: inline-flex; align-items: center; gap: 6px;
   margin-bottom: 24px; padding: 0;
   background: none; border: none; cursor: pointer;
-  color: var(--ct-ink-2); font-size: 13px; font-family: inherit;
+  color: var(--ct-ink-2); font-size: var(--fs-body); font-family: inherit;
   transition: color .15s;
 }
 .back:hover { color: var(--ct-ink); }
 
 .eyebrow {
-  font-size: 11px; font-weight: 600; letter-spacing: .10em;
+  font-size: var(--fs-label); font-weight: var(--fw-label); letter-spacing: .10em;
   text-transform: uppercase; color: var(--ct-accent);
 }
 .h1 {
   margin: 12px 0 0;
   font-size: 30px; line-height: 1.18; letter-spacing: -.022em;
-  font-weight: 640; color: var(--ct-ink);
+  font-weight: var(--fw-label); color: var(--ct-ink);
 }
 .lede {
   margin: 12px 0 0; max-width: 60ch;
-  font-size: 15px; line-height: 1.62; color: var(--ct-ink-2);
+  font-size: var(--fs-section); line-height: 1.62; color: var(--ct-ink-2);
 }
 
 /* Understated by construction: no border, no fill, no pill. Reading as a row
@@ -92,9 +92,9 @@
 }
 .signal {
   display: inline-flex; align-items: center; gap: 8px;
-  font-size: 13px; color: var(--ct-ink-2);
+  font-size: var(--fs-body); color: var(--ct-ink-2);
 }
-.signalIcon { font-size: 15px; color: var(--ct-ink-3); flex: none; }
+.signalIcon { font-size: var(--fs-section); color: var(--ct-ink-3); flex: none; }
 
 /* Desaturated so a photograph with its own colour cast cannot fight the UI,
    and so it reads as editorial rather than as a stock hero. */
@@ -126,15 +126,15 @@
 
 /* ── Form ── */
 .form { min-width: 0; }
-.formH { margin: 0; font-size: 17px; font-weight: 620; letter-spacing: -.01em; color: var(--ct-ink); }
-.formP { margin: 8px 0 0; font-size: 14px; line-height: 1.6; color: var(--ct-ink-2); max-width: 62ch; }
+.formH { margin: 0; font-size: var(--fs-head); font-weight: var(--fw-label); letter-spacing: -.01em; color: var(--ct-ink); }
+.formP { margin: 8px 0 0; font-size: var(--fs-item); line-height: 1.6; color: var(--ct-ink-2); max-width: 62ch; }
 
 .field { margin-top: 24px; }
 .label {
   display: block; margin-bottom: 8px;
-  font-size: 13px; font-weight: 550; color: var(--ct-ink);
+  font-size: var(--fs-body); font-weight: var(--fw-label); color: var(--ct-ink);
 }
-.optional { font-weight: 400; color: var(--ct-ink-3); }
+.optional { font-weight: var(--fw-body); color: var(--ct-ink-3); }
 
 /* index.css styles form controls as carved wells - `--sunken` fill, no border,
    an inset `--press` shadow - through
@@ -158,7 +158,7 @@
 .input {
   width: 100%; box-sizing: border-box;
   padding: 10px 12px;
-  font-family: inherit; font-size: 14.5px; line-height: 1.5;
+  font-family: inherit; font-size: var(--fs-item); line-height: 1.5;
   color: var(--ct-ink);
   background-color: #fff !important;
   border: 1px solid var(--ct-line) !important;
@@ -200,10 +200,10 @@
 .dropOver { border-color: var(--ct-accent); border-style: solid; background: var(--ct-accent-weak); }
 .drop:disabled { cursor: default; opacity: .55; }
 
-.dropIcon { font-size: 18px; color: var(--ct-ink-3); flex: none; }
+.dropIcon { font-size: var(--fs-head); color: var(--ct-ink-3); flex: none; }
 .dropText { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.dropLead { font-size: 14px; color: var(--ct-ink); }
-.dropMeta { font-size: 12.5px; color: var(--ct-ink-3); }
+.dropLead { font-size: var(--fs-item); color: var(--ct-ink); }
+.dropMeta { font-size: var(--fs-sub); color: var(--ct-ink-3); }
 
 .fileList { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; }
 .fileRow {
@@ -215,24 +215,24 @@
 .thumbDoc {
   width: 32px; height: 32px; flex: none;
   display: grid; place-items: center;
-  border-radius: 6px; background: var(--ct-line-soft); color: var(--ct-ink-3); font-size: 16px;
+  border-radius: 6px; background: var(--ct-line-soft); color: var(--ct-ink-3); font-size: var(--fs-section);
 }
 /* min-width:0 lets the filename ellipsis engage inside the flex row - without
    it a long name pushes the remove control off the edge on a phone. */
 .fileMeta { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
-.fileName { font-size: 13.5px; color: var(--ct-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fileSize { font-size: 12px; color: var(--ct-ink-3); }
+.fileName { font-size: var(--fs-body); color: var(--ct-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fileSize { font-size: var(--fs-sub); color: var(--ct-ink-3); }
 .fileRemove {
   flex: none; width: 28px; height: 28px;
   display: grid; place-items: center;
   border: none; border-radius: 6px; background: none;
-  color: var(--ct-ink-3); font-size: 15px; cursor: pointer;
+  color: var(--ct-ink-3); font-size: var(--fs-section); cursor: pointer;
   transition: background-color .15s, color .15s;
 }
 .fileRemove:hover { background: var(--ct-line-soft); color: var(--ct-ink); }
 
-.fileTotal { margin-top: 8px; font-size: 12px; color: var(--ct-ink-3); }
-.fileWarn { margin: 8px 0 0; font-size: 12.5px; line-height: 1.5; color: #92400E; }
+.fileTotal { margin-top: 8px; font-size: var(--fs-sub); color: var(--ct-ink-3); }
+.fileWarn { margin: 8px 0 0; font-size: var(--fs-sub); line-height: 1.5; color: #92400E; }
 
 /* ── Error ── */
 .errorBox {
@@ -241,15 +241,15 @@
   border: 1px solid #F3C9C5; border-left: 3px solid #C0392B; border-radius: 8px;
   background: #FDF6F5;
 }
-.errorH { font-size: 13.5px; font-weight: 600; color: #8E2B21; }
-.errorP { font-size: 13px; line-height: 1.55; color: #8E2B21; }
-.link { color: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.errorH { font-size: var(--fs-body); font-weight: var(--fw-label); color: #8E2B21; }
+.errorP { font-size: var(--fs-body); line-height: 1.55; color: #8E2B21; }
+.link { color: inherit; font-weight: var(--fw-label); text-decoration: underline; text-underline-offset: 2px; }
 
 /* ── Actions ── */
 .actions { margin-top: 32px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .send {
   padding: 10px 18px;
-  font-family: inherit; font-size: 14.5px; font-weight: 560;
+  font-family: inherit; font-size: var(--fs-item); font-weight: var(--fw-label);
   color: #fff; background: var(--ct-accent);
   border: 1px solid var(--ct-accent); border-radius: 8px;
   cursor: pointer;
@@ -260,11 +260,11 @@
 /* Grey rather than a faded accent: a dimmed primary still reads as "the thing
    to press", which is exactly wrong while it cannot be pressed. */
 .send:disabled { background: #EBECEF; border-color: #EBECEF; color: var(--ct-ink-3); cursor: not-allowed; }
-.hint { font-size: 12.5px; color: var(--ct-ink-3); }
+.hint { font-size: var(--fs-sub); color: var(--ct-ink-3); }
 
 .secondary {
   margin-top: 16px; padding: 9px 16px;
-  font-family: inherit; font-size: 14px; font-weight: 520;
+  font-family: inherit; font-size: var(--fs-item); font-weight: var(--fw-label);
   color: var(--ct-ink); background: #fff;
   border: 1px solid var(--ct-line); border-radius: 8px; cursor: pointer;
   transition: border-color .15s, background-color .15s;
@@ -276,7 +276,7 @@
 .block { border: 1px solid var(--ct-line); border-radius: 10px; background: #fff; overflow: hidden; }
 .blockH {
   margin: 0; padding: 14px 16px;
-  font-size: 13px; font-weight: 620; letter-spacing: -.005em; color: var(--ct-ink);
+  font-size: var(--fs-body); font-weight: var(--fw-label); letter-spacing: -.005em; color: var(--ct-ink);
   border-bottom: 1px solid var(--ct-line-soft);
 }
 
@@ -294,12 +294,12 @@
 .option:hover .optionGo { color: var(--ct-accent); transform: translateX(2px); }
 .option:focus-visible { outline: none; background: #FAFAFB; box-shadow: inset 0 0 0 2px var(--ct-accent-weak); }
 
-.optionIcon { font-size: 17px; color: var(--ct-accent); flex: none; margin-top: 1px; }
+.optionIcon { font-size: var(--fs-head); color: var(--ct-accent); flex: none; margin-top: 1px; }
 .optionText { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
-.optionName { font-size: 14px; font-weight: 550; color: var(--ct-ink); }
-.optionSub { font-size: 12.5px; line-height: 1.45; color: var(--ct-ink-2); overflow-wrap: anywhere; }
+.optionName { font-size: var(--fs-item); font-weight: var(--fw-label); color: var(--ct-ink); }
+.optionSub { font-size: var(--fs-sub); line-height: 1.45; color: var(--ct-ink-2); overflow-wrap: anywhere; }
 .optionGo {
-  font-size: 15px; color: var(--ct-ink-3); flex: none; margin-top: 2px;
+  font-size: var(--fs-section); color: var(--ct-ink-3); flex: none; margin-top: 2px;
   transition: color .15s, transform .15s;
 }
 
@@ -315,7 +315,7 @@
   width: 22px; height: 22px;
   display: grid; place-items: center;
   border: 1px solid var(--ct-line); border-radius: 50%;
-  font-size: 11.5px; font-weight: 600; color: var(--ct-ink-2); background: #fff;
+  font-size: var(--fs-label); font-weight: var(--fw-label); color: var(--ct-ink-2); background: #fff;
 }
 .step:not(:last-child) .stepNum::after {
   content: ''; position: absolute; top: 24px; left: 50%;
@@ -323,8 +323,8 @@
   background: var(--ct-line); transform: translateX(-50%);
 }
 .stepText { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding-top: 1px; }
-.stepName { font-size: 13.5px; font-weight: 550; color: var(--ct-ink); }
-.stepSub { font-size: 12.5px; line-height: 1.5; color: var(--ct-ink-2); }
+.stepName { font-size: var(--fs-body); font-weight: var(--fw-label); color: var(--ct-ink); }
+.stepSub { font-size: var(--fs-sub); line-height: 1.5; color: var(--ct-ink-2); }
 
 /* ── Success ── */
 .done {
@@ -337,9 +337,9 @@
   display: grid; place-items: center;
   border-radius: 50%; background: #ECFDF3; color: #067647;
 }
-.doneH { margin: 0; font-size: 16px; font-weight: 620; color: var(--ct-ink); }
-.doneP { margin: 6px 0 0; font-size: 14px; line-height: 1.6; color: var(--ct-ink-2); }
-.doneP strong { color: var(--ct-ink); font-weight: 550; }
+.doneH { margin: 0; font-size: var(--fs-section); font-weight: var(--fw-label); color: var(--ct-ink); }
+.doneP { margin: 6px 0 0; font-size: var(--fs-item); line-height: 1.6; color: var(--ct-ink-2); }
+.doneP strong { color: var(--ct-ink); font-weight: var(--fw-label); }
 
 /* ── Footer ── */
 .foot { border-top: 1px solid var(--ct-line); }
@@ -347,7 +347,7 @@
   padding: 20px 32px;
   display: flex; flex-wrap: wrap; gap: 8px 24px;
   align-items: center; justify-content: space-between;
-  font-size: 12.5px; color: var(--ct-ink-3);
+  font-size: var(--fs-sub); color: var(--ct-ink-3);
 }
 .footLinks { display: flex; align-items: center; gap: 8px; }
 .footLink { display: inline-flex; align-items: center; gap: 8px; }

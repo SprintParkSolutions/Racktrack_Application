@@ -24,8 +24,8 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiUrl, authFetch } from '../utils/api';
 import { useTour } from '../TourContext.jsx';
-import BackButton from '../components/BackButton.jsx';
 import styles from './HelpPage.module.css';
+import PageHeader from '../components/PageHeader.jsx';
 
 /* DOT's mark: a speech bubble carrying a single dot.
  *
@@ -205,32 +205,37 @@ export default function HelpPage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.head}>
-        {/* Every other destination reached from the menu has a back control;
-            Help was the one that did not, so it was a dead end. */}
-        <BackButton fallback="/scan" always />
-        {/* One line: mark, name, what it is. It used to be a stacked block - a boxed logo, a heading and a subtitle - which took a third of a
-            phone screen before a single answer appeared. */}
-        <span className={styles.mark} aria-hidden="true"><DotMark /></span>
-        <h1 className={styles.title}>DOT</h1>
-        <span className={styles.titleNote}>Support assistant</span>
+      {/* Every other destination reached from the menu has a back control;
+          Help was the one that did not, so it was a dead end.
 
-        {/* A permanent way through to a human.
-            Contact used to be reachable only from the phone's More menu, which
-            testers reported as not knowing it was there - and the one link to
-            it from this page appeared solely when DOT failed to answer, so a
-            user who simply preferred a person had no route. The bottom bar is
-            full at five slots, and Ask DOT now has a button on the home screen,
-            so putting it here makes Contact two taps from home, always. */}
-        <button
-          type="button"
-          className={styles.headContact}
-          onClick={() => navigate('/contact')}
-        >
-          Support
-        </button>
+          The mark sits beside the name and "Support assistant" is the header's
+          second line, the same shape every other screen's header has. It used
+          to be a stacked block - a boxed logo, a heading and a subtitle -
+          which took a third of a phone screen before a single answer appeared.
 
-      </header>
+          Support is a permanent way through to a human. Contact used to be
+          reachable only from the phone's More menu, which testers reported as
+          not knowing it was there - and the one link to it from this page
+          appeared solely when DOT failed to answer, so a user who simply
+          preferred a person had no route. The bottom bar is full at five
+          slots, and Ask DOT now has a button on the home screen, so putting it
+          here makes Contact two taps from home, always. */}
+      <PageHeader
+        title="DOT"
+        sub="Support assistant"
+        backFallback="/scan"
+        backAlways
+        lead={<span className={styles.mark} aria-hidden="true"><DotMark /></span>}
+        action={(
+          <button
+            type="button"
+            className={styles.headContact}
+            onClick={() => navigate('/contact')}
+          >
+            Support
+          </button>
+        )}
+      />
 
       <div className={styles.log} ref={logRef}>
         <div className={styles.inner}>

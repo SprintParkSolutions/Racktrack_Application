@@ -10,6 +10,8 @@ vi.mock('../AuthContext.jsx', () => ({ useAuth: () => ({ isAuthed: true }) }));
 vi.mock('../nav/navLinks.jsx', () => ({
   usePrimaryNav: () => [{ to: '/', label: 'Home', icon: null, inBar: true, end: true }, { to: '/scan', label: 'Scan', icon: null, inBar: true }],
   MoreIcon: () => null,
+  ScanIcon: () => null,
+  HomeIcon: () => null,
 }));
 
 import BottomNav from './BottomNav.jsx';
@@ -51,5 +53,24 @@ describe('<BottomNav> on a rack', () => {
     mountAt('/scan');
     expect(screen.queryAllByRole('tab')).toEqual([]);
     expect(screen.getByText('SCAN')).toBeTruthy();
+  });
+
+  test('the centre action is Home, and is not one of the items', () => {
+    mountAt('/scan');
+    // It carries no label, so it is found by what it says it does.
+    const centre = screen.getByRole('button', { name: 'Home' });
+    expect(centre).toBeTruthy();
+    fireEvent.click(centre);
+    expect(screen.getByTestId('where').textContent).toBe('/');
+    // and Home takes no slot in the row beside it
+    expect(screen.queryByRole('tab', { name: /home/i })).toBeNull();
+  });
+
+  test("the rack bar's centre action opens the results page on its port picker", () => {
+    mountAt('/results/RK-1/network');
+    fireEvent.click(screen.getByRole('button', { name: 'Look up a port' }));
+    // The results page reads #port on arrival and opens its port picker, the
+    // same thing its own "Look up a port" button does.
+    expect(screen.getByTestId('where').textContent).toBe('/results/RK-1#port');
   });
 });

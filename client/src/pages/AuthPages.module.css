@@ -82,7 +82,7 @@
 .asideNote {
   margin-left: auto;
   display: flex; align-items: baseline; gap: 6px;
-  font-size: .8125rem;
+  font-size: var(--fs-body);
   color: var(--body);
 }
 /* Below 420px the sentence and the link together crowd a narrow phone;
@@ -90,7 +90,7 @@
 .asideText { display: none; }
 .asideLink {
   background: none; border: 0; padding: 0;
-  font-family: inherit; font-size: .8125rem; font-weight: 550;
+  font-family: inherit; font-size: var(--fs-body); font-weight: var(--fw-label);
   color: var(--ink);
   text-decoration: none;
   cursor: pointer;
@@ -137,7 +137,7 @@
 }
 .brandMark { flex-shrink: 0; width: 22px; height: 22px; border-radius: 5px; object-fit: cover; }
 .brandName {
-  font-size: .875rem; font-weight: 600;
+  font-size: var(--fs-item); font-weight: var(--fw-label);
   letter-spacing: -0.015em;
   color: var(--ink);
   white-space: nowrap;
@@ -148,17 +148,17 @@
 .heading {
   margin: 0 0 6px;
   font-size: 1.5rem;
-  font-weight: 600;
+  font-weight: var(--fw-label);
   letter-spacing: -0.024em;
   line-height: 1.2;
   color: var(--ink);
 }
 .subheading {
   margin: 0 0 22px;
-  font-size: .9375rem;
+  font-size: var(--fs-section);
   line-height: 1.5;
   color: var(--body);
-  font-weight: 400;
+  font-weight: var(--fw-body);
 }
 
 /* ── Form ── */
@@ -175,13 +175,13 @@
 }
 .label {
   display: block;
-  font-size: .8125rem;
-  font-weight: 500;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-label);
   color: var(--body);
   margin-bottom: 6px;
 }
 .labelRow .label { margin-bottom: 0; }
-.labelOpt { color: var(--dim); font-weight: 400; }
+.labelOpt { color: var(--dim); font-weight: var(--fw-body); }
 
 .inputWrap { position: relative; display: block; }
 
@@ -193,14 +193,14 @@
   color: var(--ink);
   font-family: inherit;
   /* 16px floor: anything smaller makes iOS Safari zoom the page on focus. */
-  font-size: 1rem;
-  font-weight: 450;
+  font-size: var(--fs-section);
+  font-weight: var(--fw-body);
   letter-spacing: -0.006em;
   padding: 0 14px;
   outline: none;
   -webkit-appearance: none;
 }
-.input::placeholder { color: var(--dim); font-weight: 400; }
+.input::placeholder { color: var(--dim); font-weight: var(--fw-body); }
 .input:disabled { color: var(--body); cursor: not-allowed; }
 /* Chrome paints its own tinted fill over an autofilled field, which puts a
    yellow slab into a page built out of hairlines. */
@@ -228,7 +228,7 @@
 }
 .eyeBtn:hover { color: var(--ink); }
 
-.fieldNote { margin: 6px 0 0; font-size: .75rem; line-height: 1.45; color: var(--dim); }
+.fieldNote { margin: 6px 0 0; font-size: var(--fs-sub); line-height: 1.45; color: var(--dim); }
 
 /* ── Password strength ── */
 .strength { margin-top: 9px; display: flex; align-items: center; gap: 10px; }
@@ -243,7 +243,7 @@
   transition: width .28s ease;
 }
 .strengthHint {
-  font-size: .72rem; font-weight: 500;
+  font-size: var(--fs-sub); font-weight: var(--fw-label);
   color: var(--body);
   white-space: nowrap;
 }
@@ -252,7 +252,7 @@
 .matchHint {
   position: absolute;
   right: 12px; top: 50%; transform: translateY(-50%);
-  font-size: .72rem; font-weight: 500;
+  font-size: var(--fs-sub); font-weight: var(--fw-label);
   pointer-events: none;
   z-index: 3;
 }
@@ -265,7 +265,7 @@
 .errBox, .infoBox {
   display: flex; align-items: flex-start; gap: 8px;
   padding: 9px 0 9px 11px;
-  font-size: .8125rem; font-weight: 450; line-height: 1.5;
+  font-size: var(--fs-body); font-weight: var(--fw-body); line-height: 1.5;
 }
 .errBox  { border-left: 2px solid #a5352b; color: #a5352b; }
 .infoBox { border-left: 2px solid var(--line); color: var(--body); }
@@ -282,7 +282,7 @@
   margin-top: -6px;
 }
 .forgotLink {
-  font-size: .8125rem; font-weight: 450;
+  font-size: var(--fs-body); font-weight: var(--fw-body);
   color: var(--body);
   text-decoration: none;
   white-space: nowrap;
@@ -301,8 +301,8 @@
   background: var(--ink);
   color: #ffffff;
   font-family: inherit;
-  font-size: .9375rem;
-  font-weight: 550;
+  font-size: var(--fs-section);
+  font-weight: var(--fw-label);
   letter-spacing: -0.004em;
   cursor: pointer;
   margin-top: 6px;
@@ -331,7 +331,7 @@
   background: #ffffff;
   color: var(--ink);
   font-family: inherit;
-  font-size: .9375rem; font-weight: 600;
+  font-size: var(--fs-section); font-weight: var(--fw-label);
   cursor: pointer;
   transition: border-color .15s, background-color .15s;
   -webkit-tap-highlight-color: transparent;
@@ -352,12 +352,12 @@
 /* ── Alt-link row ── */
 .altRow {
   margin-top: 20px;
-  font-size: .875rem;
+  font-size: var(--fs-item);
   color: var(--body);
 }
 .altLink {
   color: var(--ink);
-  font-weight: 550;
+  font-weight: var(--fw-label);
   text-decoration: none;
   background: transparent; border: none;
   padding: 0;
@@ -376,12 +376,12 @@
   margin-top: 22px;
   padding-top: 16px;
   border-top: 1px solid var(--line);
-  font-size: .8125rem;
+  font-size: var(--fs-body);
   line-height: 1.6;
   color: var(--body);
 }
 .noteLine + .noteLine { margin-top: 5px; }
-.note b { font-weight: 600; color: var(--ink); }
+.note b { font-weight: var(--fw-label); color: var(--ink); }
 
 /* ── Verification code ────────────────────────────────────────────────
    The cells are inputs, so they inherit the field border and radius set in
@@ -396,7 +396,7 @@
   min-width: 0;
   text-align: center;
   font-family: inherit;
-  font-size: 1.25rem; font-weight: 550;
+  font-size: var(--fs-head); font-weight: var(--fw-label);
   color: var(--ink);
   outline: none;
   padding: 0;
@@ -406,11 +406,11 @@
 
 .sentTo {
   margin: 0 0 26px;
-  font-size: .9375rem;
+  font-size: var(--fs-section);
   line-height: 1.5;
   color: var(--body);
 }
-.sentToEmail { color: var(--ink); font-weight: 500; }
+.sentToEmail { color: var(--ink); font-weight: var(--fw-label); }
 
 /* ── Social sign-in ───────────────────────────────────────────────────
    Outlined, so the page keeps exactly one filled action. */
@@ -425,7 +425,7 @@
 .socialDivider {
   display: flex; align-items: center; gap: 14px;
   margin: 20px 0 0;
-  font-size: .78rem; font-weight: 400;
+  font-size: var(--fs-sub); font-weight: var(--fw-body);
   color: var(--dim);
 }
 .socialDivider::before,
@@ -443,8 +443,8 @@
   background: #ffffff;
   color: var(--ink);
   font-family: inherit;
-  font-size: .875rem;
-  font-weight: 500;
+  font-size: var(--fs-item);
+  font-weight: var(--fw-label);
   white-space: nowrap;
   cursor: pointer;
   transition: border-color .15s, background .15s;
@@ -534,7 +534,7 @@
   }
   .mediaMark { width: 22px; height: 22px; border-radius: 5px; object-fit: cover; }
   .mediaName {
-    font-size: .875rem; font-weight: 550;
+    font-size: var(--fs-item); font-weight: var(--fw-label);
     letter-spacing: -0.012em;
     color: rgba(255,255,255,.94);
   }
@@ -546,8 +546,8 @@
   }
   .mediaTitle {
     margin: 0 0 10px;
-    font-size: 1.4375rem;
-    font-weight: 550;
+    font-size: var(--fs-page);
+    font-weight: var(--fw-label);
     letter-spacing: -0.022em;
     line-height: 1.28;
     color: #ffffff;
@@ -555,9 +555,9 @@
   .mediaSub {
     margin: 0;
     max-width: 42ch;
-    font-size: .875rem;
+    font-size: var(--fs-item);
     line-height: 1.6;
-    font-weight: 400;
+    font-weight: var(--fw-body);
     color: rgba(255,255,255,.66);
   }
 

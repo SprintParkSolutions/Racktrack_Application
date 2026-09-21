@@ -1352,6 +1352,9 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // tab change pushes the previous tab onto this stack.
   const tabHistoryRef = useRef([]);
   const handleTabChange = (newTab) => {
+    // 'port' is the tab bar's centre action, not a tab: it is the same thing
+    // the "Look up a port" button on this page does.
+    if (newTab === 'port') { enterPortFlow(); return; }
     // Network is the live switches, read from this phone over SNMP. It is a
     // page of its own rather than a tab of this one, because reading a switch
     // is work with its own state - credentials, a reading, where it sits in

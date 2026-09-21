@@ -16,38 +16,18 @@
   color: var(--md-on-surface, #121212);
 }
 
-.header {
-  display: flex; align-items: center; gap: 8px;
-  padding: 14px 16px 12px;
-  background: var(--md-surface-container-lowest, #ffffff);
-  border-bottom: 1px solid var(--md-outline-variant, #e0e0e0);
-  position: sticky; top: 0; z-index: 60;
-  flex-shrink: 0;
-}
-.backBtn {
-  width: 40px; height: 40px; flex-shrink: 0;
-  border-radius: 12px; border: 1px solid var(--md-outline-variant, #e0e0e0);
-  background: var(--md-surface-container-lowest, #ffffff);
-  color: var(--md-on-surface, #121212);
-  font-size: 24px; line-height: 1; cursor: pointer;
-}
-.backBtn:hover { border-color: var(--md-on-surface, #121212); background: var(--md-surface-container, #ffffff); }
-.headerCenter { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
-.headerTitle { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
-.headerSub   { margin: 0; font-size: 12px; opacity: 0.6; }
-
 .main {
   display: flex; flex-direction: column; gap: 16px;
-  padding: 16px 14px 32px;
+  padding: 16px 14px var(--nav-clear);
   max-width: none; width: 100%; margin: 0 auto;
 }
 
 /* ── fleet strip ─────────────────────────────────────────────────── */
 .fleetBar {
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
-  font-size: 12px;
+  font-size: var(--fs-sub);
 }
-.fleetCount { font-weight: 700; }
+.fleetCount { font-weight: var(--fw-title); }
 .fleetSep { opacity: 0.3; }
 .fleetStat { display: inline-flex; align-items: center; gap: 6px; }
 
@@ -90,20 +70,20 @@
 }
 .dName {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 15px; font-weight: 700; line-height: 1.2;
+  font-size: var(--fs-section); font-weight: var(--fw-title); line-height: 1.2;
   overflow-wrap: anywhere; word-break: break-word;
 }
 .dHost {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px; opacity: 0.7; overflow-wrap: anywhere;
+  font-size: var(--fs-mono); opacity: 0.7; overflow-wrap: anywhere;
 }
-.dFoot { font-size: 11px; opacity: 0.55; }
+.dFoot { font-size: var(--fs-label); opacity: 0.55; }
 
 /* ── status pill ─────────────────────────────────────────────────── */
 .statusPill {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 3px 10px; border-radius: 999px;
-  font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em;
+  font-size: var(--fs-micro); font-weight: var(--fw-title); letter-spacing: 0.04em;
   border: 1px solid var(--md-outline-variant, #e0e0e0);
   background: var(--md-surface-container-lowest, #ffffff);
   white-space: nowrap; width: fit-content;
@@ -132,7 +112,7 @@
 .detailTitleWrap { display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1 1 240px; }
 .detailName {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 20px; font-weight: 800; line-height: 1.15; letter-spacing: -0.01em;
+  font-size: var(--fs-head); font-weight: var(--fw-title); line-height: 1.15; letter-spacing: -0.01em;
   overflow-wrap: anywhere; word-break: break-word;
 }
 .detailActions { display: flex; flex-wrap: wrap; gap: 8px; flex-shrink: 0; }
@@ -141,7 +121,7 @@
   border-radius: 8px; border: 1px solid var(--md-outline-variant, #e0e0e0);
   background: var(--md-surface-container-lowest, #ffffff);
   color: var(--md-on-surface, #121212);
-  font: inherit; font-size: 12px; font-weight: 600;
+  font: inherit; font-size: var(--fs-sub); font-weight: var(--fw-label);
   cursor: pointer; white-space: nowrap;
   transition: border-color .14s, background-color .14s;
 }
@@ -166,26 +146,26 @@
   background: var(--md-surface-container-lowest, #ffffff);
 }
 .factKey {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase;
+  font-size: var(--fs-micro); font-weight: var(--fw-title); letter-spacing: 0.10em; text-transform: uppercase;
   opacity: 0.55;
 }
 .factVal {
-  font-size: 13px; font-weight: 600;
+  font-size: var(--fs-body); font-weight: var(--fw-label);
   overflow-wrap: anywhere; word-break: break-word;
 }
-.factMono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+.factMono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--fs-mono); }
 
 /* ── banners ─────────────────────────────────────────────────────── */
 .banner {
   margin: 0; padding: 12px 16px;
   border-top: 1px solid var(--md-outline-variant, #e0e0e0);
-  font-size: 12.5px; line-height: 1.5;
+  font-size: var(--fs-sub); line-height: 1.5;
 }
-.bannerStrong { font-weight: 700; }
+.bannerStrong { font-weight: var(--fw-title); }
 .bannerWarn { color: #b45309; background: rgba(245, 158, 11, 0.06); }
 .bannerHint { margin-top: 4px; opacity: 0.75; overflow-wrap: anywhere; }
 .bannerRaw {
-  margin-top: 6px; font-size: 11px; opacity: 0.6;
+  margin-top: 6px; font-size: var(--fs-label); opacity: 0.6;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   overflow-wrap: anywhere; word-break: break-word;
 }
@@ -202,17 +182,17 @@
   padding: 11px 16px; margin-bottom: -1px;
   background: transparent; border: none; border-bottom: 2px solid transparent;
   color: var(--md-on-surface, #121212); opacity: 0.55;
-  font: inherit; font-size: 12px; font-weight: 600; letter-spacing: 0.03em;
+  font: inherit; font-size: var(--fs-sub); font-weight: var(--fw-label); letter-spacing: 0.03em;
   text-transform: uppercase; white-space: nowrap; cursor: pointer;
   transition: opacity .15s, border-color .15s;
 }
 .tab:hover { opacity: 0.85; }
-.tabActive { opacity: 1; font-weight: 700; border-bottom-color: var(--md-on-surface, #121212); }
-.tabCount { opacity: 0.55; font-weight: 600; margin-left: 5px; }
+.tabActive { opacity: 1; font-weight: var(--fw-title); border-bottom-color: var(--md-on-surface, #121212); }
+.tabCount { opacity: 0.55; font-weight: var(--fw-label); margin-left: 5px; }
 
 .section { padding: 16px; }
-.sectionNote { margin: 0; font-size: 12.5px; line-height: 1.5; opacity: 0.65; }
-.asOf { margin: 0 0 12px; font-size: 11px; opacity: 0.55; }
+.sectionNote { margin: 0; font-size: var(--fs-sub); line-height: 1.5; opacity: 0.65; }
+.asOf { margin: 0 0 12px; font-size: var(--fs-label); opacity: 0.55; }
 
 /* ── identity tiles ──────────────────────────────────────────────── */
 .idGrid {
@@ -229,19 +209,19 @@
   background: var(--md-surface-container-lowest, #ffffff);
 }
 .idKey {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase;
+  font-size: var(--fs-micro); font-weight: var(--fw-title); letter-spacing: 0.10em; text-transform: uppercase;
   opacity: 0.55;
 }
 .idVal {
-  font-size: 13.5px; font-weight: 600; line-height: 1.35;
+  font-size: var(--fs-body); font-weight: var(--fw-label); line-height: 1.35;
   overflow-wrap: anywhere; word-break: break-word;
 }
-.idMono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+.idMono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--fs-mono); }
 
 /* ── port faceplate ──────────────────────────────────────────────── */
 .legend {
   display: flex; align-items: center; gap: 14px;
-  margin: 0 0 12px; font-size: 10.5px; font-weight: 700;
+  margin: 0 0 12px; font-size: var(--fs-micro); font-weight: var(--fw-title);
   letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.7;
 }
 .legendItem { display: inline-flex; align-items: center; gap: 6px; }
@@ -270,7 +250,7 @@
 .portCell.down::after { background: #ef4444; }
 .portName {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: clamp(9px, 2.4vw, 12px); font-weight: 700; line-height: 1;
+  font-size: clamp(9px, 2.4vw, 12px); font-weight: var(--fw-title); line-height: 1;
   font-variant-numeric: tabular-nums;
   padding: 0 2px; text-align: center; overflow-wrap: anywhere;
 }
@@ -280,13 +260,13 @@
   border: 1px solid var(--md-outline-variant, #e0e0e0);
   border-radius: 12px; overflow-x: auto;
 }
-.table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.table { width: 100%; border-collapse: collapse; font-size: var(--fs-sub); }
 .table th, .table td {
   padding: 8px 12px; text-align: left; vertical-align: top;
   border-bottom: 1px solid var(--md-outline-variant, #e0e0e0);
 }
 .table th {
-  font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  font-size: var(--fs-micro); font-weight: var(--fw-title); letter-spacing: 0.08em; text-transform: uppercase;
   opacity: 0.6; white-space: nowrap;
 }
 .table tr:last-child td { border-bottom: 0; }
@@ -295,14 +275,14 @@
 .up { color: #16a34a; } .down { color: #dc2626; } .unknown { opacity: 0.4; }
 
 .empty { text-align: center; padding: 8px 0; }
-.errLine { color: #b45309; font-size: 12.5px; line-height: 1.5; margin: 0; }
+.errLine { color: #b45309; font-size: var(--fs-sub); line-height: 1.5; margin: 0; }
 
 /* Extra-neighbour count ("+3") next to the first device on a shared port.
    Muted so the device name stays primary, but visible enough that the port
    doesn't read as a point-to-point link when it isn't. */
 .alsoCount {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-label);
   opacity: 0.55;
 }
 
@@ -349,9 +329,9 @@
     border-radius: 16px;
     background: var(--md-surface-container-lowest, #ffffff);
     box-shadow: 0 1px 2px rgba(18, 18, 18,0.04);
-    font-size: 13px;
+    font-size: var(--fs-body);
   }
-  .fleetCount { font-size: 15px; }
+  .fleetCount { font-size: var(--fs-section); }
   .fleetSep { display: none; }
   .fleetStat { justify-content: flex-start; }
 
@@ -366,7 +346,7 @@
   }
   .deviceCard { padding: 12px 14px 12px 16px; gap: 6px; }
   .deviceCard:hover { transform: none; }   /* no lift inside a tight list */
-  .dName { font-size: 14px; }
+  .dName { font-size: var(--fs-item); }
 
   /* Detail - one clean card filling the right pane. */
   .detail {
@@ -375,7 +355,7 @@
     box-shadow: 0 1px 2px rgba(18, 18, 18,0.04);
   }
   .detailHead { padding: 18px 20px 16px; }
-  .detailName { font-size: 23px; }
+  .detailName { font-size: var(--fs-page); }
   .section { padding: 18px 20px; }
   .factGrid { grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); }
 

@@ -5,6 +5,7 @@ import { apiUrl, authFetch } from '../utils/api';
 import { getCached, setCached, cacheKey } from '../utils/scanPrefetch';
 import RackTabs from '../components/RackTabs.jsx';
 import styles from './TopologyPage.module.css';
+import PageHeader from '../components/PageHeader.jsx';
 import { getItem, setItem } from '../utils/safeStorage';
 
 const TopologyScene3D = lazy(() => import('./TopologyScene3D.jsx'));
@@ -330,14 +331,14 @@ function TopologyInner({ rackId, embedded }) {
           onClick={retry}
           style={{ marginTop: 14, alignSelf: 'flex-start', padding: '10px 18px', borderRadius: 10,
                    border: '1px solid #000000', background: '#000000', color: '#fff',
-                   fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+                   fontSize: 'var(--fs-body)', fontWeight: 'var(--fw-title)', cursor: 'pointer' }}
         >Retry</button>
       </>
     );
     if (embedded) return errBody;
     return (
       <div className={styles.page}>
-        <PageHeader rackId={rackId} onBack={() => goBack()} />
+        <TopologyHeader rackId={rackId} onBack={() => goBack()} />
         {errBody}
       </div>
     );
@@ -346,7 +347,7 @@ function TopologyInner({ rackId, embedded }) {
     if (embedded) return <div className={styles.loading}>Loading topology…</div>;
     return (
       <div className={styles.page}>
-        <PageHeader rackId={rackId} onBack={() => goBack()} />
+        <TopologyHeader rackId={rackId} onBack={() => goBack()} />
         <div className={styles.loading}>Loading topology…</div>
       </div>
     );
@@ -355,7 +356,7 @@ function TopologyInner({ rackId, embedded }) {
   const topoBody = (
     <>
       {!embedded && (
-        <PageHeader
+        <TopologyHeader
           rackId={rackId}
           onBack={() => goBack()}
           stats={topo.stats}
@@ -453,19 +454,19 @@ function RackBanner({ topo, view, setView }) {
   );
 }
 
-function PageHeader({ rackId, onBack, stats, view, setView, showCables = true }) {
+function TopologyHeader({ rackId, onBack, stats, view, setView, showCables = true }) {
   const subtitle = stats
     ? `${rackId} · ${stats.device_count_in_rack} devices${showCables ? ` · ${stats.edge_count} cables` : ''}`
     : rackId;
   return (
     <>
-      <header className={styles.header}>
-        <button className={styles.backBtn} onClick={onBack}>← Back</button>
-        <div className={styles.headerCenter}>
-          <h2>Rack Topology</h2>
-          <span className={styles.headerMono}>{subtitle}</span>
-        </div>
-        {view ? (
+      <PageHeader
+        title="Rack Topology"
+        sub={subtitle}
+        mono
+        back={onBack}
+        sticky
+        action={view ? (
           <div className={styles.viewToggle} role="tablist" aria-label="Topology view">
             <button
               type="button"
@@ -480,10 +481,8 @@ function PageHeader({ rackId, onBack, stats, view, setView, showCables = true })
               aria-pressed={view === '3d'}
             >3D</button>
           </div>
-        ) : (
-          <div style={{ width: 64 }} />
-        )}
-      </header>
+        ) : null}
+      />
       <RackTabs rackId={rackId} />
     </>
   );

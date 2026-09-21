@@ -26,11 +26,11 @@
   padding: 0 16px; padding-top: env(safe-area-inset-top, 0px);
 }
 .topbarLeft { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.topbarT { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.2; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topbarT { margin: 0; font-size: var(--fs-section); font-weight: var(--fw-label); line-height: 1.2; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ---- While the model is being read ---- */
-.wait { padding: 24px 16px; font-size: 14px; color: #6b7280; }
-.legend { margin: 0; font-size: 12px; line-height: 1.4; color: #6b7280; }
+.wait { padding: 24px 16px; font-size: var(--fs-item); color: #6b7280; }
+.legend { margin: 0; font-size: var(--fs-sub); line-height: 1.4; color: #6b7280; }
 
 /* ---- The container: fills a phone ---- */
 .veil {
@@ -50,13 +50,13 @@
   display: flex; flex-direction: column; gap: 6px;
 }
 .boxHRow { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
-.boxT { margin: 0; flex: 1 1 auto; min-width: 0; font-size: 20px; font-weight: 600; line-height: 1.25; color: #111827; overflow-wrap: anywhere; }
+.boxT { margin: 0; flex: 1 1 auto; min-width: 0; font-size: var(--fs-head); font-weight: var(--fw-label); line-height: 1.25; color: #111827; overflow-wrap: anywhere; }
 .boxT:focus { outline: none; }
 .boxHRight { margin-left: auto; flex: none; display: inline-flex; align-items: center; gap: 12px; padding-top: 3px; }
-.boxQuit { border: 0; background: none; padding: 0; font-family: inherit; font-size: 13.5px; font-weight: 600; color: #4b5563; cursor: pointer; white-space: nowrap; }
+.boxQuit { border: 0; background: none; padding: 0; font-family: inherit; font-size: var(--fs-body); font-weight: var(--fw-label); color: #4b5563; cursor: pointer; white-space: nowrap; }
 .boxQuit:hover { color: #111827; text-decoration: underline; text-underline-offset: 3px; }
 .boxQuit:focus-visible { outline: 2px solid #1f4ed8; outline-offset: 2px; }
-.boxLead { margin: 0; font-size: 13.5px; line-height: 1.5; color: #4b5563; }
+.boxLead { margin: 0; font-size: var(--fs-body); line-height: 1.5; color: #4b5563; }
 .boxB {
   flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
   padding: 20px 16px 24px; display: flex; flex-direction: column; gap: 24px;
@@ -67,8 +67,8 @@
   border-top: 1px solid #d7dce3; background: #fff;
 }
 
-.loading { color: #6b7280; font-size: 14px; }
-.stop { margin: 0; font-size: 13.5px; line-height: 1.5; font-weight: 500; color: #b42318; }
+.loading { color: #6b7280; font-size: var(--fs-item); }
+.stop { margin: 0; font-size: var(--fs-body); line-height: 1.5; font-weight: var(--fw-label); color: #b42318; }
 
 /* ---- From the shell (768px) ---- */
 @media (min-width: 768px) {

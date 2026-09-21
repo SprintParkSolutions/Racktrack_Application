@@ -17,18 +17,18 @@
 }
 .triggerLabel {
   grid-area: label;
-  font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase;
-  color: var(--muted); font-weight: 600;
+  font-size: var(--fs-micro); letter-spacing: .07em; text-transform: uppercase;
+  color: var(--muted); font-weight: var(--fw-label);
 }
-.triggerValue { grid-area: value; font-size: 15px; font-weight: 650; color: var(--text); margin-top: 2px; }
-.triggerEmpty { grid-area: value; font-size: 15px; font-weight: 600; color: var(--muted); margin-top: 2px; }
-.triggerSub { grid-area: sub; font-size: 12px; color: var(--muted); margin-top: 1px; }
+.triggerValue { grid-area: value; font-size: var(--fs-section); font-weight: var(--fw-title); color: var(--text); margin-top: 2px; }
+.triggerEmpty { grid-area: value; font-size: var(--fs-section); font-weight: var(--fw-label); color: var(--muted); margin-top: 2px; }
+.triggerSub { grid-area: sub; font-size: var(--fs-sub); color: var(--muted); margin-top: 1px; }
 .triggerAction {
   grid-area: action;
-  font-size: 13px; font-weight: 650; color: #0f7b4f;
+  font-size: var(--fs-body); font-weight: var(--fw-title); color: #0f7b4f;
   padding-left: 14px;
 }
-.suggest { margin: 0 0 2px; font-size: 12px; color: var(--muted); }
+.suggest { margin: 0 0 2px; font-size: var(--fs-sub); color: var(--muted); }
 
 /* The one act that turns a match into a fact - see PlacePicker.jsx. */
 .confirm {
@@ -37,7 +37,7 @@
   padding: 9px 12px;
   border: 1px solid #0f7b4f; border-radius: 8px;
   background: transparent;
-  font-family: var(--font); font-size: 13px; font-weight: 650; color: #0f7b4f;
+  font-family: var(--font); font-size: var(--fs-body); font-weight: var(--fw-title); color: #0f7b4f;
   text-align: left;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
@@ -67,13 +67,13 @@
 }
 .sheetHead h3 {
   flex: 1; margin: 0;
-  font-size: 17px; font-weight: 650; letter-spacing: -.01em; color: var(--text);
+  font-size: var(--fs-head); font-weight: var(--fw-title); letter-spacing: -.01em; color: var(--text);
 }
 .close {
   width: 34px; height: 34px; flex: none;
   border: 0; border-radius: 9px;
   background: var(--bg2, #f1f3f5); color: var(--text);
-  font-size: 14px; cursor: pointer;
+  font-size: var(--fs-item); cursor: pointer;
 }
 
 /* List | On the photo */
@@ -82,7 +82,7 @@
   flex: 1; min-height: 38px;
   border-radius: 9px; border: 1px solid transparent;
   background: var(--bg2, #f1f3f5); color: var(--muted);
-  font-family: var(--font); font-size: 13.5px; font-weight: 650;
+  font-family: var(--font); font-size: var(--fs-body); font-weight: var(--fw-title);
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 .modeOn { background: #121212; color: #fff; }
@@ -103,15 +103,15 @@
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 .itemOn { background: rgba(15,123,79,.07); }
-.itemName { grid-area: name; font-size: 14.5px; font-weight: 650; color: var(--text); }
-.itemSub { grid-area: sub; font-size: 12px; color: var(--muted); margin-top: 2px; }
+.itemName { grid-area: name; font-size: var(--fs-item); font-weight: var(--fw-title); color: var(--text); }
+.itemSub { grid-area: sub; font-size: var(--fs-sub); color: var(--muted); margin-top: 2px; }
 .tag {
   grid-area: tag; align-self: center;
-  font-size: 10px; letter-spacing: .06em; text-transform: uppercase; font-weight: 700;
+  font-size: var(--fs-micro); letter-spacing: .06em; text-transform: uppercase; font-weight: var(--fw-title);
   color: #0f7b4f; background: rgba(15,123,79,.12);
   padding: 3px 7px; border-radius: 999px;
 }
-.tick { grid-area: tag; align-self: center; color: #0f7b4f; font-size: 16px; font-weight: 700; }
+.tick { grid-area: tag; align-self: center; color: #0f7b4f; font-size: var(--fs-section); font-weight: var(--fw-title); }
 
 /* ── The photo ── */
 .photo { position: relative; padding: 0 16px 16px; }
@@ -127,7 +127,7 @@
 .boxTaken { fill: rgba(18,18,18,.05); stroke: rgba(255,255,255,.55); stroke-dasharray: 6 5; }
 .boxLabel {
   fill: #ffffff;
-  font-family: var(--font); font-size: 26px; font-weight: 700;
+  font-family: var(--font); font-size: 26px; font-weight: var(--fw-title);
   paint-order: stroke; stroke: rgba(0,0,0,.55); stroke-width: 5px; stroke-linejoin: round;
   pointer-events: none;
 }
@@ -138,6 +138,6 @@
   margin: 0; width: 100%; min-height: 52px;
   border: 0; border-top: 1px solid var(--border, rgba(0,0,0,.1));
   background: transparent; color: var(--muted);
-  font-family: var(--font); font-size: 14px; font-weight: 600;
+  font-family: var(--font); font-size: var(--fs-item); font-weight: var(--fw-label);
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }

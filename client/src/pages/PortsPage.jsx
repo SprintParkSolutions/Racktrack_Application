@@ -10,6 +10,7 @@ import {
 import RackTabs from '../components/RackTabs.jsx';
 import { useIsDesktop } from '../hooks/useIsDesktop';
 import styles from './PortsPage.module.css';
+import PageHeader from '../components/PageHeader.jsx';
 
 // "6d ago" / "just now" - same phrasing the Lab page uses, so a recorded
 // timestamp reads identically wherever it appears.
@@ -280,7 +281,7 @@ export default function PortsPage() {
   if (scanErr) {
     return (
       <div className={styles.page}>
-        <PageHeader rackId={rackId} onBack={goBack} />
+        <PortsHeader rackId={rackId} onBack={goBack} />
         <div className={styles.error}>Failed to load scan: {scanErr}</div>
       </div>
     );
@@ -288,7 +289,7 @@ export default function PortsPage() {
   if (!scan) {
     return (
       <div className={styles.page}>
-        <PageHeader rackId={rackId} onBack={goBack} />
+        <PortsHeader rackId={rackId} onBack={goBack} />
         <div className={styles.loading}>Loading rack...</div>
       </div>
     );
@@ -296,7 +297,7 @@ export default function PortsPage() {
 
   return (
     <div className={styles.page}>
-      <PageHeader rackId={rackId} onBack={goBack} />
+      <PortsHeader rackId={rackId} onBack={goBack} />
       <LogicalView probe={probe} scan={scan} scanDurationMs={scanDurationMs} />
     </div>
   );
@@ -306,19 +307,18 @@ export default function PortsPage() {
 // On desktop the DesktopShell already renders the single top bar (title +
 // back button), so this page must NOT draw a second one. On mobile there is
 // no shell, so this header is the one bar.
-function PageHeader({ rackId, onBack }) {
+function PortsHeader({ rackId, onBack }) {
   const isDesktop = useIsDesktop();
   return (
     <>
       {!isDesktop && (
-        <header className={styles.header}>
-          <button className={styles.backBtn} onClick={onBack}>← Back</button>
-          <div className={styles.headerCenter}>
-            <h2>Live Network Switch</h2>
-            <span className={styles.headerMono}>{rackId}</span>
-          </div>
-          <div style={{ width: 64 }} />
-        </header>
+        <PageHeader
+          title="Live Network Switch"
+          sub={rackId}
+          mono
+          back={onBack}
+          sticky
+        />
       )}
       {/* Renders nothing when this rack is standalone */}
       <RackTabs rackId={rackId} />
