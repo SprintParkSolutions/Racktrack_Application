@@ -9943,25 +9943,40 @@ function ensureSideLabels(rackId) {
     child.on('error', () => { clearTimeout(killer); done(false); });
     child.on('close', () => {
       clearTimeout(killer);
-      done(fs.existsSync(path.join(rackDir, 'side_labels.json')));
+      const read = fs.existsSync(path.join(rackDir, 'side_labels.json'));
+      // The rack ladder reads the physical layer from its cached file, so the
+      // file is made again here, with the labels in it, the moment they exist.
+      // Otherwise a layer built before the label was read is what every later
+      // question about this rack would be answered from.
+      if (read) {
+        try { buildPhysicalLayer(rackId, { refresh: true }).catch(() => {}); } catch (_) { /* best effort */ }
+      }
+      done(read);
     });
   }).finally(() => { _sideLabelRuns.delete(rackId); });
   _sideLabelRuns.set(rackId, run);
   return run;
 }
 
-async function physicalLayerReport(rackId, opts = {}) {
-  // Wait for the labels, but not for ever: a slow reader must not hold a
-  // results screen. If it has not finished, the layer is built from what there
-  // is, and built again - with the labels - the next time it is asked for.
-  let fresh = false;
-  if (/^RK-[A-Z0-9]+$/i.test(String(rackId))) {
-    fresh = await Promise.race([
+const _physicalLayerCalls = new Map();
+function physicalLayerReport(rackId, opts = {}) {
+  if (!/^RK-[A-Z0-9]+$/i.test(String(rackId))) return buildPhysicalLayer(rackId, opts);
+  // Two callers at once share one answer, as they always did: the second is
+  // handed the first one's promise rather than starting a wait of its own.
+  const key = `${rackId}|${opts.refresh ? 1 : 0}`;
+  if (_physicalLayerCalls.has(key)) return _physicalLayerCalls.get(key);
+  const run = (async () => {
+    // Wait for the labels, but not for ever: a slow reader must not hold a
+    // results screen. If it has not finished, the layer is built from what
+    // there is, and built again - with the labels - when they arrive.
+    const fresh = await Promise.race([
       ensureSideLabels(rackId),
       new Promise((resolve) => setTimeout(() => resolve(false), SIDE_LABELS_WAIT_MS)),
     ]);
-  }
-  return buildPhysicalLayer(rackId, { ...opts, refresh: Boolean(opts.refresh) || fresh === true });
+    return buildPhysicalLayer(rackId, { ...opts, refresh: Boolean(opts.refresh) || fresh === true });
+  })().finally(() => { _physicalLayerCalls.delete(key); });
+  _physicalLayerCalls.set(key, run);
+  return run;
 }
 
 function buildPhysicalLayer(rackId, { refresh = false } = {}) {
