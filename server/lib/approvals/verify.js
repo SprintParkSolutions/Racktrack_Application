@@ -122,19 +122,13 @@ const FAIL_REASON = { post_fix: 'verification_failed', post_write: 'write_mismat
 async function compareFor({ plan, scanId = null, actor = null, client = null,
   snapshot = null, writer = null } = {}) {
   const W = writer || require('../netbox/writer');
-  let snap = snapshot;
-  let scan = null;
-  if (!snap) {
-    const scans = require('../netbox/store');
-    scan = scans.getScan(scanId != null ? scanId : plan.scanId);
-    if (!scan) return { error: 'no such scan' };
-    snap = (scan.payload && scan.payload.reconciled) || (scan.payload && scan.payload.snapshot);
-    if (!snap) return { error: 'that scan has no detection result yet' };
-    try {
-      require('../netbox/unmanaged').applyTo(snap, scan.rackId);
-      require('../netbox/entered').applyTo(snap, scan.rackId);
-    } catch { /* a scan with no hand-declared extras compares just the same */ }
+  // The same loader the write uses, so a change a person made on the check is
+  // in this comparison too, whichever scan of the rack it reads.
+  const loaded = require('./snapshot').forPlan(plan, { scanId, snapshot });
+  if (loaded.error) {
+    return { error: loaded.code === 'not_found' || /no scan/.test(loaded.error) ? 'no such scan' : loaded.error };
   }
+  const { snap, scan } = loaded;
   const nb = client || require('./connections').netboxFor({
     orgId: plan.orgId ?? (actor && actor.orgId), userId: actor && actor.id });
   if (!nb) {

@@ -205,13 +205,38 @@ function excludedUids(items) {
   return out;
 }
 
-/** The same snapshot, minus what was not approved. */
+/**
+ * The same snapshot, minus what was not approved.
+ *
+ * What a person changed on the check rides on the snapshot beside the arrays,
+ * and goes the same way. A record marked offline that was then rejected writes
+ * nothing. And the answer "this box is that record" about a box that was left
+ * out goes with the box: the writer reads an answer about a box it cannot find
+ * as a box the scan lost, and holds every new device back until somebody says
+ * where it went - which would stop the approved half of the check for the sake
+ * of the rejected half. Nothing on the snapshot handed in is changed.
+ */
 function filterSnapshot(snapshot, excluded) {
   if (!excluded || !excluded.size) return snapshot;
   const out = { ...snapshot };
   for (const [key, value] of Object.entries(snapshot)) {
     if (Array.isArray(value) && value.length && value[0] && value[0].uid !== undefined) {
       out[key] = value.filter((o) => !excluded.has(o.uid));
+    }
+  }
+  const without = (map) => Object.fromEntries(Object.entries(map).filter(([uid]) => !excluded.has(uid)));
+  const isMap = (v) => Boolean(v) && typeof v === 'object' && !Array.isArray(v);
+  if (isMap(snapshot.approvedOffline)) {
+    out.approvedOffline = Object.fromEntries(Object.entries(snapshot.approvedOffline)
+      .filter(([, row]) => !(row && excluded.has(row.uid))));
+  }
+  if (isMap(snapshot.approvedMoves)) out.approvedMoves = without(snapshot.approvedMoves);
+  const binding = snapshot.recordBinding;
+  if (isMap(binding) && isMap(binding.deviceNetboxIds)
+    && Object.keys(binding.deviceNetboxIds).some((uid) => excluded.has(uid))) {
+    out.recordBinding = { ...binding, deviceNetboxIds: without(binding.deviceNetboxIds) };
+    if (isMap(binding.shown) && isMap(binding.shown.devices)) {
+      out.recordBinding.shown = { ...binding.shown, devices: without(binding.shown.devices) };
     }
   }
   return out;
