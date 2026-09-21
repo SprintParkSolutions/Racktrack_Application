@@ -20,6 +20,11 @@ import styles from './AssignedNotice.module.css';
 
 const POLL_MS = 60_000;
 const URL_RE = /https?:\/\/[^\s]+/g;
+// A scan nobody has identified is known only by the hash of its photograph. The
+// server words that properly now; a notice written before it did still carries
+// the hash, so it is put into words here too.
+const HASH_RE = /\brack RK-[0-9A-F]{6,}\b/gi;
+const inWords = (text) => String(text || '').replace(HASH_RE, 'a rack that has not been identified yet');
 
 /**
  * A notice, taken apart for a small screen.
@@ -35,7 +40,7 @@ const URL_RE = /https?:\/\/[^\s]+/g;
  * a bare ServiceNow address - the owner asked why a technician was seeing that.
  */
 export function splitBody(body) {
-  const raw = String(body || '');
+  const raw = inWords(body);
   const url = (raw.match(URL_RE) || [])[0] || null;
   const text = raw
     .replace(/^Hello [^\n]*\n+/, '')            // the greeting is for the email
@@ -107,7 +112,7 @@ export default function AssignedNotice() {
         <span className={styles.label}>Assigned to you</span>
         {rows.length > 1 && <span className={styles.more}>and {rows.length - 1} more</span>}
       </div>
-      <h2 className={styles.title}>{String(top.subject || '').replace(/^Assigned to you:\s*/i, '').replace(/^./, (c) => c.toUpperCase())}</h2>
+      <h2 className={styles.title}>{inWords(top.subject).replace(/^Assigned to you:\s*/i, '').replace(/^./, (c) => c.toUpperCase())}</h2>
       <p className={styles.body}>{parts.lead}</p>
 
       {(parts.details || parts.steps) && (
