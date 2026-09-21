@@ -667,6 +667,10 @@ try {
   app.use('/api/nb/scans',      nbAny,   require('./routes/netbox/scans'));
   app.use('/api/nb/switches',   nbAny,   require('./routes/netbox/switches'));
   app.use('/api/nb/unmanaged',  nbField, require('./routes/netbox/unmanaged'));
+  // The ports section of a check. A router that answers /:planId/connectivity
+  // and nothing else, so it sits in front of the plans router on the same
+  // prefix and gate, and everything else falls through to it.
+  app.use('/api/nb/plans',      nbAny,   require('./routes/netbox/connectivity'));
   app.use('/api/nb/plans',      nbAny,   require('./routes/netbox/plans'));
   app.use('/api/nb/netbox',     nbAny,   require('./routes/netbox/netbox'));
   // Connectors hold the NetBox token itself.
@@ -694,6 +698,9 @@ try {
 //   - the ServiceNow poller starts, so an incident resolved over there comes
 //     back here without an admin having to open the plan.
 try {
+  // The same ports section for the desk, in front of the sub-application the
+  // way its phone twin sits in front of /api/nb/plans.
+  app.use('/api/approvals/plans', auth.requireAuth, require('./routes/approvals/connectivity'));
   app.use('/api/approvals', auth.requireAuth, require('./routes/approvals'));
   const imported = require('./lib/approvals/migrate').run();
   const poller = require('./lib/approvals/poller').start();
