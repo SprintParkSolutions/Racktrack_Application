@@ -1825,7 +1825,9 @@ function get(planId, actor) {
     sla: store.slaOf(plan.id),
     spoc: rackContact, rackContact,
     holder: plan.spocUserId != null ? plan.spoc : null,
-    siteSpoc: spoc.ofSite(plan),
+    // Read through estate.js's own database handle, so never from inside a
+    // transaction of ours (create() reads the plan back inside its own).
+    siteSpoc: store.db().inTransaction ? null : spoc.ofSite(plan),
     sender: plan.submittedBy || plan.submittedById != null
       ? { userId: plan.submittedById ?? null, username: plan.submittedBy ?? null, note: plan.submittedNote ?? null }
       : null,
