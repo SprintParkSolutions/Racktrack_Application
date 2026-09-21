@@ -90,7 +90,15 @@ module.exports = function rackIdentityRouter({ requireAuth, audit = null, physic
       tenantId, spaceId, netboxClient: clientOf(req), physicalLayer: reportFor,
     });
     res.setHeader('Cache-Control', 'no-store');
-    res.json({ ok: true, ...result });
+    // The room the rack is in, by the name the customer gave it, for the header
+    // of the results screen. Added here rather than in identify(): that answer
+    // is compared whole in tests and by callers, and this is only a label.
+    let spaceName = null;
+    try {
+      const space = result.spaceId != null ? estate.getSpace(result.spaceId) : null;
+      spaceName = space && space.name ? String(space.name) : null;
+    } catch { spaceName = null; }
+    res.json({ ok: true, ...result, spaceName });
   }));
 
   router.post('/api/scan/:rackId/identity/confirm', requireAuth, guardRack, wrap(async (req, res) => {

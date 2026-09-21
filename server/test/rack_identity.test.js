@@ -759,7 +759,7 @@ test('GET: signed in, scoped to the rack\'s organisation and Site, and it writes
       assert.deepEqual(r.json.rack, { source: 'known', id: rack.id, name: 'GET-01', facilityId: null });
       assert.equal(r.json.rackKey, `t${SITE_A}:${rack.id}`);
       assert.deepEqual(Object.keys(r.json).sort(), ['candidates', 'confidence', 'decision', 'evidence', 'ok', 'proposal',
-        'rack', 'rackId', 'rackKey', 'rule', 'spaceId']);
+        'rack', 'rackId', 'rackKey', 'rule', 'spaceId', 'spaceName']);   // spaceName: the room's name, for the results header
       assert.deepEqual(Object.keys(r.json.evidence).sort(), ['deviceHints', 'labels', 'location', 'notes', 'pattern']);
     }
     // Every other outcome reads only, too: a suggestion from NetBox, a scan with no report, a refusal.

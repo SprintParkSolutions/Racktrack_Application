@@ -4701,22 +4701,20 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           {/* The site and the coordinates belong to the scan itself. On the
               Timeline, Topology and Switches they were three more lines above
               a screen that is not about where the photo was taken. */}
-          {tab === 'overview' && (rackSaid || takenAt) && (
+          {tab === 'overview' && (rackSaid || takenAt || (identity && identity.spaceName)) && (
             <div className={styles.headerWhere}>
               {rackSaid && rackSaid.also && <span>{rackSaid.also}</span>}
               {/* The site, and no more. How many metres the phone stood from
                   the site's address is the ladder's working, not something the
                   person at the rack needs read back to them. */}
               {takenAt && takenAt.site && <span>{takenAt.site}</span>}
+              {/* The room, by the name the customer gave it. It replaced the
+                  coordinates: a person finds a rack by its room, not by a pair
+                  of numbers. */}
+              {identity && identity.spaceName && <span>{identity.spaceName}</span>}
               {rackSaid && !rackSaid.confirmed && (
                 <span className={styles.headerRackAsk}>read, not confirmed</span>
               )}
-            </div>
-          )}
-          {tab === 'overview' && takenAt && takenAt.at && Number.isFinite(takenAt.at.lat) && (
-            <div className={styles.headerCoords}>
-              {takenAt.at.lat.toFixed(5)}, {takenAt.at.lng.toFixed(5)}
-              {Number.isFinite(takenAt.at.accuracyM) ? ` ±${takenAt.at.accuracyM} m` : ''}
             </div>
           )}
         </div>
