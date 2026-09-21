@@ -41,6 +41,8 @@ approval_tickets: id, plan_id, item_uid, assignee, assignee_id, assignee_email, 
 
 approval_overrides: id, plan_id, item_uid (nullable for offline), kind (move, offline, value), netbox_id, record_name, fields (json {field: {from, to}}), shown (json), source (suggestion, manual), suggestion_id, rule, note, created_by, created_by_id, created_at, revoked_at, revoked_by. What a person changed on a check before approving it; never edited or deleted, a change taken back is stamped revoked. approval_plans also holds findings, evidence and suggestion_state (json) and base_fingerprint (the fingerprint the check was filed with, kept when a change re-plans it).
 
+approval_changes: id, org_id, tenant_id, plan_id, attempt, rack_id, rack_name, item_uid, object_type, object_name, netbox_id, netbox_url, action (create, update, rebind, fail, check), field (`*` for a whole record), before (json), after (json), internal (0/1, RackTrack's own link fields), result (written, failed, verified, mismatch), reason, source (scan, suggestion, manual), rule, approved_by, approved_by_id, approved_at, written_by (`system` for a write an approval started), written_by_id, written_at, incident_number, incident_sys_id. Append only, by triggers; no foreign key, so removing an organization deletes its rows by hand after its plans. The verdict of the check after a write is a row of its own (action `check`), never an update.
+
 approval_decisions: id, plan_id, stage (first, second), approver_id, decision (approved, rejected, rework), reason_code, comment, payload_hash, plan_version, decided_at.
 
 approval_verifications: id, plan_id, kind (post_fix, post_write), scan_id, result (pass, fail), performed_by, performed_at, detail (json: per item uid, expected, observed, ok), evidence (json).
@@ -119,8 +121,9 @@ All answer JSON `{ ok: true, ... }` or `{ error }` with the right status. Every 
 - POST `/plans/:id/suggestions/:sid/accept` `{ note }`, POST `/plans/:id/suggestions/:sid/dismiss` `{ note }` (`:sid` URL-encoded) -> the whole check as GET `/plans/:id` gives it. 409 when the suggestion no longer applies, when NetBox could not be compared, or when the fresh comparison does not show the change.
 - DELETE `/plans/:id/overrides/:overrideId` -> takes a change back, compares the check again, and answers the whole check.
 - POST `/plans/:id/approve` `{ comment, incidentState }` -> plan-level approval record with payload_hash, plus `write` and `incident`; second call by a different approver when dual approval applies
+  The final approval writes at once: the server does it, as the system, on the approver's word, and waits up to 25 seconds. `write` is `{ state, status, written, failed, failures, changes, why }` with `state` one of `written`, `nothing_to_write`, `failed`, `bounced` (NetBox or the check changed after the approval: nothing written, the check is back with its holder, compared again in place, and `why` says so), `not_started` (the write could not begin; the check stays `approved`), `writing` (still going; poll the check). It is null while a second approval is awaited. `incident` is `{ number, state, pushed, error }`, with `pending: true` when ServiceNow has not answered within 10 seconds; its `state` is ServiceNow's own word (`new`, `in progress`, `on hold`, `resolved`, `closed`, `cancelled`) or `raising` while a slow ServiceNow has not yet given a number.
 - POST `/plans/:id/reject` `{ reasonCode, comment, incidentState }`; POST `/plans/:id/rework` `{ reasonCode, comment, incidentState }`
-- POST `/plans/:id/write` -> pre_snapshot, write, post_snapshot, post_write verification; `{ status, result, failures }`
+- POST `/plans/:id/write` -> the retry of a failed write, or the write of a check approved before approvals wrote (organization admin only): pre_snapshot, write, post_snapshot, post_write verification; `{ status, result, failures }`
 - POST `/plans/:id/reopen` `{ reasonCode, comment }`; POST `/plans/:id/cancel` `{ reason }`
 - POST `/plans/:id/comments` `{ body, visibility, itemUid }`; GET `/plans/:id/comments`
 - GET `/plans/:id/contacts`
@@ -129,7 +132,8 @@ All answer JSON `{ ok: true, ... }` or `{ error }` with the right status. Every 
 - GET `/exceptions`, POST `/exceptions`, DELETE `/exceptions/:id` (revoke)
 - GET `/windows`, POST `/windows`, DELETE `/windows/:id`
 - GET `/notifications` (mine), POST `/notifications/:id/read`, GET `/notifications/prefs`, PUT `/notifications/prefs`
-- GET `/reports/:name` for backlog, sla, quality, trends, resolvers, approvals, writes, exceptions -> `{ rows, filtersFor: { ... } }`; GET `/reports/:name.csv`
+- GET `/reports/:name` for backlog, sla, quality, trends, resolvers, approvals, writes, exceptions, changes -> `{ rows, filtersFor: { ... } }`; GET `/reports/:name.csv`
+- GET `/changes` -> the change registry, newest first: `{ changes: [{ id, writtenAt, planId, attempt, tenantId, siteName, rackId, rackName, objectType, objectName, netboxId, netboxUrl, action, field, before, after, internal, result, reason, source, rule, approvedBy, approvedById, approvedAt, writtenBy, incidentNumber, incidentUrl, checked }], nextCursor }`. Filters: `tenantId`, `rackId`, `planId`, `objectType`, `field`, `approvedById`, `incident`, `result`, `since`, `until`, `q`, `internal=1` (RackTrack's own link fields too), `limit`, `cursor`. An admin and an auditor read the organization; anybody else the Sites they are the SPOC of and the checks they hold or held; with neither, 403. `checked` is the verdict of the check after that attempt (`verified`, `mismatch` or null). GET `/changes.csv` is the same rows as a file. GET `/plans/:id` carries the rows of that check under `changes`, link fields included.
 - GET `/users` (assignable RackTrack users of the org, for approver and assignee pickers)
 
 Errors: 400 for a bad body, 403 with a plain sentence for a role refusal, 404 for another organization's plan, 409 for a guard refusal `{ error, code: 'guard', from, to, why }`.
