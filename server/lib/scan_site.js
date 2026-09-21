@@ -69,7 +69,9 @@ function siteRow(t) {
  * The Sites this person may scan for, by name, and the one to start on.
  *
  *   member, site_manager, approver, auditor   their own Site
- *   org_admin, an owner inside an organisation   every Site of it, and their own
+ *   org_admin, an owner inside an organisation   every Site of it, and nothing
+ *                                             outside it - not even the shared
+ *                                             default tenant they may sit on
  *   an owner with no organisation             every Site
  *
  * `preselect` is the only Site, else the caller's own when it is listed, else
@@ -83,10 +85,13 @@ function listFor(user) {
 
   let rows;
   if (wide && org) {
+    // Their own tenant is listed only when it is a Site of the organisation.
+    // An admin made by the owner sits on the shared default tenant, which
+    // belongs to no organisation: offering it would put the scan back there.
     rows = db.prepare(
       `SELECT id, name, organization_id FROM tenants
-       WHERE organization_id = ? OR id = ? ORDER BY name COLLATE NOCASE, id LIMIT ?`)
-      .all(org, own ?? 0, MAX_SITES);
+       WHERE organization_id = ? ORDER BY name COLLATE NOCASE, id LIMIT ?`)
+      .all(org, MAX_SITES);
   } else if (user.role === 'owner') {
     rows = db.prepare(
       'SELECT id, name, organization_id FROM tenants ORDER BY name COLLATE NOCASE, id LIMIT ?')
@@ -114,7 +119,9 @@ function listFor(user) {
  * With one, the caller must be able to read that Site. `auth` is then a copy
  * of the payload as a technician of that Site would carry it: the Site as
  * `tenantId`, and the Site's organisation, because the rack id is scoped by
- * organisation first and an owner carries none of their own.
+ * organisation first and an owner carries none of their own. A Site that
+ * belongs to no organisation (the shared default tenant) never takes the
+ * caller's own away: nobody loses an organisation they had.
  */
 function resolve(authPayload, rawSiteId, ownTenantOf = (a) => a?.tenantId ?? null) {
   const raw = rawSiteId === undefined || rawSiteId === null ? '' : String(rawSiteId).trim();
@@ -138,7 +145,11 @@ function resolve(authPayload, rawSiteId, ownTenantOf = (a) => a?.tenantId ?? nul
     ok: true,
     chosen: true,
     tenantId: site.id,
-    auth: { ...authPayload, tenantId: site.id, organizationId: site.organization_id ?? null },
+    auth: {
+      ...authPayload,
+      tenantId: site.id,
+      organizationId: site.organization_id ?? authPayload.organizationId ?? null,
+    },
   };
 }
 

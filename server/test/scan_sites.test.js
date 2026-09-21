@@ -13,6 +13,9 @@
  *      of another one; with no Site of their own nothing is preselected;
  *   3. an owner inside an organisation gets that organisation's Sites; an
  *      owner with none gets every Site;
+ *   3a. an admin or owner of an organization who sits on a shared tenant
+ *      outside it is never offered that tenant, and never starts on it; naming
+ *      it anyway keeps their own organization;
  *   4. a row is the Site's number as a person reads it, its name, its racks
  *      and its spaces - and never a coordinate or an address.
  */
@@ -33,7 +36,8 @@ process.env.RT_DATA_DIR = path.join(DB_DIR, 'netbox');
 const ORG_A = 10, ORG_B = 20;
 const SITE_A1 = 31, SITE_A2 = 32, SITE_B1 = 41, SITE_LONE = 50;
 const OWNER = 1, OWNER_A = 2, ADMIN_A = 3, ADMIN_A_HOMED = 4, MGR_A1 = 5, MEMBER_A2 = 6,
-  APPROVER_A1 = 7, AUDITOR_A1 = 8, MEMBER_B1 = 9, MEMBER_NOWHERE = 10;
+  APPROVER_A1 = 7, AUDITOR_A1 = 8, MEMBER_B1 = 9, MEMBER_NOWHERE = 10,
+  ADMIN_A_SHARED = 11, ADMIN_B_SHARED = 12, OWNER_A_SHARED = 13;
 const RACK = 'RK-5B81BE87';
 
 before(() => {
@@ -66,6 +70,11 @@ before(() => {
   u.run(AUDITOR_A1, 'auditor_a1', 'auditor_a1@example.test', 'auditor', SITE_A1, ORG_A);
   u.run(MEMBER_B1, 'member_b1', 'member_b1@example.test', 'member', SITE_B1, ORG_B);
   u.run(MEMBER_NOWHERE, 'nowhere', 'nowhere@example.test', 'member', null, null);
+  // Admins the way the owner makes them: in an organization, sitting on a
+  // shared tenant that belongs to none (the default tenant of a live server).
+  u.run(ADMIN_A_SHARED, 'admin_a3', 'admin_a3@example.test', 'org_admin', SITE_LONE, ORG_A);
+  u.run(ADMIN_B_SHARED, 'admin_b', 'admin_b@example.test', 'org_admin', SITE_LONE, ORG_B);
+  u.run(OWNER_A_SHARED, 'owner_a2', 'owner_a2@example.test', 'owner', SITE_LONE, ORG_A);
   db.close();
 });
 
@@ -175,6 +184,34 @@ test('an owner inside an organization gets its Sites; an owner with none gets ev
   const all = await list(OWNER);
   assert.deepEqual(idsOf(all), [SITE_B1, SITE_LONE, SITE_A2, SITE_A1]);
   assert.equal(all.json.preselect, null);
+});
+
+test('an admin who sits on a shared tenant outside the organization is never offered it', async () => {
+  const several = await list(ADMIN_A_SHARED);
+  assert.deepEqual(idsOf(several), [SITE_A2, SITE_A1]);
+  assert.ok(!idsOf(several).includes(SITE_LONE), 'the shared tenant is not a Site of the organization');
+  assert.equal(several.json.preselect, null, 'with several Sites they have to choose');
+
+  const one = await list(ADMIN_B_SHARED);
+  assert.deepEqual(idsOf(one), [SITE_B1]);
+  assert.equal(one.json.preselect, SITE_B1, 'the organization\'s only Site, not the shared tenant');
+
+  const owner = await list(OWNER_A_SHARED);
+  assert.deepEqual(idsOf(owner), [SITE_A2, SITE_A1]);
+  assert.equal(owner.json.preselect, null);
+});
+
+test('naming a tenant with no organization keeps the caller\'s own organization', () => {
+  const scanSite = require('../lib/scan_site');
+  for (const [sub, role] of [[ADMIN_A_SHARED, 'org_admin'], [OWNER_A_SHARED, 'owner']]) {
+    const out = scanSite.resolve({ sub, role, tenantId: SITE_LONE, organizationId: ORG_A }, String(SITE_LONE));
+    assert.equal(out.ok, true);
+    assert.equal(out.auth.tenantId, SITE_LONE);
+    assert.equal(out.auth.organizationId, ORG_A);
+  }
+  // A Site inside an organization still lends it to an owner who has none.
+  assert.equal(scanSite.resolve({ sub: OWNER, role: 'owner', tenantId: null, organizationId: null },
+    SITE_A1).auth.organizationId, ORG_A);
 });
 
 test('somebody with no Site gets an empty list, not an error', async () => {
