@@ -1552,6 +1552,13 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
 
   const { scanId, rackId, cached, devices: initialDevices = [], units_detected = [], originalExt, originalImageUrl, qualityWarning, qualityWarningMsg, timings: analysisTimings } = result || {};
 
+  // Which rack this is, and where the photograph was taken. The header used to
+  // show only the scan's own id - a hash of the photograph - so a person
+  // standing in front of a rack that wears SP-HYB-RM01-R01-R1 was shown
+  // RK-AD902EF2 and nothing about the site. Read-only: this asks, it never
+  // confirms, and confirming stays where it was, on the drift check.
+  const [identity, setIdentity] = useState(null);
+
   useEffect(() => {
     let dropped = false;
     if (!rackId) { setIdentity(null); return undefined; }
@@ -1584,12 +1591,6 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     ? identity.evidence.location : null;
   const [fetchedOcrLabels, setFetchedOcrLabels] = useState(null);
   const ocrLabels = fetchedOcrLabels;
-  // Which rack this is, and where the photograph was taken. The header used to
-  // show only the scan's own id - a hash of the photograph - so a person
-  // standing in front of a rack that wears SP-HYB-RM01-R01-R1 was shown
-  // RK-AD902EF2 and nothing about the site. Read-only: this asks, it never
-  // confirms, and confirming stays where it was, on the drift check.
-  const [identity, setIdentity] = useState(null);
   const [warningDismissed, setWarningDismissed] = useState(false);
 
   // ── Ticket-mode bootstrapping ──
