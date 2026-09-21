@@ -176,6 +176,71 @@ describe('the tables hold a plan and everything on it', () => {
   });
 });
 
+describe('the change registry only ever grows', () => {
+  const row = (planId, over = {}) => ({ orgId: 4343, tenantId: 9, planId, attempt: 1, rackId: 'RK-REG1',
+    rackName: 'RACK-REG', itemUid: 'dev:reg:u20', objectType: 'Device', objectName: 'SW-20', netboxId: 199,
+    netboxUrl: 'http://netbox.test/dcim/devices/199/', action: 'update', field: 'position', before: 22,
+    after: 20, result: 'written', approvedBy: 'spoc', approvedById: 41, approvedAt: store.nowIso(),
+    writtenBy: 'system', writtenAt: store.nowIso(), incidentNumber: 'INC0010042', ...over });
+
+  it('round trips a row, with before and after as the values they were', () => {
+    const plan = store.insertPlan({ orgId: 4343, tenantId: 9, status: 'written', createdAt: store.nowIso(),
+      incident: { system: 'servicenow', number: 'INC0010042', url: 'https://sn.test/INC0010042' } }, []);
+    store.addChange(row(plan.id));
+    store.addChange(row(plan.id, { field: 'racktrack_uid', before: null, after: 'dev:reg:u20', internal: true }));
+    store.addChange(row(plan.id, { itemUid: 'dev:reg:u21', action: 'create', field: '*', before: null,
+      after: { name: 'SW-21', position: 21 }, netboxId: 200 }));
+    const all = store.changesOf(plan.id);
+    assert.equal(all.length, 3, 'changesOf keeps the link fields in');
+    assert.equal(all[0].before, 22);
+    assert.equal(all[0].after, 20);
+    assert.deepEqual(all[2].after, { name: 'SW-21', position: 21 });
+
+    const listed = store.listChanges({ seenBy: { orgId: 4343, userId: 1, username: 'x' } });
+    assert.deepEqual(listed.map((c) => c.field), ['*', 'position'], 'newest first, link fields hidden');
+    assert.equal(listed[0].incidentUrl, 'https://sn.test/INC0010042', 'the link is read off the plan');
+    assert.equal(store.listChanges({ seenBy: { orgId: 4343 }, internal: 1 }).length, 3);
+    assert.equal(store.listChanges({ seenBy: { orgId: 9999 } }).length, 0, 'another organization sees none');
+    assert.deepEqual(store.listChanges({ seenBy: { orgId: 4343 }, field: 'position' }).map((c) => c.after), [20]);
+    assert.deepEqual(store.listChanges({ seenBy: { orgId: 4343 }, q: 'SW-21' }).map((c) => c.netboxId), [200]);
+    assert.equal(store.listChanges({ seenBy: { orgId: 4343 }, tenantIds: [8], planIds: [] }).length, 0);
+    assert.equal(store.listChanges({ seenBy: { orgId: 4343 }, tenantIds: [8], planIds: [plan.id] }).length, 2);
+    const page = store.listChanges({ seenBy: { orgId: 4343 }, limit: 1 });
+    assert.equal(page.length, 1);
+    assert.deepEqual(store.listChanges({ seenBy: { orgId: 4343 }, cursor: page[0].id }).map((c) => c.field),
+      ['position']);
+  });
+
+  it('finds the checks a person holds or held', () => {
+    const mine = store.insertPlan({ orgId: 4343, status: 'assigned', createdAt: store.nowIso(), spocUserId: 41,
+      spoc: { userId: 41, username: 'now', previous: [{ userId: 40, username: 'before' }] } }, []);
+    store.insertPlan({ orgId: 4343, status: 'assigned', createdAt: store.nowIso(), spocUserId: 42 }, []);
+    assert.deepEqual(store.plansHeldBy(41, { orgId: 4343 }), [mine.id]);
+    assert.deepEqual(store.plansHeldBy(40, { orgId: 4343 }), [mine.id], 'the one it was taken from still reads it');
+    assert.deepEqual(store.plansHeldBy(41, { orgId: 9999 }), [], 'inside their own organization only');
+    assert.deepEqual(store.plansHeldBy(null), []);
+  });
+
+  it('will not let a row be rewritten or erased while its check exists', () => {
+    const plan = store.insertPlan({ orgId: 4343, status: 'written', createdAt: store.nowIso() }, []);
+    const id = store.addChange(row(plan.id));
+    assert.throws(() => store.db().prepare('UPDATE approval_changes SET after = ? WHERE id = ?').run('19', id),
+      /append only/);
+    assert.throws(() => store.db().prepare('DELETE FROM approval_changes WHERE id = ?').run(id),
+      /append only/);
+  });
+
+  it('goes when its organization goes, after the plans and not before', () => {
+    const other = store.insertPlan({ orgId: 4344, status: 'written', createdAt: store.nowIso() }, []);
+    store.addChange(row(other.id, { orgId: 4344 }));
+    assert.ok(store.listChanges({ seenBy: { orgId: 4343 } }).length > 0);
+    store.purgeOrg(4343);
+    assert.equal(store.db().prepare('SELECT COUNT(*) AS n FROM approval_changes WHERE org_id = 4343').get().n, 0);
+    assert.equal(store.changesOf(other.id).length, 1, 'another organization keeps its own');
+    store.purgeOrg(4344);
+  });
+});
+
 describe('the five SLA words mean the same thing in SQL and in code', () => {
   /**
    * The list filter and the dashboard counts have to do this in one query, so

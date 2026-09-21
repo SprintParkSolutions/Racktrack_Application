@@ -353,6 +353,54 @@ function _prep() {
   // What a notice is about, as fields a screen can read without parsing words.
   _ensureColumn('approval_notifications', 'data', 'data TEXT');
   handle().exec('CREATE INDEX IF NOT EXISTS idx_approval_plans_spoc ON approval_plans(spoc_user_id, status)');
+  // The change registry: what each write put into NetBox, field by field, and
+  // what NetBox refused. Append only, by the same two triggers as the events:
+  // nothing updates a row, and a row goes only when its whole plan has gone
+  // (an organization being removed). There is no foreign key on purpose, so
+  // the rows outlive the cascade and purgeOrg takes them by hand, last.
+  handle().exec(`
+    CREATE TABLE IF NOT EXISTS approval_changes (
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      org_id          INTEGER,
+      tenant_id       INTEGER,
+      plan_id         INTEGER NOT NULL,
+      attempt         INTEGER NOT NULL DEFAULT 1,
+      rack_id         TEXT,
+      rack_name       TEXT,
+      item_uid        TEXT    NOT NULL,
+      object_type     TEXT,
+      object_name     TEXT,
+      netbox_id       INTEGER,
+      netbox_url      TEXT,
+      action          TEXT    NOT NULL,
+      field           TEXT    NOT NULL,
+      before          TEXT,
+      after           TEXT,
+      internal        INTEGER NOT NULL DEFAULT 0,
+      result          TEXT    NOT NULL,
+      reason          TEXT,
+      source          TEXT    NOT NULL DEFAULT 'scan',
+      rule            TEXT,
+      approved_by     TEXT,
+      approved_by_id  INTEGER,
+      approved_at     TEXT,
+      written_by      TEXT,
+      written_by_id   INTEGER,
+      written_at      TEXT    NOT NULL,
+      incident_number TEXT,
+      incident_sys_id TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_approval_changes_org ON approval_changes(org_id, written_at);
+    CREATE INDEX IF NOT EXISTS idx_approval_changes_plan ON approval_changes(plan_id);
+    CREATE INDEX IF NOT EXISTS idx_approval_changes_obj ON approval_changes(netbox_id, object_type);
+    CREATE TRIGGER IF NOT EXISTS approval_changes_no_update
+      BEFORE UPDATE ON approval_changes
+      BEGIN SELECT RAISE(ABORT, 'approval_changes is append only'); END;
+    CREATE TRIGGER IF NOT EXISTS approval_changes_no_delete
+      BEFORE DELETE ON approval_changes
+      WHEN EXISTS (SELECT 1 FROM approval_plans WHERE id = OLD.plan_id)
+      BEGIN SELECT RAISE(ABORT, 'approval_changes is append only'); END;
+  `);
   _ready = true;
 }
 
@@ -1173,6 +1221,131 @@ function allSettings(orgId) {
   return out;
 }
 
+// -- The change registry (the rules are registry.js) ------------------
+const changeOf = (r) => r && ({
+  id: r.id, orgId: r.org_id, tenantId: r.tenant_id, planId: r.plan_id, attempt: r.attempt,
+  rackId: r.rack_id, rackName: r.rack_name, itemUid: r.item_uid,
+  objectType: r.object_type, objectName: r.object_name, netboxId: r.netbox_id, netboxUrl: r.netbox_url,
+  action: r.action, field: r.field, before: parse(r.before), after: parse(r.after),
+  internal: bool(r.internal), result: r.result, reason: r.reason, source: r.source, rule: r.rule,
+  approvedBy: r.approved_by, approvedById: r.approved_by_id, approvedAt: r.approved_at,
+  writtenBy: r.written_by, writtenById: r.written_by_id, writtenAt: r.written_at,
+  incidentNumber: r.incident_number, incidentSysId: r.incident_sys_id,
+});
+
+/** One row of the registry. There is no update and no delete to go with it. */
+function addChange(c) {
+  const info = db().prepare(`INSERT INTO approval_changes
+    (org_id, tenant_id, plan_id, attempt, rack_id, rack_name, item_uid, object_type, object_name,
+     netbox_id, netbox_url, action, field, before, after, internal, result, reason, source, rule,
+     approved_by, approved_by_id, approved_at, written_by, written_by_id, written_at,
+     incident_number, incident_sys_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .run(c.orgId ?? null, c.tenantId ?? null, Number(c.planId), Number(c.attempt) || 1,
+      c.rackId ?? null, c.rackName ?? null, String(c.itemUid), c.objectType ?? null, c.objectName ?? null,
+      c.netboxId ?? null, c.netboxUrl ?? null, String(c.action), String(c.field),
+      json(c.before), json(c.after), flag(c.internal), String(c.result), c.reason ?? null,
+      c.source || 'scan', c.rule ?? null, c.approvedBy ?? null, c.approvedById ?? null,
+      c.approvedAt ?? null, c.writtenBy ?? null, c.writtenById ?? null, c.writtenAt || nowIso(),
+      c.incidentNumber ?? null, c.incidentSysId ?? null);
+  return Number(info.lastInsertRowid);
+}
+
+/**
+ * Every registry row of one check, oldest first, RackTrack's own link fields
+ * included (`internal`). The verdicts of the checks after a write are rows of
+ * their own, action 'check', and come only when asked for.
+ */
+const changesOf = (planId, { checks = false } = {}) => db()
+  .prepare(`SELECT * FROM approval_changes WHERE plan_id = ? ${checks ? '' : "AND action <> 'check'"} ORDER BY id`)
+  .all(Number(planId)).map(changeOf);
+
+/**
+ * The registry, newest first, behind its filters.
+ *
+ * `seenBy` is the organization rule of planWhere, read off the row itself so
+ * it holds whatever became of the plan. `tenantIds` and `planIds` are the
+ * scope of a SPOC - the Sites they are the SPOC of, and the checks they hold
+ * or held - and a row passes on either. RackTrack's own link fields are left
+ * out unless `internal` asks for them. The Site's name, the incident's link
+ * and the verdict of the check after the write are read here, never stored.
+ */
+function listChanges(filters = {}) {
+  const f = filters;
+  // A verdict is read back on the rows of its attempt, never listed as one.
+  const where = ["c.action <> 'check'"];
+  const params = {};
+  const inList = (col, name, values) => {
+    const keys = values.map((v, i) => { params[`${name}${i}`] = Number(v); return `@${name}${i}`; });
+    return keys.length ? `${col} IN (${keys.join(', ')})` : '0';
+  };
+  if (f.seenBy) {
+    const v = f.seenBy;
+    where.push(`((c.org_id IS NOT NULL AND c.org_id = @seenOrgId)
+      OR (c.org_id IS NULL AND (p.created_by_id = @seenUserId
+                                OR (p.created_by IS NOT NULL AND p.created_by = @seenUsername))))`);
+    params.seenOrgId = v.orgId == null ? -1 : Number(v.orgId);
+    params.seenUserId = v.userId == null ? -1 : Number(v.userId);
+    params.seenUsername = v.username == null ? '\u0000' : String(v.username);
+  }
+  if (f.tenantIds || f.planIds) {
+    where.push(`(${inList('c.tenant_id', 'site', f.tenantIds || [])} OR ${inList('c.plan_id', 'held', f.planIds || [])})`);
+  }
+  const eq = (key, col, cast = String) => {
+    if (f[key] == null || f[key] === '') return;
+    where.push(`c.${col} = @${key}`);
+    params[key] = cast(f[key]);
+  };
+  eq('tenantId', 'tenant_id', Number);
+  eq('planId', 'plan_id', Number);
+  eq('rackId', 'rack_id');
+  eq('objectType', 'object_type');
+  eq('field', 'field');
+  eq('approvedById', 'approved_by_id', Number);
+  eq('result', 'result');
+  if (f.incident != null && f.incident !== '') {
+    where.push('(c.incident_number = @incident OR c.incident_sys_id = @incident)');
+    params.incident = String(f.incident);
+  }
+  if (f.since) { where.push('c.written_at >= @since'); params.since = String(f.since); }
+  if (f.until) { where.push('c.written_at <= @until'); params.until = String(f.until); }
+  if (f.q != null && String(f.q).trim() !== '') {
+    where.push(`(c.object_name LIKE @q OR c.rack_name LIKE @q OR c.rack_id LIKE @q OR c.field LIKE @q
+      OR c.approved_by LIKE @q OR c.incident_number LIKE @q OR c.before LIKE @q OR c.after LIKE @q)`);
+    params.q = `%${String(f.q).trim()}%`;
+  }
+  if (!(f.internal === true || f.internal === 1 || f.internal === '1')) where.push('c.internal = 0');
+  if (f.cursor != null && f.cursor !== '') { where.push('c.id < @cursor'); params.cursor = Number(f.cursor); }
+  params.limit = Math.min(Math.max(1, Number(f.limit) || 100), Number(f.cap) || 500);
+  const rows = db().prepare(`
+    SELECT c.*, json_extract(p.incident, '$.url') AS p_incident_url,
+      (SELECT v.result FROM approval_changes v WHERE v.plan_id = c.plan_id AND v.attempt = c.attempt
+         AND v.action = 'check' ORDER BY v.id DESC LIMIT 1) AS checked
+    FROM approval_changes c LEFT JOIN approval_plans p ON p.id = c.plan_id
+    WHERE ${where.join(' AND ')}
+    ORDER BY c.id DESC LIMIT @limit
+  `).all(params);
+  const sites = new Map();
+  const siteName = (id) => {
+    if (id == null) return null;
+    if (!sites.has(id)) sites.set(id, (tenantById(id) || {}).name || null);
+    return sites.get(id);
+  };
+  return rows.map((r) => ({ ...changeOf(r), siteName: siteName(r.tenant_id),
+    incidentUrl: r.p_incident_url || null, checked: r.checked || null }));
+}
+
+/** The checks this person holds or held, as ids, inside what they may see. */
+function plansHeldBy(userId, seenBy = null) {
+  if (userId == null) return [];
+  const { where, params } = planWhere(seenBy ? { seenBy } : {});
+  where.push(`(p.spoc_user_id = @heldBy OR EXISTS (SELECT 1 FROM json_each(p.spoc, '$.previous') h
+    WHERE json_extract(h.value, '$.userId') = @heldBy))`);
+  params.heldBy = Number(userId);
+  return db().prepare(`SELECT p.id FROM approval_plans p WHERE ${where.join(' AND ')}`)
+    .all(params).map((r) => r.id);
+}
+
 // -- People and Sites (read only; the tables are auth.js's) -----------
 // On a throwaway test database there is no users table. These answer "nobody"
 // there rather than throw, so a rule that only fills a field in when somebody
@@ -1241,6 +1414,9 @@ function purgeOrg(orgId) {
   return tx(() => {
     const n = Number(orgId);
     const plans = db().prepare('DELETE FROM approval_plans WHERE org_id = ?').run(n).changes;
+    // The registry has no cascade. Its delete trigger lets a row go once its
+    // plan has gone, which is now.
+    db().prepare('DELETE FROM approval_changes WHERE org_id = ?').run(n);
     db().prepare('DELETE FROM approval_exceptions WHERE org_id = ?').run(n);
     db().prepare('DELETE FROM approval_windows WHERE org_id = ?').run(n);
     db().prepare('DELETE FROM approval_settings WHERE org_id = ?').run(n);
@@ -1256,7 +1432,8 @@ function _reset() {
 
 const TABLES = ['approval_plans', 'approval_items', 'approval_tickets', 'approval_decisions',
   'approval_verifications', 'approval_comments', 'approval_events', 'approval_sla',
-  'approval_notifications', 'approval_exceptions', 'approval_windows', 'approval_settings'];
+  'approval_notifications', 'approval_exceptions', 'approval_windows', 'approval_settings',
+  'approval_changes'];
 
 module.exports = {
   // the handle
@@ -1279,5 +1456,7 @@ module.exports = {
   getSetting, setSetting, allSettings,
   // people and Sites
   userById, userByUsername, userByEmail, usersOfOrg, tenantById, sitesWhereSpoc,
+  // the change registry
+  addChange, changesOf, listChanges, plansHeldBy,
   purgeOrg,
 };

@@ -167,7 +167,16 @@ class NetBox {
       if (!uid) continue;
       // Two objects with one uid is the same refusal findByUid makes below;
       // remembered as a marker so the lookup still refuses rather than guesses.
-      byUid.set(uid, byUid.has(uid) ? 'ambiguous' : r);
+      // A row seen again under the same NetBox id is the same object, read
+      // later: a write keeps one client for the comparison before it, the push
+      // and the comparison after it, and each of them preloads the same rows.
+      // Counting those as two objects made every known uid refuse from the
+      // second preload on. The map is kept, not reset, because a keyed rack
+      // preloads each endpoint twice, by its key and by its hash, and the
+      // second must not wipe what the first found.
+      const prev = byUid.get(uid);
+      const another = prev && prev !== 'ambiguous' && Number(prev.id) !== Number(r.id);
+      byUid.set(uid, prev === 'ambiguous' || another ? 'ambiguous' : r);
     }
     this._uidCache.set(endpoint, byUid);
     // Remember what this preload actually covered. A contains filter asked

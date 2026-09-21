@@ -40,6 +40,23 @@ class Pending {
 const isPending = (v) => v instanceof Pending;
 
 /**
+ * What a create sends, trimmed to its plain values, for the change row: the
+ * registry records it as what was created. A reference this same push is
+ * still to create reads null; a list or an object (terminations, custom
+ * fields) is left out. It rides beside the row and is never part of a diff,
+ * so no fingerprint moves because of it.
+ */
+function onlyScalars(payload) {
+  const out = {};
+  for (const [k, v] of Object.entries(payload || {})) {
+    if (v === undefined) continue;
+    if (isPending(v)) out[k] = null;
+    else if (v === null || ['string', 'number', 'boolean'].includes(typeof v)) out[k] = v;
+  }
+  return out;
+}
+
+/**
  * What NetBox refused, in a sentence rather than in JSON.
  *
  * An admin approving an export reads these reasons, and a reason that arrives as
@@ -1437,12 +1454,13 @@ async function walk(snapshot, client, apply, report, { boundField = true } = {})
         if (spec.field === 'racks') rackNetboxId = created.id;
         report.changes.push({
           type: spec.label, uid: obj.uid, name: String(name), action: 'create',
-          netboxId: created.id,
+          netboxId: created.id, created: onlyScalars(payload),
         });
       } else {
         resolved.set(obj.uid, new Pending(spec.label, obj.uid));
         report.changes.push({
           type: spec.label, uid: obj.uid, name: String(name), action: 'create',
+          created: onlyScalars(payload),
         });
       }
       bump('create');

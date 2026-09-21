@@ -1,5 +1,5 @@
 /**
- * The eight reports, and the rule that keeps them honest.
+ * The nine reports, and the rule that keeps them honest.
  *
  * EVERY NUMBER OPENS THE LIST IT COUNTS. A report that says "7 waiting for
  * approval" and a plan list that then shows six is worse than no report at
@@ -9,7 +9,7 @@
  * the plan list itself uses - not a second query that means the same thing.
  * test/approvals/reports.test.js asserts the two agree.
  *
- * THE EIGHT:
+ * THE NINE:
  *
  *   backlog    open plans by status, oldest first, with what is ageing
  *   sla        plans by clock state, and which clock is breaching
@@ -20,6 +20,8 @@
  *   approvals  who approves, who rejects, and how long a plan waits
  *   writes     what was written, what NetBox refused, how many attempts
  *   exceptions what is accepted drift today, and what it is hiding
+ *   changes    what the writes changed in NetBox, check by check, from the
+ *              change registry; each row opens the registry behind it
  *
  * Each answers { name, title, rows, columns, filtersFor, window }. `.csv` is
  * the same rows through the same columns - one report, two shapes.
@@ -27,7 +29,8 @@
 const store = require('./store');
 const machine = require('./machine');
 
-const NAMES = ['backlog', 'sla', 'quality', 'trends', 'resolvers', 'approvals', 'writes', 'exceptions'];
+const NAMES = ['backlog', 'sla', 'quality', 'trends', 'resolvers', 'approvals', 'writes', 'exceptions',
+  'changes'];
 const OPEN = machine.OPEN.filter((s) => s !== 'written');
 const words = (s) => String(s).replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
 
@@ -344,7 +347,40 @@ function exceptions(actor, query) {
   };
 }
 
-const REPORTS = { backlog, sla, quality, trends, resolvers, approvals, writes, exceptions };
+/**
+ * What the writes changed, a row per check, newest first. Counted through
+ * service.listChanges - the list the registry page itself reads - so the
+ * numbers are scoped as that page is (an admin and an auditor the whole
+ * organization, a SPOC their own Sites and checks) and a row's `written` and
+ * `failed` add up to exactly the registry rows its filter opens. RackTrack's
+ * own link fields are not counted: a person is not shown them either.
+ */
+function changes(actor, query) {
+  const win = windowOf(query);
+  const listed = require('./service').listChanges(actor, { ...win }, { cap: 5000 });
+  const byPlan = new Map();
+  for (const c of (listed && listed.changes) || []) {
+    if (!byPlan.has(c.planId)) {
+      byPlan.set(c.planId, { key: String(c.planId), planId: c.planId, rackName: c.rackName || c.rackId || null,
+        siteName: c.siteName || null, written: 0, failed: 0, approvedBy: c.approvedBy || null,
+        incidentNumber: c.incidentNumber || null, writtenAt: c.writtenAt,
+        filters: { planId: c.planId, ...win } });
+    }
+    const row = byPlan.get(c.planId);
+    if (c.result === 'failed') row.failed += 1; else row.written += 1;
+  }
+  const rows = [...byPlan.values()];
+  return {
+    name: 'changes', title: 'What the writes changed in NetBox', window: win, rows,
+    columns: [{ key: 'planId', title: 'Check' }, { key: 'rackName', title: 'Rack' },
+      { key: 'written', title: 'Written' }, { key: 'failed', title: 'Failed' },
+      { key: 'approvedBy', title: 'Approved by' }, { key: 'incidentNumber', title: 'Incident' },
+      { key: 'writtenAt', title: 'When' }],
+    filtersFor: filtersOf(rows),
+  };
+}
+
+const REPORTS = { backlog, sla, quality, trends, resolvers, approvals, writes, exceptions, changes };
 
 /** One report by name, or null when there is no such report. */
 function run(name, { actor, query = {} } = {}) {

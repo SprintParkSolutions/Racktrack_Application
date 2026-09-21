@@ -154,3 +154,78 @@ test('planning a rack NetBox has never seen costs a handful of requests, not one
   assert.ok(nb.gets() < 40,
     `it asks NetBox a few dozen times, not once per object (asked ${nb.gets()} for ${objects} objects)`);
 });
+
+// -- One client across compare, write and the check after it ----------------
+// A write hands ONE client to the comparison before it, the push, and the
+// comparison after it, so the same rows are preloaded three times. A row seen
+// again under the same NetBox id is the same row, not a second object.
+
+test('a row preloaded twice is the same row, read fresh, and not two objects sharing a uid', async () => {
+  const nb = countingNetBox();
+  nb.rows(DEVICES).push({ id: 7, name: 'Switch U10', position: 10, custom_fields: { [UID_FIELD]: 'dev:t7:5:u10' } });
+  const filter = { [`cf_${UID_FIELD}__ic`]: 't7:5' };
+
+  await nb.preloadByUid(DEVICES, filter);
+  nb.rows(DEVICES)[0].position = 12;
+  await nb.preloadByUid(DEVICES, filter);
+
+  const again = await nb.findByUid(DEVICES, 'dev:t7:5:u10');
+  assert.equal(again.id, 7, 'it still resolves');
+  assert.equal(again.position, 12, 'to the row as the later preload read it');
+});
+
+test('a keyed rack preloads by its key and by its hash, and neither wipes the other', async () => {
+  const nb = countingNetBox();
+  nb.rows(DEVICES).push({ id: 7, name: 'By key', custom_fields: { [UID_FIELD]: 'dev:t32:16:u20' } });
+  nb.rows(DEVICES).push({ id: 8, name: 'By hash', custom_fields: { [UID_FIELD]: 'dev:RK-2F85EE94:u5' } });
+  const key = { [`cf_${UID_FIELD}__ic`]: 't32:16' };
+  const hash = { [`cf_${UID_FIELD}__ic`]: 'RK-2F85EE94' };
+
+  await nb.preloadByUid(DEVICES, key);
+  await nb.preloadByUid(DEVICES, hash);
+  await nb.preloadByUid(DEVICES, key);
+  const after = nb.gets();
+
+  assert.equal((await nb.findByUid(DEVICES, 'dev:t32:16:u20')).id, 7);
+  assert.equal((await nb.findByUid(DEVICES, 'dev:RK-2F85EE94:u5')).id, 8);
+  assert.equal(nb.gets(), after, 'both from memory');
+});
+
+test('two objects that really share a uid are still refused, however often they are preloaded', async () => {
+  const nb = countingNetBox();
+  nb.rows(DEVICES).push({ id: 7, name: 'One', custom_fields: { [UID_FIELD]: 'dev:t7:5:u10' } });
+  nb.rows(DEVICES).push({ id: 9, name: 'Other', custom_fields: { [UID_FIELD]: 'dev:t7:5:u10' } });
+  const filter = { [`cf_${UID_FIELD}__ic`]: 't7:5' };
+  await nb.preloadByUid(DEVICES, filter);
+  await assert.rejects(() => nb.findByUid(DEVICES, 'dev:t7:5:u10'), /refuses to guess/);
+  await nb.preloadByUid(DEVICES, filter);
+  await assert.rejects(() => nb.findByUid(DEVICES, 'dev:t7:5:u10'), /refuses to guess/);
+});
+
+test('compare, write and compare again on one client: nothing reads as ambiguous, and the check is real', async () => {
+  const nb = countingNetBox();
+  const snap = bigRackSnapshot();
+
+  const before = await writer.plan(snap, nb);
+  const creates = before.changes.filter((c) => c.action === 'create');
+  assert.ok(creates.length > 150);
+  const device = creates.find((c) => c.type === 'Device');
+  assert.equal(typeof device.created.name, 'string', 'a create says what it would send, before it is sent');
+  assert.equal(device.created.custom_fields, undefined, 'plain values only');
+
+  const pushed = await writer.push(snap, nb);
+  assert.equal(pushed.counts.fail || 0, 0, JSON.stringify(pushed.changes.filter((c) => c.action === 'fail').slice(0, 3)));
+  const made = pushed.changes.find((c) => c.type === 'Device' && c.action === 'create');
+  assert.ok(made.netboxId, 'the applied row names the new object');
+  assert.equal(typeof made.created.name, 'string', 'and carries what was sent');
+
+  const after = await writer.plan(snap, nb);
+  assert.equal(after.counts.fail || 0, 0,
+    `nothing is refused as a shared uid: ${JSON.stringify(after.changes.filter((c) => c.action === 'fail').slice(0, 2))}`);
+  assert.equal(after.changes.filter((c) => ['create', 'update', 'rebind'].includes(c.action)).length, 0,
+    'and the rack now compares as written');
+
+  // Once more, as a retry does.
+  const third = await writer.plan(snap, nb);
+  assert.equal(third.counts.fail || 0, 0);
+});
