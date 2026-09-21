@@ -226,6 +226,12 @@
   word-break: break-all;
 }
 
+/* Said above the button while a Site is still to be chosen, as on Scan. */
+.siteHint {
+  margin: 0 0 -8px; text-align: center;
+  font-family: var(--font); font-size: 13px; line-height: 1.4; color: #6b6b6b;
+}
+
 /* ── Combine / Analyze - full-width dark button (Scan's Analyze). ── */
 .primaryBtn {
   width: 100%;

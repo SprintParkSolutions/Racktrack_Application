@@ -3,16 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import { apiUrl, authFetch } from '../utils/api';
 import { validateMedia } from '../utils/validateMedia';
 import { IMAGE_ACCEPT, VIDEO_ACCEPT } from '../utils/mediaAccept';
+import SitePicker from '../components/SitePicker.jsx';
+import { useScanSite, SITE_REFUSED, isSiteRefused } from '../hooks/useScanSite';
 import styles from './MultiRackNewPage.module.css';
 
-// Analyze one image → returns its rackId (throws on failure).
-async function analyzeImage(file) {
+// Analyze one image → returns its rackId (throws on failure). The chosen Site
+// goes with it exactly as it does from the scan page, so both racks are
+// matched inside that Site.
+async function analyzeImage(file, siteId) {
   const fd = new FormData();
   fd.append('image', file);
+  if (siteId) fd.append('siteId', siteId);
   const res = await authFetch(apiUrl('/api/analyze'), { method: 'POST', body: fd });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const msg = data.error || 'Could not analyze that photo. Try again.';
+    const msg = isSiteRefused(res, data) ? SITE_REFUSED
+      : (data.error || 'Could not analyze that photo. Try again.');
     const err = new Error(msg);
     err.kind = data.kind;   // e.g. 'not_a_rack'
     throw err;
@@ -77,6 +83,10 @@ export default function MultiRackNewPage() {
   const [step,   setStep]   = useState('');
   const [error,  setError]  = useState(null);
   const videoInputRef = useRef(null);
+  // The same Site list, remembered choice and picker as the scan page - a
+  // pair of racks is scanned for a Site like any other.
+  const { sites, siteId, chooseSite: rememberSite, needsSite } = useScanSite();
+  const chooseSite = (id) => { rememberSite(id); setError(null); };
 
   // Two-rack uploads ran no quality check at all. A single-rack upload goes
   // through validateMedia() in ScanPage before analysis - blur, size, and the
@@ -102,15 +112,16 @@ export default function MultiRackNewPage() {
     setImages(prev => { const next = prev.slice(); next[i] = f; return next; });
   }, []);
 
-  const canBuildImages = images[0] && images[1];
+  const canBuildImages = images[0] && images[1] && !needsSite;
 
   const buildFromImages = async () => {
+    if (needsSite) return;
     setBusy(true); setError(null);
     try {
       setStep('Analyzing rack 1…');
-      const id1 = await analyzeImage(images[0]);
+      const id1 = await analyzeImage(images[0], siteId);
       setStep('Analyzing rack 2…');
-      const id2 = await analyzeImage(images[1]);
+      const id2 = await analyzeImage(images[1], siteId);
       if (id1 === id2) {
         throw new Error('Both photos show the same rack. Photograph two different racks.');
       }
@@ -136,14 +147,16 @@ export default function MultiRackNewPage() {
   };
 
   const buildFromVideo = async () => {
-    if (!video) return;
+    if (!video || needsSite) return;
     setBusy(true); setError(null);
     try {
       setStep('Detecting racks in the video…');
       const fd = new FormData();
       fd.append('video', video);
+      if (siteId) fd.append('siteId', siteId);
       const res = await authFetch(apiUrl('/api/analyze-video'), { method: 'POST', body: fd });
       const data = await res.json().catch(() => ({}));
+      if (isSiteRefused(res, data)) throw new Error(SITE_REFUSED);
       if (!res.ok || !data.groupId) throw new Error(data.error || 'Could not process the video.');
       if ((data.count || 0) < 2) {
         // Fewer than two, so it is one or none. Saying "only one" when the video
@@ -176,6 +189,10 @@ export default function MultiRackNewPage() {
           Both racks side by side, with the cabling between them.
         </p>
 
+        {/* Drawn only when the server has Sites to offer: a line for one, a
+            search for several. The picker locks with the page while it works. */}
+        <SitePicker sites={sites} value={siteId} onChange={busy ? undefined : chooseSite} />
+
         <div className={styles.eyebrow}>Capture mode</div>
         <div className={styles.modeToggle}>
           <button
@@ -197,6 +214,7 @@ export default function MultiRackNewPage() {
               <ImageSlot index={0} file={images[0]} onPick={(f) => setImage(0, f)} disabled={busy} />
               <ImageSlot index={1} file={images[1]} onPick={(f) => setImage(1, f)} disabled={busy} />
             </div>
+            {needsSite && <p className={styles.siteHint}>Choose the site first.</p>}
             <button
               className={styles.primaryBtn}
               onClick={buildFromImages}
@@ -240,10 +258,11 @@ export default function MultiRackNewPage() {
               hidden
               onChange={(e) => { const f = e.target.files?.[0]; if (f) { setVideo(f); setError(null); } e.target.value = ''; }}
             />
+            {needsSite && <p className={styles.siteHint}>Choose the site first.</p>}
             <button
               className={styles.primaryBtn}
               onClick={buildFromVideo}
-              disabled={!video || busy}
+              disabled={!video || needsSite || busy}
             >
               {busy ? (step || 'Working…') : 'Build combined view'}
             </button>
