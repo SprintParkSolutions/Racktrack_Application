@@ -35,10 +35,10 @@ export const TAB_KEYS = TABS.map((t) => t.key);
    places that job leads to. Report and Drift are about the whole rack and had
    no business on a screen about one socket. */
 const PORT_TABS = [
+  { key: 'overview', label: 'Rack',     icon: <IconRack /> },
   { key: 'result',   label: 'Port',     icon: <IconPort /> },
   { key: 'switches', label: 'Switches', icon: <IconSwitch /> },
   { key: 'network',  label: 'Network',  icon: <IconNetwork /> },
-  { key: 'overview', label: 'Rack',     icon: <IconRack /> },
   { key: 'drift',    label: 'Drift',    icon: <IconDrift /> },
   { key: 'topology', label: 'Topology', icon: <IconTopology /> },
   { key: 'report',   label: 'Report',   icon: <IconReport /> },
