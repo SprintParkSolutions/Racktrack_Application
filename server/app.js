@@ -724,6 +724,19 @@ try {
     'setup router not loaded');
 }
 
+// The Sites the scan screen offers - one list for every role, scoped on the
+// server: a technician gets their one Site, an organisation admin every Site
+// of the organisation. The scan routes below take the chosen one as `siteId`
+// (lib/scan_site.resolve). No coordinates: a person names the Site.
+try {
+  app.use('/api/scan-sites', auth.requireAuth, require('./routes/scan_sites'));
+  logger.info({ event: 'router.loaded', router: 'scan_sites', prefix: '/api/scan-sites' },
+    'scan sites router loaded');
+} catch (err) {
+  logger.warn({ event: 'router.load_failed', router: 'scan_sites', err: err.message },
+    'scan sites router not loaded');
+}
+
 // Demo tenant-mat — a prototype dataset for the /demo/topology UI.
 //
 // Gated like mock_routes, and for a stronger reason than "it's only demo
