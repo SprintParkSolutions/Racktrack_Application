@@ -4,9 +4,8 @@ import { BackIcon } from '../components/BackButton.jsx';
 import { apiUrl, authFetch } from '../utils/api';
 import { useSmartBack } from '../hooks/useSmartBack';
 import ExternalLink from '../components/ExternalLink.jsx';
-import { driftCheckUrl } from '../utils/approvals.js';
-import { Capacitor } from '@capacitor/core';
-import { Browser } from '@capacitor/browser';
+import PortsCheck from '../components/PortsCheck.jsx';
+import { driftCheckUrl, openDriftReport } from '../utils/approvals.js';
 import styles from './DriftPage.module.css';
 
 /**
@@ -15,15 +14,21 @@ import styles from './DriftPage.module.css';
  * The person standing at the rack is not the person who changes the record, so
  * this screen deliberately has no write button and never says "export". It
  * answers one question - does the rack match what NetBox says - and then hands
- * the answer to an admin.
+ * the answer to the SPOC of the site, by name. Where the site has no SPOC, or
+ * the person sending IS the SPOC, it says before anything is sent that an admin
+ * will choose who decides it.
  *
  * After it is sent, this page becomes the technician's window on what happened
- * next: which items an admin approved, which went out as tickets, which came
- * back, and whether the record was updated in the end. Somebody who walks a
- * rack deserves to know whether their work landed.
+ * next: who holds the check, the ServiceNow incident raised for it, whether it
+ * was approved, and whether the record was updated in the end. Somebody who
+ * walks a rack deserves to know whether their work landed.
  *
- * The admin's side is not in this app. It is RackTrack Approvals, on the
- * own address, and once a check is sent this page links to that check there.
+ * The SPOC's side is not in this app. It is RackTrack Approvals, on its own
+ * address, and once a check is sent this page links to that check there.
+ *
+ * Everything the newer server adds - who it goes to, the holder, the incident,
+ * the ports - is optional here: against a server that says none of it the page
+ * still compares, sends and follows.
  */
 
 const WORD = {
@@ -52,26 +57,31 @@ function plainName(name, rackName) {
 
 // What becomes of a check after it is sent, in the order it happens. The person
 // who walked to the rack used to read "Waiting on them" and nothing else until
-// the record changed; this is the same line the admin watches, in their words.
+// the record changed. A check goes straight to the site's SPOC now, so there are
+// four steps and not seven: everything the SPOC does with it - looking, putting
+// it on hold, sending it back - is one step to the person who sent it.
 const TRACK = [
-  { key: 'sent', label: 'Sent', at: ['submitted', 'triage'] },
-  { key: 'assigned', label: 'Assigned', at: ['assigned', 'accepted'] },
-  { key: 'started', label: 'Started', at: ['in_progress', 'pending'] },
-  { key: 'resolved', label: 'Resolved', at: ['resolved', 'verification_pending'] },
-  { key: 'verified', label: 'Verified', at: ['approval_pending'] },
+  { key: 'sent', label: 'Sent', at: ['submitted'] },
+  { key: 'spoc', label: 'With the SPOC', at: ['assigned', 'accepted', 'in_progress', 'pending', 'resolved', 'verification_pending', 'approval_pending', 'rework', 'reopened'] },
   { key: 'approved', label: 'Approved', at: ['approved', 'write_in_progress'] },
-  { key: 'written', label: 'Written to NetBox', at: ['written', 'completed'] },
+  { key: 'written', label: 'Written', at: ['written', 'completed'] },
 ];
+// Where a check has left that line. `word` is said first and set apart, because
+// it is the one thing the person needs: it was rejected, or it needs an admin.
+// `after` is the last step that is certainly behind it - a write is only ever
+// tried on a check that was approved.
 const OFF_TRACK = {
-  rejected: 'The admin rejected this check.',
-  rework: 'The admin sent this back to be checked again.',
-  cancelled: 'This check was cancelled.',
-  duplicate: 'This was the same as another check, so it was closed.',
-  known_exception: 'This is a known exception, so nothing needs to change.',
-  write_failed: 'NetBox refused part of the write. The admin is looking at it.',
-  manual_review: 'The write is with a person to finish by hand.',
-  reopened: 'This check was opened again.',
+  triage: { word: 'Needs an admin', text: 'An admin is choosing who this goes to.' },
+  rejected: { word: 'Rejected', text: 'The SPOC rejected this check.' },
+  cancelled: { text: 'This check was cancelled.' },
+  duplicate: { text: 'This was the same as another check, so it was closed.' },
+  known_exception: { text: 'This is a known exception, so nothing needs to change.' },
+  write_failed: { word: 'Needs an admin', text: 'NetBox refused part of the write.', after: 'approved' },
+  manual_review: { word: 'Needs an admin', text: 'The write is with a person to finish by hand.', after: 'approved' },
 };
+// A plan the server still calls open or draft has not been sent. Every other
+// word - sent, written, rejected, a write that failed - is a check to follow.
+const isSent = (p) => !!p && !!p.status && !['open', 'draft'].includes(p.status);
 
 // RackTrack's own bookkeeping, not a difference between the rack and the
 // record. When a person has said which record a rack is, the plan carries one
@@ -81,14 +91,31 @@ const OFF_TRACK = {
 // with. The owner opened this screen and read "1 thing does not match" over a
 // rack that matched in every way that matters, with two internal keys under
 // it; that line is a note now, and it is never counted.
-const isHousekeeping = (item) => item.action === 'rebind' && !item.fromUid;
+//
+// One such line is NOT bookkeeping: when the SPOC accepts that a box is on
+// another shelf, the check is planned again and the same line now carries the
+// shelf as well. That is the very difference the technician sent, so it stays
+// in the list - it is told apart by a field a person can see.
 
 // Fields that carry RackTrack's own keys. They are how the app finds a record
 // again, not something a person saw on the rack, so they are never shown.
 const INTERNAL_FIELDS = new Set(['racktrack_uid', 'racktrack_bound', 'recordId']);
+const carriesChange = (item) => Object.keys(item.diff || {}).some((field) => !INTERNAL_FIELDS.has(field));
+const isHousekeeping = (item) => item.action === 'rebind' && !item.fromUid && !carriesChange(item);
+// A record kept, with something on it changed: said as any other difference.
+const actionOf = (item) => (item.action === 'rebind' && !item.fromUid && carriesChange(item) ? 'update' : item.action);
+
+/** What a difference means, in one sentence. A shelf is said as a shelf. */
+function meaningOf(item) {
+  const shelf = item.diff && item.diff.position;
+  if (actionOf(item) === 'update' && shelf && shelf.from != null && shelf.to != null) {
+    return `Your records list this on shelf U${shelf.from}. You saw it on shelf U${shelf.to}.`;
+  }
+  return MEANS[actionOf(item)] || '';
+}
 
 const STATE_WORD = {
-  pending: 'Waiting on the admin',
+  pending: 'Waiting on the SPOC',
   approved: 'Approved',
   rejected: 'Rejected',
   ticketed: 'Someone is checking',
@@ -138,31 +165,51 @@ function diffLines(diff) {
 const show = (v) => (v === null || v === undefined || v === '' ? ' - ' : String(v));
 
 /**
- * Where a sent check has got to: seven steps, the one it is on marked, and under
- * it what is known - who holds it, the ServiceNow incident, what they found.
- * Falls back to "Sent" when the workflow cannot be read, which is still true.
+ * Where a sent check has got to: four steps, the one it is on marked, and under
+ * it what is known - who holds it, or why it has left the line. Falls back to
+ * "Sent" when the workflow cannot be read, which is still true.
+ *
+ * `status` is the workflow's own word: from the check as it is followed, from
+ * the answer to Send before the first poll lands, or from the plan itself.
  */
-function Progress({ flow, rackName }) {
-  const status = flow?.plan?.status || 'submitted';
+function Progress({ flow, status, holder, needsAdmin, rackName }) {
   const at = TRACK.findIndex((t) => t.at.includes(status));
+  const off = at === -1 ? OFF_TRACK[status] || null : null;
+  // How many steps are behind it. The last step has nothing after it, so a
+  // written check has all four filled.
+  const behind = off ? TRACK.findIndex((t) => t.key === (off.after || 'sent')) + 1
+    : at === TRACK.length - 1 ? TRACK.length : Math.max(at, 0);
   const tickets = flow?.tickets || [];
   const items = flow?.items || [];
   const nameOf = (uid) => plainName((items.find((i) => i.uid === uid) || {}).name || uid, rackName);
+  const notes = [
+    holder && `With ${holder}.`,
+    status === 'rework' && 'Sent back to be checked again.',
+    status === 'pending' && `On hold${flow?.plan?.pendingReason ? `: ${String(flow.plan.pendingReason).replace(/_/g, ' ')}` : ''}.`,
+  ].filter(Boolean);
   return (
     <div className={styles.progress}>
       <ol className={styles.steps} aria-label="Progress of this check">
         {TRACK.map((t, i) => (
-          <li key={t.key} className={`${styles.step} ${at >= 0 && i < at ? styles.stepDone : ''} ${i === at ? styles.stepNow : ''}`}
+          <li key={t.key} className={`${styles.step} ${i < behind ? styles.stepDone : ''} ${i === at && i >= behind ? styles.stepNow : ''}`}
               aria-current={i === at ? 'step' : undefined}>
             <span className={styles.stepDot} aria-hidden="true" />
-            <span className={styles.stepLabel}>{t.label}</span>
+            <span className={styles.stepWords}>
+              <span className={styles.stepLabel}>{t.label}</span>
+              {t.key === 'spoc' && i === at && notes.map((n) => <span key={n} className={styles.stepNote}>{n}</span>)}
+            </span>
           </li>
         ))}
       </ol>
-      {at === -1 && OFF_TRACK[status] && <p className={styles.offTrack}>{OFF_TRACK[status]}</p>}
-      {status === 'pending' && <p className={styles.offTrack}>On hold{flow?.plan?.pendingReason ? `: ${String(flow.plan.pendingReason).replace(/_/g, ' ')}` : ''}.</p>}
-      {at === 0 && <p className={styles.trackNote}>The admin has it and will assign it to somebody.</p>}
-      {tickets.length > 0 && (
+      {off && (
+        <p className={styles.offTrack}>
+          {off.word && <span className={styles.offWord}>{off.word}</span>}
+          {status === 'triage' && needsAdmin?.text ? `${needsAdmin.text} ${off.text}` : off.text}
+        </p>
+      )}
+      {/* A check with a holder is one line: who has it. An older check went out
+          as a ticket per difference, and still shows each of them. */}
+      {!flow?.holder && tickets.length > 0 && (
         <ul className={styles.tickets}>
           {tickets.map((t) => (
             <li key={t.itemUid}>
@@ -181,12 +228,42 @@ function Progress({ flow, rackName }) {
   );
 }
 
+/**
+ * The ServiceNow incident raised for this check: its number, and the way to it.
+ * Nothing while it is still being raised - the next look fills it in - and
+ * nothing at all where no ServiceNow is connected.
+ */
+function Incident({ incident }) {
+  if (!incident || incident.system === 'none') return null;
+  if (!incident.number) {
+    return incident.error
+      ? <p className={styles.incidentNone}>No ServiceNow incident could be raised. An admin has been told.</p>
+      : null;
+  }
+  return (
+    <p className={styles.incident}>
+      <span className={styles.incidentNumber}>Incident {incident.number}</span>
+      {/^https?:\/\//.test(String(incident.url || '')) && (
+        <ExternalLink className={styles.incidentOpen} href={incident.url}>Open in ServiceNow</ExternalLink>
+      )}
+    </p>
+  );
+}
+
 export default function DriftPage() {
   const { rackId } = useParams();
   const goBack = useSmartBack(`/results/${rackId}/report`);
 
   const [plan, setPlan] = useState(null);
   const [spoc, setSpoc] = useState(null);
+  // Who the server says this check goes to: 'spoc', or 'admin' with the reason
+  // in words. A server that does not say leaves both empty.
+  const [goesTo, setGoesTo] = useState(null);
+  const [whyText, setWhyText] = useState('');
+  // What Send answered: where the check landed, who holds it, the incident.
+  const [sentInfo, setSentInfo] = useState(null);
+  // Ports, asked for once the comparison is up. The page never waits on it.
+  const [ports, setPorts] = useState(null);
   const [matched, setMatched] = useState(null);
   const [recordRack, setRecordRack] = useState(null);
   const [identity, setIdentity] = useState(null);
@@ -196,7 +273,7 @@ export default function DriftPage() {
   const [needsSource, setNeedsSource] = useState(false);
   const [note, setNote] = useState('');
   const [sent, setSent] = useState(false);
-  // Which differences go to the admin. Everything, until the person says otherwise.
+  // Which differences are sent. Everything, until the person says otherwise.
   const [left, setLeft] = useState(() => new Set());
   // The same check as the approval workflow holds it: its status and its tickets.
   const [flow, setFlow] = useState(null);
@@ -235,20 +312,14 @@ export default function DriftPage() {
   }, [items, orphans, changed]);
   const notSeen = useMemo(() => orphans.filter((o) => !o.seen), [orphans]);
 
-  // The drift report: one printable page of this comparison, to send or to
-  // attach to the incident. Opened with a short-lived link, because the app's
-  // own sign-in does not travel to the browser it opens in.
+  // The drift report: one printable page of this comparison. The server
+  // attaches the same page to the incident when the check is sent.
   const [reportBusy, setReportBusy] = useState(false);
   const openReport = async () => {
     if (!plan?.id) return;
     setReportBusy(true);
     try {
-      const r = await authFetch(apiUrl(`/api/scan/${encodeURIComponent(rackId)}/report-token`));
-      const { token } = r.ok ? await r.json() : {};
-      const url = apiUrl(`/api/scan/${encodeURIComponent(rackId)}/drift-report?plan=${plan.id}${token ? `&t=${encodeURIComponent(token)}` : ''}`);
-      const full = /^https?:/.test(url) ? url : `${window.location.origin}${url}`;
-      if (Capacitor.isNativePlatform()) await Browser.open({ url: full });
-      else window.open(full, '_blank', 'noopener');
+      await openDriftReport(rackId, plan.id);
     } catch (e) {
       setError(e.message || 'The drift report could not be opened');
     } finally {
@@ -291,12 +362,14 @@ export default function DriftPage() {
       const full = await authFetch(apiUrl(`/api/nb/plans/${report.planId}`));
       const body = await full.json();
       setPlan(body);
-      setSent(body.status === 'submitted' || body.status === 'applied');
+      setSent(isSent(body));
 
       const c = await authFetch(apiUrl(`/api/nb/plans/${report.planId}/contacts`));
       if (c.ok) {
         const body = await c.json();
-        setSpoc(body.spoc);
+        setSpoc(body.spoc || null);
+        setGoesTo(body.goesTo || null);
+        setWhyText(body.whyText || '');
         // Which rack in the customer's record this was compared against, and
         // why the app believes it is the same rack. The server has always
         // worked this out; the screen used to take the contact off it and drop
@@ -338,17 +411,15 @@ export default function DriftPage() {
     : '';
 
   // How the rack was matched, for whoever opens Read more: what was read off
-  // the rack, where the photo was taken, and the reason the app itself gave for
-  // each rack it considered. Only what the server said; nothing is inferred here.
+  // the rack, and the reason the app itself gave for each rack it considered.
+  // Only what the server said; nothing is inferred here. Where the phone stood
+  // is no part of it: the site is chosen on the scan screen now.
   const matchedHow = useMemo(() => {
     if (!identity) return [];
     const out = [];
     const ev = identity.evidence || {};
     const labels = (ev.labels || []).map((l) => `${l.normalized || l.text}${l.conf != null ? ` (${Math.round(l.conf * 100)}% sure)` : ''}`);
     out.push(labels.length ? `Label read off the rack: ${labels.join(', ')}.` : 'No label was read off the rack in this photo.');
-    if (ev.location && ev.location.verdict === 'here' && ev.location.site) out.push(`The phone was at ${ev.location.site} when the photo was taken.`);
-    else if (ev.location && ev.location.verdict && ev.location.verdict !== 'unknown' && ev.location.site) out.push(`The phone was not at ${ev.location.site} when the photo was taken.`);
-    else out.push('The phone gave no location with this photo.');
     for (const c of (identity.candidates || []).slice(0, 2)) {
       for (const why of (c.reasons || [])) {
         const line = `${c.facilityId || c.name}: ${why}`;
@@ -360,8 +431,6 @@ export default function DriftPage() {
 
   // Nothing decided which rack this is, so a person still has to.
   const unsettled = !!identity && identity.decision !== 'matched';
-  // Where the photo was taken, as the rack ladder judged it (lib/location.js).
-  const where = identity && identity.evidence ? identity.evidence.location : null;
 
   // What is still open, said plainly. Only ever shown when nothing was decided.
   const stillOpen = useMemo(() => {
@@ -420,8 +489,15 @@ export default function DriftPage() {
     } catch { /* a name is a convenience; a failure here is not worth a red banner */ }
   }
 
+  // Who it goes to, for every sentence that says so. A named SPOC is named; an
+  // admin is said where the server says the check will wait for one; and with
+  // neither it is "the SPOC", which is who a check goes to.
+  const toAdmin = goesTo === 'admin';
+  const toName = !toAdmin && spoc && spoc.name ? spoc.name : '';
+  const toWhom = toAdmin ? 'an admin' : toName || 'the SPOC';
+
   async function send() {
-    setBusy('Sending it to the admin');
+    setBusy(toName ? `Sending it to ${toName}` : 'Sending it');
     setError('');
     try {
       const r = await authFetch(apiUrl(`/api/nb/plans/${plan.id}/submit`), {
@@ -432,6 +508,9 @@ export default function DriftPage() {
       });
       const out = await r.json();
       if (!r.ok) throw new Error(out.error || 'That did not go through');
+      // Where it landed, so the line below starts there and not at "Sent".
+      setSentInfo({ state: out.state || null, assignee: out.assignee || null,
+        needsAdmin: out.needsAdmin || null, incident: out.incident || null });
       setSent(true);
       const full = await authFetch(apiUrl(`/api/nb/plans/${plan.id}`));
       if (full.ok) setPlan(await full.json());
@@ -444,7 +523,7 @@ export default function DriftPage() {
 
   // After it is sent the check is followed, not just waited on: asked again
   // every twenty seconds while this screen is open, so a technician standing at
-  // the rack sees "Assigned" turn into "Started" without pulling anything.
+  // the rack sees "With the SPOC" turn into "Approved" without pulling anything.
   useEffect(() => {
     if (!sent || !plan?.id) return undefined;
     let dropped = false;
@@ -459,7 +538,31 @@ export default function DriftPage() {
     return () => { dropped = true; clearInterval(t); };
   }, [sent, plan?.id]);
 
-  const applied = plan?.status === 'applied';
+  // Ports: the cables in the photo against the switch and NetBox. Asked for once
+  // per check, after the comparison is on the screen, and never waited on - a
+  // server without the route, or a refusal, simply leaves the section out.
+  useEffect(() => {
+    if (!plan?.id) return undefined;
+    let dropped = false;
+    setPorts(null);
+    (async () => {
+      try {
+        const r = await authFetch(apiUrl(`/api/nb/plans/${plan.id}/connectivity`));
+        if (!dropped && r.ok) setPorts(await r.json());
+      } catch { /* the comparison stands without it */ }
+    })();
+    return () => { dropped = true; };
+  }, [plan?.id]);
+
+  // Where the check is, in the workflow's own word, from the best source there
+  // is; who holds it; and the incident raised for it.
+  const state = flow?.plan?.status || sentInfo?.state || plan?.state || 'submitted';
+  const holder = flow?.holder?.username || sentInfo?.assignee?.name
+    || (state !== 'triage' && goesTo === 'spoc' ? toName : '');
+  const needsAdmin = flow?.plan?.needsAdmin || sentInfo?.needsAdmin || null;
+  const incident = flow?.incident || sentInfo?.incident || null;
+  const approver = ((flow?.decisions || []).filter((d) => d.decision === 'approved' && d.approver).pop() || {}).approver || '';
+  const applied = plan?.status === 'applied' || ['written', 'completed'].includes(flow?.plan?.status);
   // The same check, in RackTrack Approvals. Offered only once it has been sent.
   const track = plan ? (
     <ExternalLink className={styles.track} href={driftCheckUrl(plan.id)}>
@@ -542,7 +645,6 @@ export default function DriftPage() {
                 {decided.confidence === 'confirmed'
                   ? 'This is the rack in your records.'
                   : 'This looks like the rack in your records. Not confirmed yet.'}
-                {where && where.verdict === 'here' && where.site ? ` Photo taken at ${where.site}.` : ''}
               </span>
               <details className={styles.more}>
                 <summary>Read more</summary>
@@ -581,20 +683,6 @@ export default function DriftPage() {
           )}
 
           {stillOpen && <span className={styles.againstOpen}>{stillOpen}</span>}
-
-          {/* Where the photo was taken, when the phone said. Said only when it
-              tells somebody something: at this Site, at another one, or far
-              from any. "No location" is not worth a line. */}
-          {/* Where the photo was taken matters when it was somewhere else, and
-              is said without the metres: the distance is the app's working. */}
-          {where && where.verdict !== 'unknown' && !(decided && where.verdict === 'here') && (
-            <span className={where.verdict === 'here' ? styles.againstWhy : styles.againstOpen}
-              data-testid="taken-at">
-              {where.verdict === 'here'
-                ? `Photo taken at ${where.site || 'this site'}.`
-                : `This photo was not taken at ${where.site || 'the site this rack belongs to'}.`}
-            </span>
-          )}
 
           {!sent && (shortlist.length > 0 || newName) && (
             <div className={styles.pick}>
@@ -641,7 +729,7 @@ export default function DriftPage() {
                 <details className={styles.more}>
                   <summary>Read more</summary>
                   <span className={styles.againstWhy}>
-                    RackTrack will note its own id on the record the next time an admin writes, so the next scan finds this rack at once. Nothing else on the record changes.
+                    RackTrack will note its own id on the record the next time a check is written, so the next scan finds this rack at once. Nothing else on the record changes.
                   </span>
                 </details>
               )}
@@ -659,7 +747,7 @@ export default function DriftPage() {
               </h2>
               <p>
                 {compared
-                  ? 'Compared with NetBox just now. Send it to your admin to check.'
+                  ? `Compared with NetBox just now. Send it to ${toAdmin ? 'an admin' : 'the SPOC'} to check.`
                   : 'Your records do not have this rack yet, so everything in this photo would be new.'}
               </p>
             </>
@@ -677,33 +765,49 @@ export default function DriftPage() {
         </div>
       )}
 
-      {/* Who it goes to, when the record names somebody. Where it names nobody
-          there is nothing to say: the admin chooses, as the admin always may,
-          and a sentence about a missing contact read as a fault with the rack. */}
-      {plan && !busy && changed.length > 0 && !sent && spoc && (
+      {/* Who it goes to, said before anything is sent: the SPOC of the site, by
+          name. Where the site has none, or the person sending IS the SPOC, it
+          says so and says an admin will choose - nobody should learn that only
+          after pressing Send. A server that names nobody leaves this out. */}
+      {plan && !busy && changed.length > 0 && !sent && (toAdmin || spoc) && (
         <div className={styles.goesTo}>
           <span className={styles.goesToLabel}>Goes to</span>
-          <strong className={styles.goesToName}>{spoc.name}</strong>
-          {spoc.title && <span className={styles.goesToRole}>{spoc.title}</span>}
-          {spoc.email && <span className={styles.goesToMail}>{spoc.email}</span>}
+          {toAdmin ? (
+            <>
+              <strong className={styles.goesToName}>An organization admin</strong>
+              <span className={styles.goesToWhy}>
+                {whyText ? `${whyText} ` : ''}An admin will choose who decides it.
+              </span>
+            </>
+          ) : (
+            <>
+              <strong className={styles.goesToName}>{spoc.name}</strong>
+              {spoc.title && <span className={styles.goesToRole}>{spoc.title}</span>}
+              {spoc.email && <span className={styles.goesToMail}>{spoc.email}</span>}
+            </>
+          )}
         </div>
       )}
 
-      {applied && (
-        <div className={styles.done}>
-          <h2>The record has been updated</h2>
-          <p>An admin approved this and wrote it to NetBox. Nothing more is needed from you.</p>
-          {track}
-        </div>
-      )}
-
-      {sent && !applied && (
-        <div className={styles.waiting}>
-          <h2>Sent to the admin</h2>
+      {/* Once sent, the same block until the end: the four steps, the incident
+          and the way to the check. A written check keeps its steps, so the line
+          a person followed ends on "Written" instead of vanishing. */}
+      {sent && (
+        <div className={applied ? styles.done : styles.waiting}>
+          <h2>
+            {applied ? 'The record has been updated'
+              : state === 'triage' ? 'Sent. It needs an admin.'
+                : `Sent to ${holder || 'the SPOC'}`}
+          </h2>
           <p>
-            {plan?.submittedBy ? `You sent this on ${new Date(plan.submittedAt).toLocaleString()}.` : 'It is with the admin now.'}
+            {applied ? `${approver || 'The SPOC'} approved this and it was written to NetBox. Nothing more is needed from you.`
+              : plan?.submittedBy ? `You sent this on ${new Date(plan.submittedAt).toLocaleString()}.`
+                : state === 'triage' ? 'An admin is choosing who it goes to.'
+                  : `It is with ${holder || 'the SPOC'} now.`}
           </p>
-          <Progress flow={flow} rackName={decided && (decided.rack.name || decided.rack.facilityId)} />
+          <Progress flow={flow} status={applied && !flow ? 'written' : state} holder={holder} needsAdmin={needsAdmin}
+                    rackName={decided && (decided.rack.name || decided.rack.facilityId)} />
+          <Incident incident={incident} />
           {track}
         </div>
       )}
@@ -736,9 +840,9 @@ export default function DriftPage() {
                 <strong className={styles.name}>
                   {plainName(item.name, decided && (decided.rack.name || decided.rack.facilityId))}
                 </strong>
-                <span className={styles.what}>{WORD[item.action] || item.action}</span>
+                <span className={styles.what}>{WORD[actionOf(item)] || item.action}</span>
               </div>
-              {MEANS[item.action] && <p className={styles.means}>{MEANS[item.action]}</p>}
+              {meaningOf(item) && <p className={styles.means}>{meaningOf(item)}</p>}
 
               <details className={styles.more}>
                 <summary>Read more</summary>
@@ -761,7 +865,7 @@ export default function DriftPage() {
 
               {sent && (
                 <p className={styles.state}>
-                  {STATE_WORD[item.decision] || item.decision}
+                  {item.decision === 'pending' && state === 'triage' ? 'Waiting on an admin' : STATE_WORD[item.decision] || item.decision}
                   {item.ticket?.assignee && item.decision === 'ticketed' && ` - ${item.ticket.assignee}`}
                   {ext?.number && ` · ${ext.number}${ext.state ? ` (${ext.state})` : ''}`}
                   {item.note && ` - “${item.note}”`}
@@ -809,27 +913,29 @@ export default function DriftPage() {
         </details>
       )}
 
+      {plan && !busy && <PortsCheck ports={ports} />}
+
       {plan && !busy && compared && (
         <div className={styles.reportRow}>
           <button type="button" className={styles.secondaryBtn} onClick={openReport} disabled={reportBusy}>
             {reportBusy ? 'Opening the report' : 'Drift report'}
           </button>
-          <span className={styles.reportHint}>One page of this comparison, to send or attach to the incident.</span>
+          <span className={styles.reportHint}>One page of this comparison. It is attached to the incident when you send.</span>
         </div>
       )}
 
       {plan && changed.length > 0 && !sent && (
         <div className={styles.footer}>
           <label className={styles.label} htmlFor="note">
-            Note for the admin (optional)
+            {toAdmin ? 'Note for the admin (optional)' : 'Note for the SPOC (optional)'}
           </label>
           <textarea id="note" className={styles.textarea} value={note}
                     placeholder="For example: the router is on shelf U20"
                     onChange={(e) => setNote(e.target.value)} />
           <button type="button" className={styles.primary} disabled={!!busy || picked.length === 0} onClick={send}>
-            {picked.length === changed.length ? 'Send to the admin'
+            {picked.length === changed.length ? `Send to ${toWhom}`
               : picked.length === 0 ? 'Choose at least one to send'
-                : `Send ${picked.length} of ${changed.length} to the admin`}
+                : `Send ${picked.length} of ${changed.length} to ${toWhom}`}
           </button>
         </div>
       )}
