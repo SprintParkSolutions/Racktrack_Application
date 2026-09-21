@@ -39,6 +39,7 @@ const shape = require('./shape');
 const machine = require('./machine');
 const bus = require('./bus');
 const spoc = require('./spoc');
+const registry = require('./registry');
 
 const { WORKING, REASONS, ROLES, SYSTEM } = machine;
 
@@ -1511,14 +1512,20 @@ function recheck(plan, items, freshChanges) {
  * Open the write. The plan has to be approved (or be a failed write being
  * tried again), NetBox must not have moved, and what would be written must
  * still be what the approval signed. If the hash no longer stands the plan
- * goes back to approval_pending, with a fresh version, and nothing is written.
+ * goes back to be approved again, with a fresh version, and nothing is
+ * written: a check that is with a SPOC goes back to `assigned`, so it lands
+ * with its holder, its decided items still decided; a check from before the
+ * SPOC change goes back to approval_pending as it always did.
  * An approved plan with nothing approved on it completes without a write:
  * scaffolding is never written on its own.
+ *
+ * `onBehalfOf` is the approver a system write is made for; it rides on the
+ * events so a listener can name them.
  *
  * Answers { plan, excluded } to go ahead, { done: true } when there was
  * nothing to write, or a refusal; `moved: true` on it says NetBox moved.
  */
-function beginWrite(planId, { actor, freshChanges, reason = null, req = null } = {}) {
+function beginWrite(planId, { actor, freshChanges, reason = null, req = null, onBehalfOf = null } = {}) {
   const who = actorOf(actor);
   const found = open(planId, who);
   if (found.refused) return found.refused;
@@ -1539,19 +1546,23 @@ function beginWrite(planId, { actor, freshChanges, reason = null, req = null } =
     const stale = machine.approvalStands(plan, ctx);
     if (stale) {
       // The approval no longer covers what would be written. Nothing is
-      // written; the plan goes back to be approved, with a fresh version.
-      const back = move(effects, plan, 'approval_pending', { actor: SYSTEM, action: 'auto.approval_pending',
+      // written; the plan goes back to be approved, with a fresh version -
+      // to its holder when it has one, which is where such a check is approved.
+      const to = plan.spocUserId != null ? 'assigned' : 'approval_pending';
+      const back = move(effects, plan, to, { actor: SYSTEM, action: `auto.${to}`,
         force: true, reason: check.ok ? 'approval_stale' : 'netbox_changed',
         patch: { payloadHash: null }, payload: { why: stale, live: check.live },
-        auditPayload: { why: stale, causedBy: { id: who.id ?? null, username: who.username ?? null } } });
+        auditPayload: { why: stale, causedBy: { id: who.id ?? null, username: who.username ?? null } },
+        heard: { stale: true, why: stale, approver: approverOf(onBehalfOf) } });
       audit(effects, back.plan, 'write', { actor: who, req, status: 'fail', error: stale,
         payload: { counts: {}, written: 0, failed: 0 } });
       return refuse('guard', stale, { from: plan.status, to: 'write_in_progress', moved: !check.ok,
-        live: check.live, plan: back.plan });
+        stale: true, live: check.live, plan: back.plan });
     }
     if (plan.status === 'approved' && ctx.toWrite === 0) {
       const done = move(effects, plan, 'completed', { actor: who, action: 'complete', req, ctx,
-        reason: 'nothing to write', patch: { completedAt: store.nowIso() } });
+        reason: 'nothing to write', patch: { completedAt: store.nowIso() },
+        heard: { approver: approverOf(onBehalfOf), changes: registry.summaryOf([]) } });
       return done.refused || { plan: done.plan, done: true };
     }
     const retry = plan.status !== 'approved';
@@ -1570,8 +1581,15 @@ function beginWrite(planId, { actor, freshChanges, reason = null, req = null } =
  * undone (the writer never deletes); what failed is listed by uid with
  * NetBox's reason, and the uids that did go through are kept, across
  * attempts, so the next try can tell its own work from somebody else's.
+ *
+ * In the same transaction every change goes into the registry, from the
+ * writer's own report (registry.rowsFor): a row per field written, one per
+ * object created, one per object NetBox refused. `onBehalfOf` is the approver
+ * a system write was made for. The `transition` to written and the
+ * `write_failed` event carry `approver` and `changes` - the rows a person is
+ * shown, as short lines - for whoever pushes the outcome somewhere else.
  */
-function finishWrite(planId, { actor, result, req = null, withheld = null } = {}) {
+function finishWrite(planId, { actor, result, req = null, withheld = null, onBehalfOf = null } = {}) {
   const who = actorOf(actor);
   const plan = store.getPlan(planId, { heavy: false });
   if (!plan) return null;
@@ -1592,13 +1610,20 @@ function finishWrite(planId, { actor, result, req = null, withheld = null } = {}
   };
   const failed = failures.length > 0;
   return run((effects) => {
+    const decisions = store.decisionsOf(plan.id);
+    const rows = registry.rowsFor({ plan, items: store.itemsOf(plan.id), decisions, changes,
+      attempt: record.attempts, writtenAt: now, writtenBy: who });
+    for (const row of rows) store.addChange(row);
+    const approver = approverOf(onBehalfOf, decisions);
     const moved = move(effects, plan, failed ? 'write_failed' : 'written', {
       actor: who, action: failed ? 'write_failed' : 'written', force: true,
-      patch: failed ? { result: record } : { result: record, writtenAt: now, writtenBy: who.username ?? null },
+      patch: failed ? { result: record }
+        : { result: record, writtenAt: now, writtenBy: who.username ?? null, writtenById: who.id ?? null },
       payload: { what: failed ? 'write failed' : 'written to NetBox',
                  detail: { counts: record.counts, written: record.written, failed: record.failed,
                            failures: record.failures },
-                 by: who.username ?? null },
+                 by: who.username ?? null, onBehalfOf: approver ? approver.username : null },
+      heard: { approver, changes: registry.summaryOf(rows) },
     });
     audit(effects, moved.plan, 'write', { actor: who, req, status: failed ? 'fail' : 'ok', payload: {
       counts: record.counts, written: record.written, failed: record.failed,
@@ -1607,9 +1632,26 @@ function finishWrite(planId, { actor, result, req = null, withheld = null } = {}
   });
 }
 
-/** The write threw before it could report: the plan is write_failed, with the error. */
-function abortWrite(planId, { actor, error, req = null } = {}) {
-  const who = actorOf(actor);
+/**
+ * Who a write was made for: the approver it was started by, else the last
+ * approval on record. A listener reads this off the event.
+ */
+function approverOf(onBehalfOf, decisions = null) {
+  if (onBehalfOf && (onBehalfOf.id != null || onBehalfOf.username)) {
+    return { id: onBehalfOf.id ?? null, username: onBehalfOf.username ?? null };
+  }
+  const last = registry.approverOf(decisions || []);
+  return last.approvedBy || last.approvedById != null
+    ? { id: last.approvedById, username: last.approvedBy } : null;
+}
+
+/**
+ * The write threw before it could report: the plan is write_failed, with the
+ * error, and the registry says so in one row, because a write that was tried
+ * and lost is part of the record too.
+ */
+function abortWrite(planId, { actor, error, req = null, onBehalfOf = null } = {}) {
+  const who = actorOf(actor) || SYSTEM;
   const plan = store.getPlan(planId, { heavy: false });
   if (!plan || plan.status !== 'write_in_progress') return plan;
   return run((effects) => {
@@ -1617,13 +1659,50 @@ function abortWrite(planId, { actor, error, req = null } = {}) {
       writtenUids: (plan.result && plan.result.writtenUids) || [],
       attempts: ((plan.result && plan.result.attempts) || 0) + 1,
       error: String(error || 'the write did not run'), at: store.nowIso(), by: who.username ?? null };
+    const decisions = store.decisionsOf(plan.id);
+    const rows = registry.rowsFor({ plan, items: [], decisions, attempt: record.attempts,
+      writtenAt: record.at, writtenBy: who,
+      changes: [{ uid: '*', type: null, name: 'The whole write', action: 'fail', reason: record.error }] });
+    for (const row of rows) store.addChange(row);
     const moved = move(effects, plan, 'write_failed', { actor: SYSTEM, action: 'write_failed', force: true,
       patch: { result: record }, reason: record.error,
-      payload: { what: 'write failed', detail: { error: record.error } } });
+      payload: { what: 'write failed', detail: { error: record.error } },
+      heard: { approver: approverOf(onBehalfOf, decisions), changes: registry.summaryOf(rows),
+        error: record.error } });
     audit(effects, moved.plan, 'write', { actor: who, req, status: 'fail', error: record.error,
       payload: { counts: {}, written: 0, failed: 0 } });
     return moved.plan;
   });
+}
+
+// -- The change registry -------------------------------------------------
+const REGISTRY_WHY = 'The change registry is for an admin, an auditor, or the SPOC of a site.';
+const CHANGE_FILTERS = ['tenantId', 'rackId', 'planId', 'objectType', 'field', 'approvedById', 'incident',
+  'result', 'since', 'until', 'q', 'internal', 'cursor'];
+
+/**
+ * What the writes changed, newest first: { changes, nextCursor }.
+ *
+ * The organization rule applies to everybody, first. Inside it an admin and
+ * an auditor read everything; anybody else reads the Sites they are the SPOC
+ * of and the checks they hold or held, and with neither there is nothing for
+ * them here. `cap` lifts the page size for the file a person downloads.
+ */
+function listChanges(actor, query = {}, { cap = 500 } = {}) {
+  const who = actorOf(actor);
+  if (!who) return refuse('role', REGISTRY_WHY);
+  const f = {};
+  for (const key of CHANGE_FILTERS) if (query[key] != null && query[key] !== '') f[key] = query[key];
+  f.seenBy = seenByOf(who);
+  if (isStrict(who) && !machine.isAdmin(who) && who.role !== 'auditor') {
+    f.tenantIds = store.sitesWhereSpoc(who.id, who.email, who.orgId ?? null);
+    f.planIds = store.plansHeldBy(who.id, f.seenBy);
+    if (!f.tenantIds.length && !f.planIds.length) return refuse('role', REGISTRY_WHY);
+  }
+  const limit = Math.min(Math.max(1, Number(query.limit) || (cap > 500 ? cap : 100)), cap);
+  const rows = store.listChanges({ ...f, limit: limit + 1, cap: cap + 1 });
+  const page = rows.slice(0, limit);
+  return { changes: page, nextCursor: rows.length > limit ? page[page.length - 1].id : null };
 }
 
 // -- Comments -------------------------------------------------------------
@@ -2209,6 +2288,7 @@ module.exports = {
   acceptTicket, startTicket, holdTicket, resolveTicket, applyTicketStates, openSysIds, syncServiceNow,
   decideItems, skipVerification, approve, reject, rework, moveByHand, cancel, reopen,
   beginWrite, finishWrite, abortWrite,
+  listChanges,
   addComment, listComments,
   getSettings, putSetting, DEFAULT_SETTINGS, SETTING_KEYS,
 };
