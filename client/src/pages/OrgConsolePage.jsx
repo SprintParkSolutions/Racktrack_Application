@@ -474,7 +474,7 @@ export default function OrgConsolePage() {
           <section className={styles.block}>
             <div className={styles.sectionHead}>
               <SecTitle icon="location_on">Sites</SecTitle>
-              <button className={styles.primaryBtn} onClick={() => setModal('site')}>+ Add site</button>
+              <button className={styles.primaryBtn} onClick={() => setModal('site')}>Add site</button>
             </div>
             {sites.length === 0 ? (
               <div className={styles.empty}>No sites yet.</div>
@@ -498,7 +498,7 @@ export default function OrgConsolePage() {
                         <button className={styles.smallBtn}
                           onClick={() => setModal({ kind: 'invite', siteId: s.id, siteName: s.name })}>Invite</button>
                         <button className={styles.smallBtn}
-                          onClick={() => setModal({ kind: 'member', siteId: s.id, siteName: s.name })}>+ Add member</button>
+                          onClick={() => setModal({ kind: 'member', siteId: s.id, siteName: s.name })}>Add member</button>
                       </div>
                     </div>
                   );
