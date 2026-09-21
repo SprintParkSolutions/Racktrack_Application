@@ -235,6 +235,12 @@ function AndroidBackHandler() {
     let sub;
     (async () => {
       sub = await CapApp.addListener('backButton', () => {
+        // A screen that is showing a view of its own - a port that was looked
+        // up, a device picker, a tab inside the rack - steps back out of that
+        // first, exactly as its own back arrow does. It says so by cancelling
+        // this event; nobody cancelling it means the previous page is next.
+        const ev = new CustomEvent('rt:back', { cancelable: true });
+        if (!window.dispatchEvent(ev)) return;
         if (location.pathname === '/' || location.pathname === '/login') {
           CapApp.exitApp();
         } else {

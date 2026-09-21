@@ -1321,6 +1321,35 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   //     (overview is the root of this rack - back means "exit the rack")
   //   • on any other tab → pop the in-page tab history if there's any,
   //     otherwise fall back to Overview.
+  // Out of the port view, back to the rack. One function, so the arrow on the
+  // screen and the back button on the phone do the same thing.
+  const leavePortView = () => {
+    setPhase('detect');
+    setPortInfo(null); setPortNum(''); setNextPort('');
+    setResultImg(null); setRackImg(null); setPortView('rack');
+    setError(null); resetZoom();
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // The phone's own back button. App.jsx asks the screen first; a view inside
+  // this page - a located port, the device picker, a tab - is stepped out of
+  // here, and only when there is none does the previous page come next. No
+  // dependency list on purpose: every render re-registers it, so it always
+  // reads the state as it is now and never an old copy.
+  useEffect(() => {
+    const onBack = (e) => {
+      if (phase === 'port') { e.preventDefault(); leavePortView(); return; }
+      if (portMode) {
+        e.preventDefault();
+        setPortMode(false); setDeviceListOpen(false); setSelectedIdx(null);
+        return;
+      }
+      if (tab !== 'overview') { e.preventDefault(); handleHeaderBack(); }
+    };
+    window.addEventListener('rt:back', onBack);
+    return () => window.removeEventListener('rt:back', onBack);
+  });
+
   const handleHeaderBack = () => {
     // Four of the seven tour steps happen on this page, so leaving it means
     // abandoning the walkthrough - end it rather than leave the spotlight
@@ -3374,18 +3403,22 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     return (
       <div className={`page page-full ${styles.results}`}>
         <div className={styles.portAmb} style={{ '--ac': rc }} />
+        {/* The rack's tabs stay with the person here too. This view had no way
+            out but its own back arrow, so reaching Network or Report from a
+            located port meant going back first. Picking a tab leaves the view. */}
+        {!isDesktop && !embeddedProp && (
+          <ScanTabBar
+            rackId={rackId}
+            activeTab="overview"
+            onTabChange={(key) => { leavePortView(); handleTabChange(key); }}
+          />
+        )}
 
         <header className={styles.header}>
           <button
             type="button"
             aria-label="Back to results"
-            onClick={() => {
-              setPhase('detect');
-              setPortInfo(null); setPortNum(''); setNextPort('');
-              setResultImg(null); setRackImg(null); setPortView('rack');
-              setError(null); resetZoom();
-              if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
+            onClick={leavePortView}
             style={{ width: 40, height: 40, display: 'grid', placeItems: 'center',
               border: '1px solid #ececec', borderRadius: 12, background: '#fff',
               color: '#121212', cursor: 'pointer', flex: '0 0 auto' }}
@@ -3395,7 +3428,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           <div className={styles.headerCenter}>
             <h2 className={styles.headerTitle}>Port Located</h2>
             <div className={styles.headerMetaRow}>
-              {rackId && <span className={styles.headerMono}>{rackId}</span>}
+              {(rackSaid?.name || rackId) && <span className={styles.headerMono}>{rackSaid?.name || rackId}</span>}
             </div>
           </div>
           <div style={{ width: 40 }} />
@@ -4647,7 +4680,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
          data-device={selectedIdx ? 'sel' : 'none'}
          /* No tab bar yet → no space reserved for one. Same condition the bar
             itself renders on, so the two can never disagree. */
-         data-tabs={(!isDesktop && !embeddedProp && (tab !== 'overview' || portMode)) ? 'some' : 'none'}>
+         data-tabs={(!isDesktop && !embeddedProp) ? 'some' : 'none'}>
       <div className={styles.amb} />
 
       {!embeddedProp && (
@@ -4704,7 +4737,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           Straight after a scan the page is the photograph and one question - read the switches, or look at a port - and a row of tabs under it
           would be five more answers to a question nobody asked yet. Choosing
           either one brings the tabs in, and they stay for the rest of the rack. */}
-      {!isDesktop && !embeddedProp && (tab !== 'overview' || portMode) && (
+      {!isDesktop && !embeddedProp && (
         <ScanTabBar
           rackId={rackId}
           activeTab={tab === 'drift' ? 'timeline' : tab}

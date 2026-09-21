@@ -475,6 +475,11 @@ def classify_ports_by_pattern(
         return _empty_result()
 
     buckets = _bucket_and_index(typed)
+    buckets["sfp"] = even_out_sfp(
+        buckets["sfp"],
+        img_width=int(img.shape[1]) if hasattr(img, "shape") else None,
+        taken=[p["box"] for k in ("main", "console", "other") for p in buckets[k]],
+    )
     return {
         "main_ports": buckets["main"],
         "sfp_ports": buckets["sfp"],
@@ -487,6 +492,76 @@ def classify_ports_by_pattern(
             "cluster_sizes": [len(buckets[k]) for k in ("main", "sfp", "console")],
         },
     }
+
+
+def _overlaps(box, others, slack=2):
+    x1, y1, x2, y2 = box
+    for ox1, oy1, ox2, oy2 in others:
+        if x1 < ox2 - slack and ox1 < x2 - slack and y1 < oy2 - slack and oy1 < y2 - slack:
+            return True
+    return False
+
+
+def even_out_sfp(sfp, img_width=None, taken=None):
+    """SFP cages are built in pairs, so an odd count means one was missed.
+
+    A switch carries its uplink cages in blocks of two or four; the model that
+    finds them misses one when a transceiver and its cable hide the cage, which
+    is how a device came back with three. The missing one is put back where the
+    row says it is: in a gap twice as wide as the others, or failing that one
+    pitch along from the end of the row, on whichever side has room and is not
+    already a port. It is marked inferred, with no confidence of its own, so
+    nothing downstream mistakes it for a detection. Where there is no room on
+    either side the list is left as it was read: a port is never drawn off the
+    device to make a number even.
+    """
+    sfp = list(sfp or [])
+    if not sfp or len(sfp) % 2 == 0:
+        return sfp
+    taken = list(taken or [])
+    row = sorted(sfp, key=lambda p: (p["box"][0] + p["box"][2]) / 2)
+    widths = [p["box"][2] - p["box"][0] for p in row]
+    width = sorted(widths)[len(widths) // 2]
+    centres = [(p["box"][0] + p["box"][2]) / 2 for p in row]
+    gaps = [b - a for a, b in zip(centres, centres[1:])]
+    # The smallest gap is the pitch: a missed cage only ever makes a gap wider.
+    pitch = min(gaps) if gaps else width * 1.25
+
+    def at(cx, like):
+        x1 = int(round(cx - width / 2))
+        y1, y2 = like["box"][1], like["box"][3]
+        return [x1, y1, x1 + int(width), y2]
+
+    box = None
+    if len(gaps) >= 2:
+        widest = max(range(len(gaps)), key=lambda i: gaps[i])
+        if 1.6 * pitch <= gaps[widest] <= 2.6 * pitch:
+            box = at((centres[widest] + centres[widest + 1]) / 2, row[widest])
+    if box is None:
+        for cx, like in ((centres[-1] + pitch, row[-1]), (centres[0] - pitch, row[0])):
+            cand = at(cx, like)
+            inside = cand[0] >= 0 and (img_width is None or cand[2] <= img_width)
+            if inside and not _overlaps(cand, taken + [p["box"] for p in row]):
+                box = cand
+                break
+    if box is None:
+        return sfp
+
+    row.append(
+        {
+            "box": box,
+            "center": [(box[0] + box[2]) // 2, (box[1] + box[3]) // 2],
+            "status": "unknown",
+            "class_name": "SFP",
+            "confidence": 0.0,
+            "port_category": "sfp",
+            "inferred": True,
+        }
+    )
+    row.sort(key=lambda p: (p["box"][0] + p["box"][2]) / 2)
+    for i, p in enumerate(row, 1):
+        p["index"] = i
+    return row
 
 
 def grid_ports(img, target_count, existing=None, status_dets=None):

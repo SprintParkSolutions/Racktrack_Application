@@ -122,7 +122,7 @@ export default function LoginPage() {
           that can actually do something about it, is the whole of the answer
           to "I don't have a login". */}
       <footer className={s.foot}>
-        No account? RackTrack is given out by your administrator.
+        No account? Contact your administrator.
         <br />
         <a href="mailto:support@racktrack.ai?subject=RackTrack%20access%20request">
           support@racktrack.ai
