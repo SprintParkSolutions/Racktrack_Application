@@ -57,13 +57,17 @@ const toAdmin = { body: { spoc: null, siteSpoc: null, goesTo: 'admin', why: 'no_
 const INCIDENT = { system: 'servicenow', number: 'INC0010042', url: 'https://dev1.service-now.com/incident/42', state: 'new', assigned: true, error: null };
 const SUBMIT = 'POST /api/nb/plans/7/submit';
 const FLOW = 'GET /api/approvals/plans/7';
-const stepNow = () => (document.querySelector('[aria-current="step"]') || {}).textContent || '';
+// A sent check: the incident number (or, with none, who it went to) as the
+// heading, and one line under it that says where the check is.
+const sentBlock = () => screen.getByRole('link', { name: 'Track this check' }).parentElement;
+const heading = () => sentBlock().querySelector('h2').textContent;
+const statusLine = () => sentBlock().querySelector('h2 + p').textContent;
 
 // The calls are counted per test: more than one of them sends a check.
 afterEach(() => { cleanup(); authFetch.mockClear(); });
 
 describe('<DriftPage>', () => {
-  test('before sending: one button, Send to the SPOC by name, and nothing that decides or writes', async () => {
+  test('before sending: one button, Raise incident, under who it goes to, and nothing that decides or writes', async () => {
     stub('open', { body: { ...toSpoc.body, matchedRack: KNOWN } });
     mount();
     await screen.findByText('SW-16');
@@ -73,7 +77,8 @@ describe('<DriftPage>', () => {
     expect(screen.getByText('SPOC of Site 32 - Office-Sprintpark')).toBeTruthy();
     expect(screen.getByText('spoc@dc007.example')).toBeTruthy();
     expect(screen.getByLabelText('Note for the SPOC (optional)')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Send to dc007.spoc' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Raise incident' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /^Send/ })).toBeNull();
     expect(buttonNames().filter((n) => FORBIDDEN.test(n))).toEqual([]);
     expect(document.body.textContent).not.toMatch(/Write the approved|Assign to|Approve\b/);
     expect(document.body.textContent).toMatch(/Send it to the SPOC to check\./);
@@ -81,11 +86,11 @@ describe('<DriftPage>', () => {
     expect(screen.queryByRole('link', { name: 'Track this check' })).toBeNull();
   });
 
-  test('a server that names nobody: the button says the SPOC, and no Goes to block is drawn', async () => {
+  test('a server that names nobody: the button still raises the incident, and no Goes to block is drawn', async () => {
     stub('open');
     mount();
     await screen.findByText('SW-16');
-    expect(screen.getByRole('button', { name: 'Send to the SPOC' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Raise incident' })).toBeTruthy();
     expect(screen.queryByText('Goes to')).toBeNull();
   });
 
@@ -100,12 +105,11 @@ describe('<DriftPage>', () => {
     expect(screen.getByLabelText('Note for the admin (optional)')).toBeTruthy();
     expect(document.body.textContent).toMatch(/Send it to an admin to check\./);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Send to an admin' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Raise incident' }));
+    // no incident was raised, so the heading says where it went; one line under it
     await screen.findByText('Sent. It needs an admin.');
-    // off the line: Sent is behind it, no step is the current one, and the word is set apart
-    expect(screen.getByText('Needs an admin')).toBeTruthy();
-    expect(screen.getByText(new RegExp(`${NO_SPOC} An admin is choosing who this goes to\\.`))).toBeTruthy();
-    expect(stepNow()).toBe('');
+    expect(statusLine()).toBe('Needs an admin');
+    expect(document.querySelector('ol[aria-label="Progress of this check"]')).toBeNull();
     expect(screen.getByText('Waiting on an admin')).toBeTruthy();
   });
 
@@ -113,7 +117,8 @@ describe('<DriftPage>', () => {
     stub('submitted');
     mount();
     await screen.findByText('Sent to the SPOC');
-    expect(screen.queryByRole('button', { name: /^Send/ })).toBeNull();
+    expect(statusLine()).toBe('With the SPOC');
+    expect(screen.queryByRole('button', { name: /^(Send|Raise)/ })).toBeNull();
     // it has gone, so nothing on the screen still asks for it to be sent
     expect(document.body.textContent).not.toMatch(/Send it to/);
     expect(buttonNames().filter((n) => FORBIDDEN.test(n))).toEqual([]);
@@ -129,7 +134,7 @@ describe('<DriftPage>', () => {
     stub('open', { status: 403, body: { error: 'admins only' } });
     mount();
     await screen.findByText('SW-16');
-    expect(screen.getByRole('button', { name: 'Send to the SPOC' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Raise incident' })).toBeTruthy();
     expect(screen.queryByText('Goes to')).toBeNull();
     expect(screen.queryByRole('alert')).toBeNull();
   });
@@ -165,11 +170,11 @@ describe('<DriftPage> choosing and following', () => {
     mount();
     await screen.findByText('SW-16');
     expect(screen.getByText('All selected')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Send to the SPOC' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Raise incident' })).toBeTruthy();
 
     fireEvent.click(screen.getByRole('checkbox', { name: 'Send FW-02' }));
     expect(screen.getByText('1 of 2 selected')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Send 1 of 2 to the SPOC' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Raise incident for 1 of 2' }));
     await waitFor(() => {
       const call = authFetch.mock.calls.find(([u, init]) => u === '/api/nb/plans/7/submit' && init && init.method === 'POST');
       expect(call).toBeTruthy();
@@ -187,16 +192,18 @@ describe('<DriftPage> choosing and following', () => {
     expect(screen.getByRole('button', { name: 'Choose at least one to send' }).disabled).toBe(true);
   });
 
-  test('a named SPOC is named on a part send too', async () => {
+  test('a part send says how many, and the SPOC stays named above it', async () => {
     stub('open', toSpoc);
     routes.current['GET /api/nb/plans/7'] = { body: two('open') };
     mount();
     await screen.findByText('SW-16');
     fireEvent.click(screen.getByRole('checkbox', { name: 'Send FW-02' }));
-    expect(screen.getByRole('button', { name: 'Send 1 of 2 to dc007.spoc' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Raise incident for 1 of 2' })).toBeTruthy();
+    expect(screen.getByText('Goes to')).toBeTruthy();
+    expect(screen.getByText('dc007.spoc')).toBeTruthy();
   });
 
-  test('after sending, the check is followed step by step, with who holds it and the incident', async () => {
+  test('after sending: the incident number, one line that says who holds it, and the two ways on', async () => {
     stub('submitted', toSpoc);
     routes.current[FLOW] = { body: {
       ok: true,
@@ -208,14 +215,13 @@ describe('<DriftPage> choosing and following', () => {
       incident: INCIDENT,
     } };
     mount();
-    await screen.findByText('Sent to dc007.spoc');
-    await waitFor(() => expect(stepNow()).toMatch(/^With the SPOC/));
-    const labels = [...document.querySelectorAll('ol[aria-label="Progress of this check"] > li')]
-      .map((li) => li.querySelector('span > span').textContent);
-    expect(labels).toEqual(['Sent', 'With the SPOC', 'Approved', 'Written']);
-    expect(screen.getByText('With dc007.spoc.')).toBeTruthy();
+    await screen.findByRole('heading', { name: 'INC0010042' });
+    expect(heading()).toBe('INC0010042');
+    expect(statusLine()).toBe('With dc007.spoc');
+    // the four steps are that one line now
+    expect(document.querySelector('ol[aria-label="Progress of this check"]')).toBeNull();
+    expect(document.body.textContent).not.toMatch(/Sent to dc007\.spoc|It is with/);
     // one incident for the check, and the way to it - never its address in words
-    expect(screen.getByText('Incident INC0010042')).toBeTruthy();
     const link = screen.getByRole('link', { name: 'Open in ServiceNow' });
     expect(link.getAttribute('href')).toBe(INCIDENT.url);
     expect(document.body.textContent).not.toMatch(/https?:\/\//);
@@ -224,17 +230,25 @@ describe('<DriftPage> choosing and following', () => {
     expect(buttonNames().filter((n) => FORBIDDEN.test(n))).toEqual([]);
   });
 
+  test('once sent, the drift report sits right under the number and the line, and only there', async () => {
+    stub('submitted', { body: { ...toSpoc.body, matchedRack: KNOWN } });
+    routes.current[FLOW] = { body: { plan: { id: 7, status: 'assigned' }, holder: { username: 'dc007.spoc' }, incident: INCIDENT } };
+    mount();
+    await screen.findByRole('heading', { name: 'INC0010042' });
+    const reports = screen.getAllByRole('button', { name: 'Drift report' });
+    expect(reports).toHaveLength(1);
+    expect(sentBlock().nextElementSibling.contains(reports[0])).toBe(true);
+  });
+
   test('right after Send the line starts where the check landed, without waiting to be told again', async () => {
     stub('open', toSpoc);
     routes.current[SUBMIT] = { body: { planId: 7, status: 'submitted', already: false, state: 'assigned', goesTo: 'spoc',
       assignee: { userId: 41, name: 'dc007.spoc', email: 'spoc@dc007.example' }, needsAdmin: null, incident: INCIDENT } };
     mount();                                       // no approvals route stubbed: the follow-up answers 404
     await screen.findByText('SW-16');
-    fireEvent.click(screen.getByRole('button', { name: 'Send to dc007.spoc' }));
-    await screen.findByText('Sent to dc007.spoc');
-    expect(stepNow()).toMatch(/^With the SPOC/);
-    expect(screen.getByText('With dc007.spoc.')).toBeTruthy();
-    expect(screen.getByText('Incident INC0010042')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Raise incident' }));
+    await screen.findByRole('heading', { name: 'INC0010042' });
+    expect(statusLine()).toBe('With dc007.spoc');
   });
 
   test('an older check, sent before checks had a holder, still lists who has each ticket', async () => {
@@ -246,37 +260,34 @@ describe('<DriftPage> choosing and following', () => {
     } };
     mount();
     await screen.findByText('Sent to the SPOC');
-    await waitFor(() => expect(stepNow()).toBe('With the SPOC'));
-    expect(screen.getByText(/With dc007.tech - INC0010007 - in progress/)).toBeTruthy();
+    expect(statusLine()).toBe('With the SPOC');
+    await screen.findByText(/With dc007.tech - INC0010007 - in progress/);
   });
 
-  test('sent back, and on hold, are said under the step and not as steps of their own', async () => {
+  test('sent back, and on hold, are still with the SPOC to the person who sent it', async () => {
     stub('submitted');
     routes.current[FLOW] = { body: { plan: { id: 7, status: 'rework', spocUserId: 41 }, holder: { username: 'dc007.spoc' } } };
     mount();
-    await screen.findByText('Sent back to be checked again.');
-    expect(stepNow()).toMatch(/^With the SPOC/);
+    await waitFor(() => expect(statusLine()).toBe('With dc007.spoc'));
     cleanup();
 
     routes.current[FLOW] = { body: { plan: { id: 7, status: 'pending', pendingReason: 'waiting_for_access', spocUserId: 41 }, holder: { username: 'dc007.spoc' } } };
     mount();
-    await screen.findByText('On hold: waiting for access.');
+    await waitFor(() => expect(statusLine()).toBe('With dc007.spoc'));
+    expect(document.body.textContent).not.toMatch(/waiting_for_access/);
   });
 
-  test('rejected, and a write that failed, leave the line with the word set apart', async () => {
+  test('approved, rejected, and a write that failed: each is the one line', async () => {
     stub('submitted');
-    routes.current[FLOW] = { body: { plan: { id: 7, status: 'rejected' }, holder: { username: 'dc007.spoc' } } };
-    mount();
-    await screen.findByText('The SPOC rejected this check.');
-    expect(screen.getAllByText('Rejected').length).toBeGreaterThan(0);
-    expect(stepNow()).toBe('');
-    cleanup();
-
-    routes.current[FLOW] = { body: { plan: { id: 7, status: 'write_failed' }, holder: { username: 'dc007.spoc' } } };
-    mount();
-    await screen.findByText('NetBox refused part of the write.');
-    expect(screen.getByText('Needs an admin')).toBeTruthy();
-    expect(stepNow()).toBe('');
+    for (const [status, line] of [['approved', 'Approved'], ['write_in_progress', 'Approved'], ['rejected', 'Rejected'],
+      ['write_failed', 'Needs an admin'], ['manual_review', 'Needs an admin'], ['triage', 'Needs an admin'],
+      ['cancelled', 'This check was cancelled.']]) {
+      routes.current[FLOW] = { body: { plan: { id: 7, status }, holder: { username: 'dc007.spoc' }, incident: INCIDENT } };
+      mount();
+      await waitFor(() => expect(statusLine()).toBe(line));
+      expect(heading()).toBe('INC0010042');
+      cleanup();
+    }
   });
 
   test('the incident line: nothing while it is being raised or where there is no ServiceNow, a sentence when it failed', async () => {
@@ -284,14 +295,15 @@ describe('<DriftPage> choosing and following', () => {
     stub('submitted');
     routes.current[FLOW] = held({ system: 'servicenow', number: null, state: 'raising', error: null });
     mount();
-    await screen.findByText('With dc007.spoc.');
-    expect(document.body.textContent).not.toMatch(/Incident|ServiceNow/);
+    await screen.findByText('Sent to dc007.spoc');
+    expect(statusLine()).toBe('With dc007.spoc');
+    expect(document.body.textContent).not.toMatch(/Incident|INC|ServiceNow/);
     cleanup();
 
     routes.current[FLOW] = held({ system: 'none' });
     mount();
-    await screen.findByText('With dc007.spoc.');
-    expect(document.body.textContent).not.toMatch(/Incident|ServiceNow/);
+    await screen.findByText('Sent to dc007.spoc');
+    expect(document.body.textContent).not.toMatch(/Incident|INC|ServiceNow/);
     cleanup();
 
     routes.current[FLOW] = held({ system: 'servicenow', number: null, error: 'HTTP 503' });
@@ -300,24 +312,23 @@ describe('<DriftPage> choosing and following', () => {
     expect(document.body.textContent).not.toMatch(/503/);
   });
 
-  test('a written check keeps its four steps, ending on Written, and says who approved it', async () => {
+  test('a written check keeps its incident number and says Written to NetBox', async () => {
     stub('applied');
     routes.current[FLOW] = { body: { plan: { id: 7, status: 'completed' }, holder: { username: 'dc007.spoc' },
       decisions: [{ stage: 'final', approver: 'dc007.spoc', decision: 'approved' }], incident: { ...INCIDENT, state: 'resolved' } } };
     mount();
-    await screen.findByText('The record has been updated');
-    await screen.findByText('dc007.spoc approved this and it was written to NetBox. Nothing more is needed from you.');
-    expect(stepNow()).toBe('Written');
-    expect(screen.getByText('Incident INC0010042')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /^Send/ })).toBeNull();
+    await screen.findByRole('heading', { name: 'INC0010042' });
+    expect(statusLine()).toBe('Written to NetBox');
+    expect(screen.getByRole('link', { name: 'Open in ServiceNow' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /^(Send|Raise)/ })).toBeNull();
     expect(screen.getAllByRole('link', { name: 'Track this check' })).toHaveLength(1);
   });
 
   test('a written check on a server that cannot be followed still ends on Written', async () => {
     stub('applied');                               // no approvals route: 404
     mount();
-    await screen.findByText('The SPOC approved this and it was written to NetBox. Nothing more is needed from you.');
-    expect(stepNow()).toBe('Written');
+    await screen.findByText('The record has been updated');
+    expect(statusLine()).toBe('Written to NetBox');
   });
 });
 
@@ -388,7 +399,7 @@ describe('<DriftPage> ports', () => {
     stub('open', toSpoc);                          // no connectivity stub: 404
     mount();
     await screen.findByText('SW-16');
-    expect(screen.getByRole('button', { name: 'Send to dc007.spoc' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Raise incident' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /^Ports/ })).toBeNull();
     expect(screen.queryByRole('alert')).toBeNull();
   });
@@ -412,14 +423,18 @@ describe('<DriftPage> the whole comparison', () => {
     mount();
     await screen.findByText('Router on shelf U20');
     const glance = screen.getByRole('group', { name: 'Summary of the comparison' });
-    expect(glance.textContent).toBe('1match1different1not seen');
+    expect(glance.textContent).toBe('1Matched1Unmatched1Not seen');
     // the match is named by the record it matched, the unseen record by its shelf
     expect(screen.getByText('Switch on shelf U17')).toBeTruthy();
     expect(screen.getByText('SP-R1-U17-SW03')).toBeTruthy();
     expect(screen.getByText('SP-R1-U19-FW')).toBeTruthy();
     expect(screen.getByText('Shelf U19')).toBeTruthy();
     // ports are not a row of their own on this screen: one device matches, not two items
-    expect(screen.getByText('Matching your records').parentElement.textContent).toBe('Matching your records1');
+    // the three groups carry the same three words as the strip above them
+    const groups = [...document.querySelectorAll('h3, details > summary > span')].map((el) => el.firstChild.textContent.trim());
+    expect(groups.filter((g) => ['Unmatched', 'Matched', 'Not seen'].includes(g))).toEqual(['Unmatched', 'Matched', 'Not seen']);
+    expect(document.body.textContent).not.toMatch(/Matching your records|not seen in the photo/);
+    expect(screen.getByText('Matched', { selector: 'summary > span' }).parentElement.textContent).toBe('Matched1');
     expect(screen.getByRole('button', { name: 'Drift report' })).toBeTruthy();
     expect(screen.getByText('One page of this comparison. It is attached to the incident when you send.')).toBeTruthy();
   });
