@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import styles from './ScanPage.module.css';
 import { validateMedia } from '../utils/validateMedia';
+import AssignedNotice from '../components/AssignedNotice.jsx';
 import { IMAGE_ACCEPT, VIDEO_ACCEPT } from '../utils/mediaAccept';
 import { apiUrl, authFetch } from '../utils/api';
 import { prefetchScan } from '../utils/scanPrefetch';
@@ -1498,6 +1499,9 @@ export default function ScanPage() {
           <div style={{ width: 38 }} aria-hidden="true" />
         </header>
       )}
+
+      {/* Anything an admin has put on this person, said where the app opens. */}
+      <AssignedNotice />
 
       <div className={`pc ${styles.scanContent} ${isDesktop ? styles.scanContentDesktop : ''}`}>
         <div className={styles.scanIntro}>

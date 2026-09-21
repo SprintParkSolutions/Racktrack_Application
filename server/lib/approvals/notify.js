@@ -39,7 +39,11 @@ const CHANNELS = ['inapp', 'email'];
  */
 const TABLE = {
   submitted: { to: ['triage'], channels: ['inapp', 'email'] },
-  assigned: { to: ['assignee'], channels: ['inapp', 'email'] },
+  // In the application only. The person is already sent one email when a ticket
+  // is put on them - the one that lists what they were handed and carries the
+  // incident - and now that this notice lists the same things, mailing it too
+  // would be the same message twice.
+  assigned: { to: ['assignee'], channels: ['inapp'] },
   p1_p2_created: { to: ['admin'], channels: ['email'] },
   sla_warn: { to: ['assignee', 'admin'], channels: ['inapp', 'email'] },
   sla_breach: { to: ['assignee', 'admin', 'owner'], channels: ['inapp', 'email'], always: true },
@@ -134,11 +138,50 @@ function recipientsFor(event, plan, payload) {
 // -- What it says ---------------------------------------------------------
 const where = (plan) => `rack ${plan.rackName || plan.rackId || plan.id}`;
 
+/** One item to check, as somebody at the rack would say it. */
+const ITEM_MEANS = {
+  create: 'it is in the rack, but the record does not list it on that shelf',
+  update: 'the record lists it, but some details are different',
+  rebind: 'the record lists it under an older id',
+};
+function plainItem(item, rackName) {
+  let name = String((item && item.name) || (item && item.uid) || 'an item');
+  if (rackName && name.endsWith(rackName)) name = name.slice(0, -rackName.length).trim();
+  const m = name.match(/^(.+?)\s+U(\d{1,2})$/);
+  if (m) name = `${m[1]} on shelf U${Number(m[2])}`;
+  const means = ITEM_MEANS[item && item.action];
+  return means ? `${name}: ${means}.` : `${name}.`;
+}
+
 const LINES = {
   submitted: (plan) => [`A drift check on ${where(plan)} is waiting for triage.`,
     `${plan.createdBy || 'A technician'} sent it over.`],
-  assigned: (plan) => [`You have been asked to check ${where(plan)}.`,
-    'Open the plan to see what to look at and report back what you find.'],
+  // The one message a person acts on without having asked for it, so it says
+  // everything they need before they open anything: which rack and where, each
+  // thing to look at in plain words, the question the admin typed, the ServiceNow
+  // incident, and the three steps. It used to say "please check rack RK-2F85EE94,
+  // open the plan" - the photograph's hash and no reason.
+  assigned: (plan, p) => {
+    const rack = p.rackName || plan.rackName || plan.rackId || `plan ${plan.id}`;
+    const targets = Array.isArray(p.targets) ? p.targets : [];
+    const incidents = (Array.isArray(p.incidents) ? p.incidents : []).filter((i) => i && i.number);
+    const by = p.actor && p.actor.username ? p.actor.username : 'An admin';
+    return [
+      `${by} has asked you to check rack ${rack}${p.siteName ? ` at ${p.siteName}` : ''}.`,
+      '',
+      targets.length ? 'What to check:' : '',
+      ...targets.map((t) => `  - ${plainItem(t, rack)}`),
+      p.question ? '' : '',
+      p.question ? `${by} asks: "${p.question}"` : '',
+      incidents.length ? '' : '',
+      ...incidents.flatMap((i) => [`ServiceNow incident: ${i.number}`, i.url || '']),
+      '',
+      'What to do:',
+      '  1. Open the check and press Accept.',
+      '  2. Go to the rack and look. Press Start work while you are there.',
+      '  3. Press Resolve and write what you found. It then goes to the admin for approval.',
+    ];
+  },
   p1_p2_created: (plan) => [`A ${plan.priority} drift check was raised on ${where(plan)}.`],
   sla_warn: (plan, p) => [`The ${p.clock} clock on ${where(plan)} is ${p.percent || 80} percent through.`,
     p.targetAt ? `It is due at ${p.targetAt}.` : ''],
@@ -179,7 +222,7 @@ const LINES = {
 
 const SUBJECTS = {
   submitted: (plan) => `RackTrack: a drift check on ${where(plan)} needs triage`,
-  assigned: (plan) => `RackTrack: please check ${where(plan)}`,
+  assigned: (plan, p) => `Assigned to you: check rack ${p.rackName || plan.rackName || plan.rackId || plan.id}`,
   p1_p2_created: (plan) => `RackTrack: ${plan.priority} drift on ${where(plan)}`,
   sla_warn: (plan, p) => `RackTrack: the ${p.clock} clock on ${where(plan)} is close to its target`,
   sla_breach: (plan, p) => `RackTrack: the ${p.clock} clock on ${where(plan)} has run out`,
@@ -202,7 +245,9 @@ function wordsFor(event, plan, payload, to) {
   const body = [
     `Hello ${to.name || 'there'},`,
     '',
-    ...lines.filter(Boolean),
+    // Empty strings are paragraph breaks a message asked for; runs of them, and
+    // one at either end, are not.
+    ...lines.filter((l, i, all) => l != null && !(l === '' && (i === 0 || i === all.length - 1 || all[i - 1] === ''))),
     '',
     `Plan ${plan.id} - ${plan.priority} - ${String(plan.status).replace(/_/g, ' ')}`,
     '',

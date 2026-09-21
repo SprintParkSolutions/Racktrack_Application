@@ -823,7 +823,14 @@ async function assign(planId, body = {}, { actor, req = null } = {}) {
       emit(effects, 'assigned', { plan, actor: who, to: 'assigned',
         assignee: { name: n.person.name, email: n.person.email, netboxId: n.person.netboxId ?? null,
                     userId: n.userId ?? null },
-        items: n.targets.map((t) => t.uid) });
+        items: n.targets.map((t) => t.uid),
+        // What the notice is written from: the rack by the name on its tape,
+        // each item in its own words, the admin's question and the incident.
+        rackName, siteName,
+        targets: n.targets.map((t) => ({ uid: t.uid, type: t.type, name: t.name, action: t.action })),
+        incidents: n.incidents.map((i) => ({ number: i.number || null, url: i.url || null })),
+        question: wholeRack ? question : (n.targets.length === 1
+          ? store.getTicket(plan.id, n.targets[0].uid).question : null) });
     }
     flush(effects);
   }
