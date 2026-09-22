@@ -362,14 +362,15 @@ describe('<HomePage> by role', () => {
     expect(bannerFor({ role: 'tech', racks: 0, loading: true }).title).toBe('Ready to scan a rack');
   });
 
+  /* A single point of contact does not scan. Their control is their own list
+     of checks, and scanning is not on the page at all. */
   test('a single point of contact is sent to the checks that are with them', async () => {
     answers.current['/api/approvals/me'] = { ok: true, can: { spoc: true } };
     mount();
     await waitFor(() => expect(screen.getByText(/^Single point of contact/)).toBeTruthy());
-    // Four checks are held by sp.tech in the stub, and scanning stays beside it.
-    expect(screen.getByRole('button', { name: 'Scan a rack' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Scan a rack/ })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /Read 4 checks waiting for you/ }));
-    expect(screen.getByTestId('where').textContent).toBe('/results/RK-5B81BE87/drift');
+    expect(screen.getByTestId('where').textContent).toBe('/my-checks');
   });
 
   test('an admin is told what has nobody, and is still sent to scan', async () => {
@@ -384,16 +385,19 @@ describe('<HomePage> by role', () => {
     expect(screen.getByTestId('where').textContent).toBe('/scan');
   });
 
-  test('scanning is the one control for everybody who is not holding checks', () => {
-    for (const role of ['admin', 'spoc', 'tech', 'manager']) {
+  test('scanning is the one control, except for the person who does not scan', () => {
+    for (const role of ['admin', 'tech', 'manager']) {
       expect(actionsFor({ role, waiting: 0 }).lead.text).toBe('Scan a rack');
       expect(actionsFor({ role, waiting: 0 }).alt).toBe(null);
     }
-    // Somebody holding checks is told to read them: that is work only they
-    // can do, and scanning moves beside it.
-    expect(actionsFor({ role: 'spoc', waiting: 1, newest: 'RK-1' }).lead.text)
+    // A single point of contact gets their own list, and no scan at all.
+    expect(actionsFor({ role: 'spoc', waiting: 0 }).lead)
+      .toEqual({ text: 'Open your checks', to: '/my-checks' });
+    expect(actionsFor({ role: 'spoc', waiting: 1 }).lead.text)
       .toBe('Read the check waiting for you');
-    expect(actionsFor({ role: 'spoc', waiting: 4, newest: 'RK-1' }).alt.text).toBe('Scan a rack');
+    expect(actionsFor({ role: 'spoc', waiting: 4 }).lead.text)
+      .toBe('Read 4 checks waiting for you');
+    expect(actionsFor({ role: 'spoc', waiting: 4 }).alt).toBe(null);
   });
 
   test('the greeting is true at the hour it is read, and the mark is the account letters', () => {
@@ -434,6 +438,9 @@ describe('<HomePage> beyond the racks', () => {
   test('the ways on repeat nothing the bar or the page already offers', () => {
     expect(waysFor('tech').map((w) => w.to))
       .toEqual(['/port-history', '/switch-info', '/help', '/profile']);
+    // A SPOC's first way on is their own list, not a switch reading.
+    expect(waysFor('spoc').map((w) => w.to))
+      .toEqual(['/my-checks', '/port-history', '/help', '/profile']);
     expect(waysFor('admin').map((w) => w.to))
       .toEqual(['/port-history', '/switch-info', '/organizations', '/profile']);
     for (const role of ['tech', 'admin']) {

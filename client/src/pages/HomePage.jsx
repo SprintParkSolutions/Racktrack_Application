@@ -178,20 +178,22 @@ export function placeLine(role, org, site) {
  *
  * Scanning is always one of the two, because it is what the app is for.
  */
-export function actionsFor({ role, waiting = 0, newest = null }) {
+export function actionsFor({ role, waiting = 0 }) {
   const scan = { text: 'Scan a rack', to: '/scan' };
-  // Somebody holding checks is told to read them, because that is what is
-  // waiting on them and it is work nobody else can do; scanning moves beside
-  // it. Everybody else gets scanning and nothing else. The console button
-  // came off on 22 Sep 2026, and "Open this rack" with it: the racks are a
-  // list further down the page, each one already a way in.
-  if (role === 'spoc' && waiting > 0) {
+  // A single point of contact does not scan racks. Somebody else photographs
+  // one, the check reaches them, and their work is to read what has arrived -
+  // so their control is their own list, and scanning is not offered at all
+  // (the owner's direction, 22 Sep 2026). Everybody else is told to scan,
+  // which is what this app is for.
+  if (role === 'spoc') {
     return {
       lead: {
-        text: waiting === 1 ? 'Read the check waiting for you' : `Read ${waiting} checks waiting for you`,
-        to: newest ? `/results/${encodeURIComponent(newest)}/drift` : '/history',
+        text: waiting === 0 ? 'Open your checks'
+          : waiting === 1 ? 'Read the check waiting for you'
+            : `Read ${waiting} checks waiting for you`,
+        to: '/my-checks',
       },
-      alt: scan,
+      alt: null,
     };
   }
   return { lead: scan, alt: null };
@@ -340,10 +342,15 @@ export function bannerFor({ role, racks = 0, waiting = 0, triage = 0,
  * change with the role.
  */
 export function waysFor(role) {
-  const ways = [
-    { key: 'ports', label: 'Port history', icon: 'history', to: '/port-history' },
-    { key: 'switches', label: 'Switches', icon: 'dns', to: '/switch-info' },
-  ];
+  const ways = role === 'spoc'
+    ? [
+      { key: 'mine', label: 'With you', icon: 'clock', to: '/my-checks' },
+      { key: 'ports', label: 'Port history', icon: 'history', to: '/port-history' },
+    ]
+    : [
+      { key: 'ports', label: 'Port history', icon: 'history', to: '/port-history' },
+      { key: 'switches', label: 'Switches', icon: 'dns', to: '/switch-info' },
+    ];
   if (role === 'admin') {
     ways.push({ key: 'org', label: 'Organization', icon: 'apartment', to: '/organizations' });
     ways.push({ key: 'people', label: 'Your account', icon: 'person_check', to: '/profile' });
@@ -462,11 +469,7 @@ export default function HomePage() {
     failed: scansFailed,
   });
 
-  const { lead, alt } = actionsFor({
-    role: role.key,
-    waiting: needs.length,
-    newest: needs[0]?.rackId || null,
-  });
+  const { lead, alt } = actionsFor({ role: role.key, waiting: needs.length });
 
   return (
     <div className={styles.home}>

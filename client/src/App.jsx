@@ -66,6 +66,7 @@ const SetupPage = lazy(() => import('./pages/SetupPage.jsx'));
 import OrgConsolePage from './pages/OrgConsolePage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import CheckPage from './pages/CheckPage.jsx';
+import MyChecksPage from './pages/MyChecksPage.jsx';
 import MultiRackNewPage from './pages/MultiRackNewPage.jsx';
 import { ShutterProvider } from './ShutterContext.jsx';
 import { AuthProvider, useAuth } from './AuthContext.jsx';
@@ -189,7 +190,7 @@ function SetupGate({ children }) {
 function PendingRoute({ children }) {
   const { isAuthed, user } = useAuth();
   if (!isAuthed) return <Navigate to="/login" replace />;
-  if (!orgNotActive(user)) return <Navigate to="/scan" replace />;
+  if (!orgNotActive(user)) return <Navigate to="/" replace />;
   return children;
 }
 
@@ -297,8 +298,9 @@ function SocialDeepLinkHandler() {
           return;
         }
         const user = adoptSession(result.token, result.user);
-        navigate(user?.role === 'owner' || user?.role === 'org_admin' ? '/' : '/scan',
-          { replace: true });
+        // Home for everybody, whatever the role: the landing screen says what
+        // is waiting on this person and offers the job they actually do.
+        navigate('/', { replace: true });
       });
     })();
     return () => { sub?.remove?.(); };
@@ -583,6 +585,10 @@ export default function App() {
             } />
             {/* One check, followed, inside the app. Where "Track this check"
                 goes for everybody: the Desk is for the people who decide. */}
+            {/* The single point of contact's own list: every check with them. */}
+            <Route path="/my-checks" element={
+              <ProtectedRoute><ResponsiveLayout withBottomNav><MyChecksPage /></ResponsiveLayout></ProtectedRoute>
+            } />
             <Route path="/checks/:planId" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><CheckPage /></ResponsiveLayout></ProtectedRoute>
             } />

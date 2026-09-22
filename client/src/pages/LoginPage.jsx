@@ -38,7 +38,13 @@ export default function LoginPage() {
   // that state so an old deep link still explains itself.
   const [error,    setError]    = useState(location.state?.socialError || null);
 
-  const from = safeRedirect(location.state?.from, '/scan');
+  // Everybody lands on Home. It used to be Scan for anybody who was not an
+  // admin, which dropped a person into the middle of a job before they had
+  // seen what was waiting on them - and for a single point of contact, who
+  // scans nothing, it was the wrong screen entirely. The owner's direction on
+  // 22 Sep 2026. A deep link still wins: somebody sent to a page by a link
+  // signs in and goes there.
+  const from = safeRedirect(location.state?.from, '/');
 
   const submit = async (e) => {
     e?.preventDefault();

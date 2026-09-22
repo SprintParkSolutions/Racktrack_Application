@@ -1,0 +1,168 @@
+/* The checks that are with you. See MyChecksPage.jsx for what it says.
+   One list, worked from the top: white, hairlines, no boxes round anything. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: var(--bg, #ffffff);
+}
+
+.scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 6px 16px calc(24px + var(--nav-clear, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.note {
+  margin: 16px 0 0;
+  font-family: var(--font);
+  font-size: var(--fs-body);
+  color: var(--muted, #5c646d);
+}
+
+.blank { padding: 28px 0 0; display: flex; flex-direction: column; gap: 6px; }
+.blankLead {
+  margin: 0;
+  font-family: var(--font);
+  font-size: var(--fs-head);
+  font-weight: var(--fw-title);
+  letter-spacing: -0.02em;
+  color: var(--text, #121212);
+}
+.blankWords {
+  margin: 0;
+  max-width: 34ch;
+  font-family: var(--font);
+  font-size: var(--fs-body);
+  line-height: 1.45;
+  color: var(--muted, #5c646d);
+}
+
+.sect { display: flex; flex-direction: column; }
+.sectTop, .foldHead {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 0 8px;
+  border: 0;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  cursor: default;
+}
+.foldHead { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.sectTitle {
+  margin: 0;
+  font-family: var(--font);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-title);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--muted, #8a8f99);
+}
+.count {
+  font-family: var(--font);
+  font-size: var(--fs-sub);
+  font-weight: var(--fw-title);
+  font-variant-numeric: tabular-nums;
+  color: var(--text, #121212);
+}
+.foldChev {
+  margin-left: auto;
+  width: 7px; height: 7px;
+  border-right: 1.6px solid var(--muted, #8a8f99);
+  border-bottom: 1.6px solid var(--muted, #8a8f99);
+  transform: rotate(45deg);
+  transition: transform .16s ease;
+}
+.foldOpen { transform: rotate(225deg); }
+@media (prefers-reduced-motion: reduce) { .foldChev { transition: none; } }
+
+.rows { list-style: none; margin: 0; padding: 0; }
+.rows li + li { border-top: 1px solid var(--border, rgba(0,0,0,.07)); }
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 76px;
+  padding: 12px 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.row:active { opacity: .7; }
+
+.text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.top { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.inc {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: var(--fs-item);
+  font-weight: var(--fw-title);
+  color: var(--text, #121212);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.quiet { color: var(--muted, #8a8f99); font-weight: var(--fw-label); }
+/* How long it has been waiting. The number a person scans the list for. */
+.age {
+  flex: none;
+  font-family: var(--font);
+  font-size: var(--fs-sub);
+  font-weight: var(--fw-title);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted, #5c646d);
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  font-family: var(--font);
+  font-size: var(--fs-sub);
+  color: var(--muted, #8a8f99);
+}
+.rack {
+  min-width: 0;
+  font-family: var(--mono, ui-monospace, monospace);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--muted, #5c646d);
+}
+.sep {
+  flex: none;
+  width: 3px; height: 3px;
+  margin: 0 7px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: .55;
+}
+
+.stateLine {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-label);
+  color: var(--text, #121212);
+}
+.dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.dotOpen { background: #1F5FAE; }
+.dotDone { background: #0F7B4F; }
+.dotOther { background: #B4690E; }
+.diff {
+  margin-left: auto;
+  color: var(--muted, #8a8f99);
+  font-variant-numeric: tabular-nums;
+}
+
+.chev { flex: none; color: var(--muted, #bcc0c8); font-size: var(--fs-head); }

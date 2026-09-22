@@ -302,21 +302,36 @@
    under it. Three stacked rows of the same shape read as a list of jobs. */
 .quiet { border-top: 1px solid var(--hair); padding: 14px 0 4px; }
 .quiet > .sectionHead { padding: 0 var(--gutter); }
-.quietPick { display: flex; flex-wrap: wrap; gap: var(--ctl-gap, 6px); padding: 0 var(--gutter) 10px; }
+/* The three of them on one line, inside a tray of their own: a segmented
+   control, which is a shape people already know how to press. They used to
+   wrap onto a second line on a narrow phone and sat loose on the page, so
+   they read as three separate labels rather than one choice of three. */
+.quietPick {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 4px;
+  margin: 0 var(--gutter) 10px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--bg2, #f3f4f7);
+}
 .quietPick::-webkit-scrollbar { display: none; }
 /* Filled, not outlined: testers reported they could not tell these were
    controls at all. The chevron says the list opens under them, and turns when
    it is open. */
 .quietTab {
-  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px;
-  min-height: 40px; padding: 0 12px;
-  border: 0; border-radius: 12px;
-  background: var(--bg2, #f3f4f7); color: var(--text, #1c1c1c);
-  font-family: var(--font); font-size: var(--fs-body); font-weight: var(--fw-label);
+  min-width: 0;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 40px; padding: 0 8px;
+  border: 0; border-radius: 11px;
+  background: transparent; color: var(--muted-1, #5c646d);
+  font-family: var(--font); font-size: var(--fs-sub); font-weight: var(--fw-label);
+  white-space: nowrap;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
-  transition: background-color .14s;
+  transition: background-color .14s, color .14s;
 }
-.quietTab:active { background: var(--hair, #e6e7eb); }
+.quietTab:active { background: rgba(0, 0, 0, .05); }
 .quietTab b {
   font-family: ui-monospace, Menlo, monospace; font-weight: var(--fw-title);
   color: inherit; font-variant-numeric: tabular-nums;
@@ -328,8 +343,14 @@
   opacity: .55;
   transition: transform .16s ease;
 }
-.quietOn { background: var(--text, #1c1c1c); color: var(--bg, #fff); }
-.quietOn .quietChev { transform: rotate(225deg) translate(-1px, -1px); opacity: .8; }
-.quietOn:active { background: #2b2b2b; }
+/* The one that is open is the raised one: white on the tray, the way a
+   segmented control says "this is the section you are in". */
+.quietOn {
+  background: var(--bg, #ffffff);
+  color: var(--text, #1c1c1c);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .10), 0 0 0 1px rgba(0, 0, 0, .04);
+}
+.quietOn .quietChev { transform: rotate(225deg) translate(-1px, -1px); opacity: .7; }
+.quietOn:active { background: #f7f7f9; }
 @media (prefers-reduced-motion: reduce) { .quietChev { transition: none; } }
 .dotPort { width: 7px; height: 7px; border-radius: 50%; background: var(--muted-2, #9a9a9a); flex: none; }
