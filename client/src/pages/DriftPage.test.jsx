@@ -89,7 +89,7 @@ describe('<DriftPage>', () => {
     const action = screen.getByRole('button', { name: 'Raise incident' }).closest('div').parentElement;
     expect(action.contains(screen.getByText('Goes to'))).toBe(true);
     expect(action.contains(screen.getByLabelText('Note for the SPOC (optional)'))).toBe(true);
-    expect(action.nextElementSibling.textContent).toMatch(/^Drift report/);
+    expect(action.nextElementSibling.textContent).toMatch(/^Report/);
     expect(buttonNames().filter((n) => FORBIDDEN.test(n))).toEqual([]);
     expect(document.body.textContent).not.toMatch(/Write the approved|Assign to|Approve\b/);
     // the answer is one sentence, and no strip of big numbers says it again
@@ -98,7 +98,7 @@ describe('<DriftPage>', () => {
     expect(screen.queryByRole('group', { name: 'Summary of the comparison' })).toBeNull();
     expect(document.body.textContent).not.toMatch(/Send it to/);
     // Nothing to track until it has been sent.
-    expect(screen.queryByRole('button', { name: /Track this check/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Track it/ })).toBeNull();
   });
 
   test('a server that names nobody: the button still raises the incident, and no Goes to block is drawn', async () => {
@@ -141,7 +141,7 @@ describe('<DriftPage>', () => {
     expect(screen.getByText('Waiting on the SPOC')).toBeTruthy();
     // One way on, and it stays in the app: the check's own page, which is
     // where a technician follows what they sent. Nothing leaves for the Desk.
-    const track = screen.getAllByRole('button', { name: /Track this check/ });
+    const track = screen.getAllByRole('button', { name: /Track it/ });
     expect(track).toHaveLength(1);
     expect(track[0].getAttribute('href')).toBe(null);
     expect(document.querySelector('a[href*="/approvals/"]')).toBeNull();
@@ -252,13 +252,13 @@ describe('<DriftPage> choosing and following', () => {
     routes.current[FLOW] = { body: { plan: { id: 7, status: 'assigned' }, holder: { username: 'dc007.spoc' }, incident: INCIDENT } };
     mount();
     await screen.findByText(/^(Sent|It needs an admin|The record has been updated)$/);
-    const reports = screen.getAllByRole('button', { name: /Drift report/ });
+    const reports = screen.getAllByRole('button', { name: /^Report/ });
     expect(reports).toHaveLength(1);
     expect(sentBlock().nextElementSibling.contains(reports[0])).toBe(true);
     // Two blocks, each saying what it opens, and no sentence under them once
     // the check has been sent.
     expect(sentBlock().nextElementSibling.textContent)
-      .toBe('Drift reportOne page of this comparisonTrack this checkWhere it is, and who has it');
+      .toBe('ReportThis check, one pageTrack itWhere it is now');
   });
 
   test('right after Send the line starts where the check landed, without waiting to be told again', async () => {
@@ -342,7 +342,7 @@ describe('<DriftPage> choosing and following', () => {
     expect(statusLine()).toBe('Written to NetBox');
     expect(screen.queryByRole('link', { name: /ServiceNow/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /^(Send|Raise)/ })).toBeNull();
-    expect(screen.getAllByRole('button', { name: /Track this check/ })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: /Track it/ })).toHaveLength(1);
   });
 
   test('a written check on a server that cannot be followed still ends on Written', async () => {
@@ -464,8 +464,8 @@ describe('<DriftPage> the whole comparison', () => {
     expect(document.body.textContent).not.toMatch(/Matching your records|not seen in the photo/);
     // the count is said once, and the sentence under it says the rest agrees
     expect(document.body.textContent.match(/1 difference/g)).toHaveLength(1);
-    expect(screen.getByRole('button', { name: /Drift report/ })).toBeTruthy();
-    expect(screen.getByText('One page of this comparison')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Report/ })).toBeTruthy();
+    expect(screen.getByText('This check, one page')).toBeTruthy();
     expect(screen.getByText('The report is attached to the incident when you send.')).toBeTruthy();
   });
 
@@ -491,7 +491,7 @@ describe('<DriftPage> the whole comparison', () => {
     // the report
     const order = ['Drift check', 'RK-07', '1 difference',
       'Router on shelf U20', 'Matched', 'Not seen', 'Goes to', 'dc007.spoc',
-      'Note for the SPOC', 'Raise incident', 'Drift report'].map(at);
+      'Note for the SPOC', 'Raise incident', 'Report'].map(at);
     expect(order).toEqual([...order].sort((a, b) => a - b));
     // and no count is said twice
     expect(text.match(/1 difference/g)).toHaveLength(1);
@@ -503,7 +503,7 @@ describe('<DriftPage> the whole comparison', () => {
     const opened = vi.spyOn(window, 'open').mockImplementation(() => null);
     mount();
     await screen.findByText('SW-16');
-    fireEvent.click(screen.getByRole('button', { name: /Drift report/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Report/ }));
     const frame = await screen.findByTitle('Drift report');
     expect(frame.tagName).toBe('IFRAME');
     expect(frame.getAttribute('src')).toMatch(/\/api\/scan\/RK-1\/drift-report\?plan=7&t=tok$/);
@@ -518,7 +518,7 @@ describe('<DriftPage> the whole comparison', () => {
     stub('open', contactsFor(KNOWN), { 'GET /api/scan/RK-1/report-token': { body: { token: 'tok' } } });
     mount();
     await screen.findByText('SW-16');
-    fireEvent.click(screen.getByRole('button', { name: /Drift report/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Report/ }));
     const report = await screen.findByRole('dialog', { name: 'Drift report' });
     fireEvent.click(within(report).getByRole('button', { name: 'Back' }));
     expect(screen.queryByRole('dialog', { name: 'Drift report' })).toBeNull();
@@ -529,7 +529,7 @@ describe('<DriftPage> the whole comparison', () => {
     stub('open', contactsFor(KNOWN), { 'GET /api/scan/RK-1/report-token': { body: { token: 'tok' } } });
     mount();
     await screen.findByText('SW-16');
-    fireEvent.click(screen.getByRole('button', { name: /Drift report/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Report/ }));
     await screen.findByRole('dialog', { name: 'Drift report' });
     // App.jsx asks the screen first and takes a cancelled event as "handled here"
     let handled = true;

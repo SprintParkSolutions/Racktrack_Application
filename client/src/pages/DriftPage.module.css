@@ -120,46 +120,59 @@
 /* Everything a person can open from this page, on one line, all the same
    control - see the note where the row is built. */
 .actions { padding: 12px var(--gutter); border-bottom: 1px solid var(--hair); }
-/* Two blocks side by side, each carrying its own mark and a line saying what
-   it opens. They were bordered text buttons in a wrapping row with a
-   paragraph under them; at that size the two that matter looked like the
-   third one that has now gone. */
+/* Two blocks side by side: a mark, what it opens, one line saying what that
+   is, and an arrow. They were text buttons in a wrapping row, then blocks
+   whose names ran off the end as "Open in Drift De..." - the names are short
+   enough to fit now, and the blocks carry their weight: a tinted ground, a
+   white mark, and a line of ink you can read at arm's length. */
 .actionRow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .actionRow > :only-child { grid-column: 1 / -1; }
 .action {
   display: flex; align-items: center; gap: 10px;
-  min-height: 60px;
+  min-height: 64px;
   padding: 10px 12px;
   border: 0;
-  border-radius: 14px;
-  background: var(--bg2, #f3f4f7);
+  border-radius: 16px;
+  background: var(--bg2, #f2f4f7);
   color: var(--text, #1c1c1c);
   font: inherit;
   text-align: left; text-decoration: none; cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background-color .14s;
+  transition: background-color .14s, transform .14s;
 }
-.action:active { background: var(--hair, #e6e7eb); }
-.action:disabled { opacity: .55; cursor: default; }
+.action:active { background: var(--hair, #e6e8ec); transform: scale(.985); }
+.action:disabled { opacity: .5; cursor: default; }
 .actionGlyph {
   flex: 0 0 auto;
-  width: 32px; height: 32px;
+  width: 36px; height: 36px;
   display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--bg, #fff);
-  color: var(--text, #1c1c1c);
+  color: #0f7b4f;
+  box-shadow: 0 1px 2px rgba(0,0,0,.06);
 }
-.actionGlyph svg { width: 17px; height: 17px; }
-.actionText { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.actionGlyph svg { width: 18px; height: 18px; }
+.actionText { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .actionText b {
-  font-size: var(--fs-body); font-weight: var(--fw-title);
+  font-size: var(--fs-item); font-weight: var(--fw-title);
+  letter-spacing: -.01em;
   color: var(--text, #1c1c1c);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .actionText small {
-  font-size: var(--fs-label); color: var(--muted-1);
+  font-size: var(--fs-label); color: var(--muted-1, #5c646d);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+/* The arrow: small, quiet, and the thing that says these open something. */
+.actionGo {
+  flex: 0 0 auto;
+  margin-left: auto;
+  width: 7px; height: 7px;
+  border-right: 2px solid var(--muted-2, #b6bac2);
+  border-bottom: 2px solid var(--muted-2, #b6bac2);
+  transform: rotate(-45deg);
+}
+
 .actionNote { margin: 8px 0 0; font-size: var(--fs-sub); line-height: 1.45; color: var(--muted-1); }
 
 /* Read more: the working, for whoever wants it. Closed by default, so the
@@ -303,9 +316,9 @@
 .quiet { border-top: 1px solid var(--hair); padding: 14px 0 4px; }
 .quiet > .sectionHead { padding: 0 var(--gutter); }
 /* The three of them on one line, inside a tray of their own: a segmented
-   control, which is a shape people already know how to press. They used to
-   wrap onto a second line on a narrow phone and sat loose on the page, so
-   they read as three separate labels rather than one choice of three. */
+   control, which is a shape people already know how to press. The count
+   leads, because the count is what a person is looking for, and the word sits
+   under it. The one that is open is filled in ink. */
 .quietPick {
   display: grid;
   grid-auto-flow: column;
@@ -313,44 +326,40 @@
   gap: 4px;
   margin: 0 var(--gutter) 10px;
   padding: 4px;
-  border-radius: 14px;
-  background: var(--bg2, #f3f4f7);
+  border-radius: 16px;
+  background: var(--bg2, #f2f4f7);
 }
 .quietPick::-webkit-scrollbar { display: none; }
-/* Filled, not outlined: testers reported they could not tell these were
-   controls at all. The chevron says the list opens under them, and turns when
-   it is open. */
 .quietTab {
   min-width: 0;
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  min-height: 40px; padding: 0 8px;
-  border: 0; border-radius: 11px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  min-height: 56px; padding: 6px 6px 7px;
+  border: 0; border-radius: 13px;
   background: transparent; color: var(--muted-1, #5c646d);
-  font-family: var(--font); font-size: var(--fs-sub); font-weight: var(--fw-label);
+  font-family: var(--font); font-size: var(--fs-label); font-weight: var(--fw-label);
   white-space: nowrap;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
   transition: background-color .14s, color .14s;
 }
 .quietTab:active { background: rgba(0, 0, 0, .05); }
+/* The number first, then the word under it. */
 .quietTab b {
-  font-family: ui-monospace, Menlo, monospace; font-weight: var(--fw-title);
-  color: inherit; font-variant-numeric: tabular-nums;
+  order: -1;
+  font-family: var(--font);
+  font-size: var(--fs-head); font-weight: var(--fw-title);
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+  line-height: 1.05;
 }
-.quietChev {
-  width: 7px; height: 7px; margin-left: 1px;
-  border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor;
-  transform: rotate(45deg) translate(-1px, -1px);
-  opacity: .55;
-  transition: transform .16s ease;
-}
-/* The one that is open is the raised one: white on the tray, the way a
-   segmented control says "this is the section you are in". */
+/* The coloured dot moves onto the number's line, small enough to be a mark. */
+.quietTab .dotOk, .quietTab .dotIdle, .quietTab .dotPort { display: none; }
+.quietChev { display: none; }
 .quietOn {
-  background: var(--bg, #ffffff);
-  color: var(--text, #1c1c1c);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, .10), 0 0 0 1px rgba(0, 0, 0, .04);
+  background: var(--text, #1c1c1c);
+  color: #ffffff;
+  box-shadow: 0 1px 2px rgba(0,0,0,.14);
 }
-.quietOn .quietChev { transform: rotate(225deg) translate(-1px, -1px); opacity: .7; }
-.quietOn:active { background: #f7f7f9; }
-@media (prefers-reduced-motion: reduce) { .quietChev { transition: none; } }
+.quietOn:active { background: #2b2b2b; }
+
 .dotPort { width: 7px; height: 7px; border-radius: 50%; background: var(--muted-2, #9a9a9a); flex: none; }

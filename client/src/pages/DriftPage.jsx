@@ -618,9 +618,10 @@ export default function DriftPage() {
               </svg>
             </span>
             <span className={styles.actionText}>
-              <b>{reportBusy ? 'Opening the report' : 'Drift report'}</b>
-              <small>One page of this comparison</small>
+              <b>{reportBusy ? 'Opening' : 'Report'}</b>
+              <small>This check, one page</small>
             </span>
+            <i className={styles.actionGo} aria-hidden="true" />
           </button>
         )}
         {sent && plan && (
@@ -638,9 +639,10 @@ export default function DriftPage() {
                 </svg>
               </span>
               <span className={styles.actionText}>
-                <b>Open in Drift Desk</b>
-                <small>Read it, and decide</small>
+                <b>Drift Desk</b>
+                <small>Read it and decide</small>
               </span>
+              <i className={styles.actionGo} aria-hidden="true" />
             </ExternalLink>
           ) : (
           <button type="button" className={styles.action} onClick={() => navigate(`/checks/${plan.id}`)}>
@@ -651,9 +653,10 @@ export default function DriftPage() {
               </svg>
             </span>
             <span className={styles.actionText}>
-              <b>Track this check</b>
-              <small>Where it is, and who has it</small>
+              <b>Track it</b>
+              <small>Where it is now</small>
             </span>
+            <i className={styles.actionGo} aria-hidden="true" />
           </button>
           )
         )}
