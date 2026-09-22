@@ -90,15 +90,24 @@ module.exports = function rackIdentityRouter({ requireAuth, audit = null, physic
       tenantId, spaceId, netboxClient: clientOf(req), physicalLayer: reportFor,
     });
     res.setHeader('Cache-Control', 'no-store');
-    // The room the rack is in, by the name the customer gave it, for the header
-    // of the results screen. Added here rather than in identify(): that answer
-    // is compared whole in tests and by callers, and this is only a label.
+    // Where the rack is, for the header of the results screen: the Site the
+    // scan belongs to, and the room by the name the customer gave it. Added
+    // here rather than in identify(): that answer is compared whole in tests
+    // and by callers, and these are only labels. The owner asked on 22 Sep
+    // 2026 for the header to say the Site - the room is chosen nowhere any
+    // more, since the Space picker came off the scan screen - so the site name
+    // is what the screen reads and the room stays for callers that want it.
     let spaceName = null;
     try {
       const space = result.spaceId != null ? estate.getSpace(result.spaceId) : null;
       spaceName = space && space.name ? String(space.name) : null;
     } catch { spaceName = null; }
-    res.json({ ok: true, ...result, spaceName });
+    let siteName = null;
+    try {
+      const site = tenantId != null ? estate.getTenant(tenantId) : null;
+      siteName = site && site.name ? String(site.name) : null;
+    } catch { siteName = null; }
+    res.json({ ok: true, ...result, spaceName, siteName });
   }));
 
   router.post('/api/scan/:rackId/identity/confirm', requireAuth, guardRack, wrap(async (req, res) => {

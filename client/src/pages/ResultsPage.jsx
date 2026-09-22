@@ -84,12 +84,15 @@ function lowestUnit(dev) {
 }
 
 // The lines under the rack's name in the results header: the rack's other
-// name, then the room by the name the customer gave it. Where the phone stood
-// is no part of it - the site is chosen on the scan screen, and the position a
-// scan from an older build carries (its site, how far off it was) is not read
-// back to anybody.
+// name, then the Site it belongs to. The site is what a person chooses on the
+// scan screen and what a drift check is routed by, so it is the one place
+// worth naming here; the room was named instead until 22 Sep 2026, when the
+// owner asked for the site, the Space picker having come off the scan screen.
+// An older scan that carries no site falls back to its room rather than
+// leaving the line empty. Where the phone stood is no part of it.
 export function headerWhereLines(rackSaid, identity) {
-  return [rackSaid && rackSaid.also, identity && identity.spaceName].filter(Boolean);
+  const where = (identity && identity.siteName) || (identity && identity.spaceName) || null;
+  return [rackSaid && rackSaid.also, where].filter(Boolean);
 }
 
 export function buildDeviceLabels(devices, unitsDetected = [], pattern = null) {

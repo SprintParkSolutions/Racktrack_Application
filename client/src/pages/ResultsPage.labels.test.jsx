@@ -47,8 +47,9 @@ describe('buildDeviceLabels', () => {
   });
 });
 
-/* Under the rack's name the header says the room, never where the phone
-   stood: no coordinates, no site worked out from them, no distance. */
+/* Under the rack's name the header says the Site the scan belongs to, never
+   where the phone stood: no coordinates, no site worked out from them, no
+   distance. The Site the scan carries is a record; a position is not. */
 describe('headerWhereLines', () => {
   const OLD_BUILD_SCAN = {
     spaceName: 'RM01',
@@ -56,13 +57,19 @@ describe('headerWhereLines', () => {
       at: { lat: 17.4474, lng: 78.3762 }, note: 'The photo was taken 412 m from Office-Sprintpark.' } },
   };
 
-  test('the room is said, and nothing a position would give', () => {
-    const lines = headerWhereLines({ name: 'R1', also: 'SP-HYB-RM01-R01-R1', confirmed: true }, OLD_BUILD_SCAN);
-    expect(lines).toEqual(['SP-HYB-RM01-R01-R1', 'RM01']);
-    expect(lines.join(' ')).not.toMatch(/Office-Sprintpark|412|17\.4474|78\.3762/);
+  test('the Site is said, and nothing a position would give', () => {
+    const lines = headerWhereLines({ name: 'R1', also: 'SP-HYB-RM01-R01-R1', confirmed: true },
+      { ...OLD_BUILD_SCAN, siteName: 'DC-007 Hyderabad' });
+    expect(lines).toEqual(['SP-HYB-RM01-R01-R1', 'DC-007 Hyderabad']);
+    expect(lines.join(' ')).not.toMatch(/412|17\.4474|78\.3762/);
   });
 
-  test('a scan with no room and no second name says nothing', () => {
+  test('a scan with no Site falls back to its room', () => {
+    const lines = headerWhereLines({ name: 'R1', also: 'SP-HYB-RM01-R01-R1', confirmed: true }, OLD_BUILD_SCAN);
+    expect(lines).toEqual(['SP-HYB-RM01-R01-R1', 'RM01']);
+  });
+
+  test('a scan with neither, and no second name, says nothing', () => {
     expect(headerWhereLines(null, { evidence: OLD_BUILD_SCAN.evidence })).toEqual([]);
     expect(headerWhereLines(null, null)).toEqual([]);
   });
