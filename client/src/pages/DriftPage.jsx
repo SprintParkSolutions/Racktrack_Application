@@ -209,23 +209,14 @@ function Tickets({ flow, rackName }) {
 }
 
 /**
- * The way to the ServiceNow incident raised for this check; its number is the
- * heading above. Nothing while it is still being raised - the next look fills
- * it in - and nothing at all where no ServiceNow is connected.
+ * What went wrong raising the incident, if anything did. The number is a fact
+ * in the block above and the way to it is in the row of actions, so the only
+ * thing left for this to say is that there is no incident to go to.
  */
 function Incident({ incident }) {
   if (!incident || incident.system === 'none') return null;
-  if (!incident.number) {
-    return incident.error
-      ? <p className={styles.incidentNone}>No ServiceNow incident could be raised. An admin has been told.</p>
-      : null;
-  }
-  if (!/^https?:\/\//.test(String(incident.url || ''))) return null;
-  return (
-    <p className={styles.incident}>
-      <ExternalLink className={styles.incidentOpen} href={incident.url}>Open in ServiceNow</ExternalLink>
-    </p>
-  );
+  if (incident.number || !incident.error) return null;
+  return <p className={styles.incidentNone}>No ServiceNow incident could be raised. An admin has been told.</p>;
 }
 
 export default function DriftPage() {
@@ -597,22 +588,39 @@ export default function DriftPage() {
   // The drift report button. Before sending it closes the page; once sent it
   // sits with the incident number and the status line, beside the way to
   // ServiceNow.
-  const reportRow = plan && !busy && compared ? (
-    <div className={styles.reportRow}>
-      <button type="button" className={styles.secondaryBtn} onClick={openReport} disabled={reportBusy}>
-        {reportBusy ? 'Opening the report' : 'Drift report'}
-      </button>
-      <span className={styles.reportHint}>
-        One page of this comparison.
-        {!sent ? ' It is attached to the incident when you send.' : incident?.number ? ' It is attached to the incident.' : ''}
-      </span>
+  // Everything a person can do from this page, on one line.
+  //
+  // These were three controls of three shapes on three lines, each with its
+  // own sentence beside it: a bordered button to ServiceNow, an underlined
+  // link to Approvals, and another bordered button for the report with a
+  // paragraph of explanation. They do the same kind of thing - they open
+  // something - so they are one row of the same control, and the sentence
+  // that explained the report is the one line under the row.
+  const reportable = plan && !busy && compared;
+  const canOpenIncident = sent && incident && incident.system !== 'none'
+    && incident.number && /^https?:\/\//.test(String(incident.url || ''));
+  const actions = (reportable || canOpenIncident || (sent && plan)) ? (
+    <div className={styles.actions}>
+      <div className={styles.actionRow}>
+        {canOpenIncident && (
+          <ExternalLink className={styles.action} href={incident.url}>Open in ServiceNow</ExternalLink>
+        )}
+        {reportable && (
+          <button type="button" className={styles.action} onClick={openReport} disabled={reportBusy}>
+            {reportBusy ? 'Opening the report' : 'Drift report'}
+          </button>
+        )}
+        {sent && plan && (
+          <ExternalLink className={styles.action} href={driftCheckUrl(plan.id)}>Track this check</ExternalLink>
+        )}
+      </div>
+      {reportable && (
+        <p className={styles.actionNote}>
+          The drift report is one page of this comparison.
+          {!sent ? ' It is attached to the incident when you send.' : incident?.number ? ' It is attached to the incident.' : ''}
+        </p>
+      )}
     </div>
-  ) : null;
-  // The same check, in RackTrack Approvals. Offered only once it has been sent.
-  const track = plan ? (
-    <ExternalLink className={styles.track} href={driftCheckUrl(plan.id)}>
-      Track this check
-    </ExternalLink>
   ) : null;
 
   return (
@@ -760,27 +768,6 @@ export default function DriftPage() {
         </div>
       )}
 
-      {/* Once sent, the same block until the end: the incident number, large,
-          and one line under it that says where the check is - With <name>,
-          Approved, Written to NetBox, Rejected, Needs an admin. Under that the
-          way to the incident and the drift report. Where no incident was
-          raised the heading says who it went to, as it always did. */}
-      {sent && (
-        <div className={applied ? styles.done : styles.waiting}>
-          <h2 className={incident?.number ? styles.incidentBig : undefined}>
-            {incident?.number ? incident.number
-              : applied ? 'The record has been updated'
-                : state === 'triage' ? 'Sent. It needs an admin.'
-                  : `Sent to ${holder || 'the SPOC'}`}
-          </h2>
-          <StatusLine status={applied && !flow ? 'written' : state} holder={holder} />
-          <Tickets flow={flow} rackName={decided && (decided.rack.name || decided.rack.facilityId)} />
-          <Incident incident={incident} />
-          {track}
-        </div>
-      )}
-      {sent && reportRow}
-
       {plan && !busy && !sent && changed.length > 1 && (
         <label className={styles.pickAll}>
           <input type="checkbox" checked={picked.length === changed.length}
@@ -828,11 +815,16 @@ export default function DriftPage() {
                 {item.reason && <span className={styles.againstWhy}>{item.reason}</span>}
               </details>
 
+              {/* What is true of THIS difference. Who holds the check and
+                  which incident it is are facts of the whole check, said once
+                  in the block under the list - so this line says them only
+                  where they differ from it. On a check with one difference it
+                  said the holder and the number a second and third time. */}
               {sent && (
                 <p className={styles.state}>
                   {item.decision === 'pending' && state === 'triage' ? 'Waiting on an admin' : STATE_WORD[item.decision] || item.decision}
-                  {item.ticket?.assignee && item.decision === 'ticketed' && ` - ${item.ticket.assignee}`}
-                  {ext?.number && ` · ${ext.number}${ext.state ? ` (${ext.state})` : ''}`}
+                  {item.ticket?.assignee && item.decision === 'ticketed' && item.ticket.assignee !== holder && ` - ${item.ticket.assignee}`}
+                  {ext?.number && ext.number !== incident?.number && ` · ${ext.number}${ext.state ? ` (${ext.state})` : ''}`}
                   {item.note && ` - “${item.note}”`}
                 </p>
               )}
@@ -844,11 +836,47 @@ export default function DriftPage() {
         })}
       </ul>
 
+      {/* Where the check has got to, once it has been sent.
+          This sat ABOVE the differences, with the incident number set in the
+          page's largest type - so the biggest thing on a screen about a
+          router on shelf U20 was a reference number, and the difference
+          itself was three sections further down. The differences are the
+          page; this is what is happening to them, so it comes after them,
+          and the number is a value with a label on it like any other. */}
+      {sent && (
+        <section className={applied ? styles.done : styles.waiting}>
+          <h2 className={styles.sectionHead}>
+            {applied ? 'The record has been updated'
+              : state === 'triage' ? 'It needs an admin'
+                : holder ? 'Sent' : 'Sent to the SPOC'}
+          </h2>
+          <dl className={styles.facts}>
+            {incident?.number && (
+              <div className={styles.fact}>
+                <dt>Incident</dt>
+                <dd className={styles.factMono}>{incident.number}</dd>
+              </div>
+            )}
+            <div className={styles.fact}>
+              <dt>Status</dt>
+              <dd><StatusLine status={applied && !flow ? 'written' : state} holder={holder} /></dd>
+            </div>
+          </dl>
+          <Tickets flow={flow} rackName={decided && (decided.rack.name || decided.rack.facilityId)} />
+          <Incident incident={incident} />
+        </section>
+      )}
+
+      {sent && actions}
+
       {/* What needs no attention. It was three rows of the same shape stacked
           one under another, which read as a list of things to do; it is one
           line of three now, and only the one a person picks opens. */}
       {plan && !busy && ((compared && (matching.length > 0 || notSeen.length > 0)) || ports) && (
         <div className={styles.quiet}>
+          {/* The three counts were the last thing on the page with nothing
+              saying what they counted. */}
+          <h2 className={styles.sectionHead}>The rest of the rack</h2>
           <div className={styles.quietPick} role="tablist" aria-label="The rest of the rack">
             {compared && matching.length > 0 && (
               <button type="button" role="tab" aria-selected={rest === 'matched'}
@@ -951,7 +979,7 @@ export default function DriftPage() {
         </div>
       )}
 
-      {!sent && reportRow}
+      {!sent && actions}
 
       {reportOpen && (
         <ReportViewer

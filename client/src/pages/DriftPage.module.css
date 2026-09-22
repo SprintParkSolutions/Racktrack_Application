@@ -82,20 +82,61 @@
    own differences with no line between them. */
 
 /* the answer, before the detail */
-.verdict { padding: 18px var(--gutter) 14px; }
+.verdict { padding: 16px var(--gutter) 10px; }
 .verdict h2 { margin: 0 0 4px; font-size: var(--fs-page); font-weight: var(--fw-title); letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
 /* The answer sits a step under the rack's name, which is the headline. */
 .answer { font-size: var(--fs-section) !important; font-weight: var(--fw-label) !important; margin: 0 !important; }
 .verdict p { margin: 0; font-size: var(--fs-item); line-height: 1.5; color: var(--muted-1); }
 .tick { color: var(--good); font-size: var(--fs-head); line-height: 1; }
 
-.waiting, .done { margin: 0; padding: 2px var(--gutter) 14px; border-bottom: 1px solid var(--hair); }
-.waiting h2, .done h2 { margin: 0 0 4px; font-size: var(--fs-section); font-weight: var(--fw-title); }
-.done h2 { color: var(--good); }
-.waiting p, .done p { margin: 0 0 4px; font-size: var(--fs-item); line-height: 1.5; color: var(--muted-1); }
-/* the one way out: the same check in RackTrack Approvals */
-.track { display: inline-block; margin-top: 4px; font-size: var(--fs-item); font-weight: var(--fw-label);
-         color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+/* One heading shape for every section of this page. The page had a
+   page-sized incident number, a section-sized verdict, an item-sized group
+   summary and three unlabelled chips, so nothing said which parts were peers. */
+.sectionHead {
+  margin: 0 0 8px;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-title);
+  letter-spacing: var(--ls-caps, 0.06em);
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+
+.waiting, .done { margin: 0; padding: 14px var(--gutter); border-bottom: 1px solid var(--hair); }
+.done .sectionHead { color: var(--good); }
+.waiting p, .done p { margin: 0; font-size: var(--fs-item); line-height: 1.5; color: var(--muted-1); }
+
+/* What is known about a sent check, as label-and-value rows. The number used
+   to be the largest thing on the page; it is a reference, so it is a value. */
+.facts { margin: 0; display: grid; gap: 6px; }
+.fact { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.fact dt {
+  font-size: var(--fs-label); font-weight: var(--fw-label);
+  letter-spacing: var(--ls-caps, 0.06em); text-transform: uppercase; color: var(--muted-2);
+}
+.fact dd { margin: 0; font-size: var(--fs-item); color: var(--text, #1c1c1c); overflow-wrap: anywhere; }
+.fact dd p { margin: 0; font-size: var(--fs-item); color: var(--text, #1c1c1c); }
+.factMono { font-family: var(--mono, ui-monospace, Menlo, monospace); font-weight: var(--fw-label); }
+
+/* Everything a person can open from this page, on one line, all the same
+   control - see the note where the row is built. */
+.actions { padding: 12px var(--gutter); border-bottom: 1px solid var(--hair); }
+.actionRow { display: flex; flex-wrap: wrap; gap: var(--ctl-gap, 6px); }
+.action {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto;
+  min-height: var(--field-h, 36px);
+  padding: 0 12px;
+  border: 1px solid var(--hair);
+  border-radius: var(--ctl-radius, 8px);
+  background: var(--bg, #fff);
+  color: var(--text, #1c1c1c);
+  font: inherit; font-size: var(--fs-body); font-weight: var(--fw-label);
+  text-decoration: none; white-space: nowrap; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.action:hover { border-color: var(--text, #1c1c1c); }
+.action:disabled { opacity: .55; cursor: default; }
+.actionNote { margin: 8px 0 0; font-size: var(--fs-sub); line-height: 1.45; color: var(--muted-1); }
 
 /* Read more: the working, for whoever wants it. Closed by default, so the
    screen says one thing per line until somebody asks for the rest. */
@@ -159,7 +200,7 @@
 .label { display: block; margin-bottom: 6px; font-size: var(--fs-label); letter-spacing: .08em;
          text-transform: uppercase; color: var(--muted-2); font-weight: var(--fw-label); }
 .textarea {
-  width: 100%; min-height: 72px; resize: vertical; padding: 10px 12px; font-size: var(--fs-section);
+  width: 100%; min-height: 72px; resize: vertical; padding: 10px 12px; font-size: var(--fs-field);
   font-family: inherit; border: 1px solid var(--hair); border-radius: 6px;
   background: var(--bg, #fff); color: inherit;
 }
@@ -175,7 +216,7 @@
 .nameLabel { display: block; margin-bottom: 6px; font-size: var(--fs-label); letter-spacing: .08em;
              text-transform: uppercase; color: var(--muted-2); font-weight: var(--fw-label); }
 .nameInput {
-  width: 100%; padding: 10px 12px; font-size: var(--fs-section); font-family: inherit;
+  width: 100%; padding: 10px 12px; font-size: var(--fs-field); font-family: inherit;
   border: 1px solid var(--hair); border-radius: 6px; background: var(--bg, #fff); color: inherit;
 }
 .nameInput:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
@@ -202,15 +243,7 @@
 .offWord { display: inline-block; margin-right: 8px; padding: 1px 8px; border: 1px solid var(--warn); border-radius: 4px;
            font-size: var(--fs-sub); font-weight: var(--fw-label); color: var(--warn); white-space: nowrap; }
 
-/* The incident number is the heading of a sent check, in the page's own large
-   type (the verdict above it). */
-.waiting h2.incidentBig, .done h2.incidentBig { font-size: var(--fs-page); letter-spacing: -0.01em; overflow-wrap: anywhere; }
-/* The ServiceNow incident raised for the check: its number, and the way to it. */
-.waiting .incident, .done .incident { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 10px 0 4px;
-            padding-top: 10px; border-top: 1px solid var(--hair); }
-.incidentOpen { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 1px solid #121212;
-                border-radius: 6px; font-size: var(--fs-body); font-weight: var(--fw-label); color: #121212; text-decoration: none; }
-.waiting .incidentNone, .done .incidentNone { margin: 10px 0 4px; padding-top: 10px; border-top: 1px solid var(--hair); color: var(--warn); }
+.waiting .incidentNone, .done .incidentNone { margin: 10px 0 0; font-size: var(--fs-body); color: var(--warn); }
 .tickets { list-style: none; margin: 10px 0 0; padding: 10px 0 0; border-top: 1px solid var(--hair); }
 .tickets li { display: grid; gap: 1px; padding: 4px 0; font-size: var(--fs-body); color: var(--muted-1); }
 .tickets b { color: var(--text, #1c1c1c); font-weight: var(--fw-label); }
@@ -239,22 +272,17 @@
 .dotOk, .dotIdle { width: 9px; height: 9px; border-radius: 50%; }
 .dotOk { background: var(--good); } .dotIdle { background: #c9ced4; }
 
-/* The report: one quiet button and what it is for. */
-.reportRow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 14px var(--gutter); }
-.secondaryBtn { min-height: 44px; padding: 0 16px; border-radius: 6px; border: 1px solid #121212; background: var(--bg, #fff);
-                color: #121212; font: inherit; font-size: var(--fs-item); font-weight: var(--fw-label); cursor: pointer; }
-.secondaryBtn:disabled { opacity: .55; cursor: default; }
-.reportHint { flex: 1 1 160px; font-size: var(--fs-sub); line-height: 1.4; color: var(--muted-1); }
 @media (prefers-reduced-motion: reduce) { .groupBox > summary::after { transition: none; } }
 
 /* What needs no attention: one line of three, and the one that is picked opens
    under it. Three stacked rows of the same shape read as a list of jobs. */
-.quiet { border-top: 1px solid var(--hair); }
-.quietPick { display: flex; gap: 6px; padding: 10px var(--gutter); overflow-x: auto; scrollbar-width: none; }
+.quiet { border-top: 1px solid var(--hair); padding: 14px 0 4px; }
+.quiet > .sectionHead { padding: 0 var(--gutter); }
+.quietPick { display: flex; flex-wrap: wrap; gap: var(--ctl-gap, 6px); padding: 0 var(--gutter) 10px; }
 .quietPick::-webkit-scrollbar { display: none; }
 .quietTab {
-  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px;
-  min-height: 44px; padding: 0 14px;
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px;
+  min-height: var(--field-h, 36px); padding: 0 12px;
   border: 1px solid var(--hair); border-radius: 999px;
   background: transparent; color: var(--muted-1);
   font-family: var(--font); font-size: var(--fs-body); font-weight: var(--fw-label);
