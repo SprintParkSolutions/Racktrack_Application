@@ -107,6 +107,11 @@ const P = {
     <circle cx="12" cy="10" r="2.5" />
   </>,
 
+  person: <>
+    <circle cx="12" cy="8" r="3.7" />
+    <path d="M4.8 20c0-3.7 3.2-5.8 7.2-5.8s7.2 2.1 7.2 5.8" />
+  </>,
+
   person_check: <>
     <circle cx="10" cy="8" r="3.2" />
     <path d="M3.5 20a7 7 0 0 1 11-5.7" />

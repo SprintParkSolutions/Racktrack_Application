@@ -260,9 +260,9 @@
 
 .banner {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0;
+  flex-direction: row;
+  align-items: center;
+  gap: clamp(6px, 2.5vw, 14px);
   padding: 0;
 }
 .bannerText { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
@@ -282,7 +282,8 @@
   font-family: var(--font);
   font-size: var(--fs-body);
   font-weight: var(--fw-body);
-  line-height: 1.45;
+  line-height: 1.42;
+  text-wrap: pretty;
   color: var(--hm-ink-2);
 }
 /* On a new account, the three things a first scan does, under the words. */
@@ -302,20 +303,18 @@
 }
 /* The drawing runs into the page's right gutter, and gives way first on a
    narrow phone. */
-/* The drawing is not a thumbnail beside the words any more and is not kept
-   inside the card: it runs the full width of the screen, past both of the
-   card's edges, and lifts up over the card's top into the band. Its height
-   comes from its own proportions, so it is the same picture on every phone.
-   The owner asked for three times the size and no container, 22 Sep 2026. */
+/* The words on the left, the rack on the right, and the rack is not kept
+   inside the card: it runs off its right edge to the screen's. Its width is a
+   share of the card and its height follows its own proportions, so it is the
+   same picture on every phone rather than the same pixels. */
 .bannerArt {
   flex: 0 0 auto;
-  width: calc(100% + 2 * var(--hm-bleed));
+  width: calc(42% + var(--hm-bleed));
   height: auto;
-  aspect-ratio: 360 / 250;
-  margin-left: calc(-1 * var(--hm-bleed));
+  aspect-ratio: 210 / 256;
   margin-right: calc(-1 * var(--hm-bleed));
-  margin-top: calc(-1 * (var(--hm-pad) + clamp(20px, 6.5vw, 38px)));
-  margin-bottom: clamp(-14px, -3vw, -6px);
+  margin-top: calc(-1 * clamp(8px, 3.5vw, 20px));
+  margin-bottom: calc(-1 * clamp(4px, 2vw, 12px));
   pointer-events: none;
 }
 /* The reading passes down the face, once every few seconds. It rests above
@@ -327,8 +326,8 @@
 @keyframes ra-read {
   0%, 12% { transform: translateY(0); opacity: 0; }
   20% { opacity: 1; }
-  74% { transform: translateY(148px); opacity: 1; }
-  86%, 100% { transform: translateY(148px); opacity: 0; }
+  74% { transform: translateY(166px); opacity: 1; }
+  86%, 100% { transform: translateY(166px); opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   :global(.ra-sweep) { animation: none; opacity: 0; }
@@ -571,9 +570,8 @@
    rather than running a photograph the width of a desk. */
 @media (min-width: 720px) {
   .main { gap: 30px; }
-  /* Past a phone's width the drawing stops growing with the screen and the
-     stage stays the size of a large phone's, centred. */
-  .bannerArt { max-width: 560px; align-self: center; }
+  /* Past a phone's width the drawing stops growing with the screen. */
+  .bannerArt { max-width: 300px; }
 }
 
 /* ── The four ways on ───────────────────────────────────────────────
