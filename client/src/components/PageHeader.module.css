@@ -13,8 +13,15 @@
   gap: 8px;
   min-height: 56px;
   padding: 8px 12px;
-  background: var(--md-surface-container-lowest);
+  /* Not a flat white band. A wash that lifts towards the top and a hairline
+     under it give the bar an edge of its own, so the page reads as content
+     under a header rather than one sheet of white with a line across it.
+     Light enough that the theme is unchanged: #FFFFFF to #F7F8FA. */
+  background:
+    linear-gradient(180deg, var(--md-surface-container-lowest) 0%, var(--hdr-wash, #F7F8FA) 100%);
   border-bottom: 1px solid var(--md-outline-variant);
+  /* The softest of shadows, so what scrolls under it passes under something. */
+  box-shadow: 0 1px 2px rgba(15, 20, 30, .04);
   flex-shrink: 0;
   /* A page is a flex item, and a flex item refuses to shrink below its own
      content. Without this a long rack id pushes the header wider than the
@@ -25,6 +32,14 @@
 .sticky {
   position: sticky;
   top: 0;
+  /* Held over moving content, so it is translucent and the page frosts under
+     it, the way a phone's own bars behave. Browsers without the filter get
+     the wash above, which is opaque. */
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .92) 0%, rgba(247, 248, 250, .92) 100%);
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  box-shadow: 0 1px 3px rgba(15, 20, 30, .07);
   /* Above a page's own sticky rows and the rack picture, below the bottom
      navigation (200) and any modal. */
   z-index: 60;
