@@ -1,19 +1,30 @@
+/* One question and its two answers, at the size the rest of the port screen
+   is: --ctl-h tall controls, --fs-sub on them, the question a step above at
+   --fs-body. The row carries no margin of its own - every screen that uses it
+   is a flex column with a gap, and a margin on top of that gap is what made
+   these rows sit further apart than everything around them. */
 .wrap {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
-  padding: 9px 12px; margin-top: 8px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  padding: 6px 10px;
   background: var(--md-surface-container-lowest, #fff);
-  border: 1px solid var(--md-outline-variant, rgba(0,0,0,0.1)); border-radius: 11px;
-  font-size: var(--fs-item);
+  border: 1px solid var(--md-outline-variant, rgba(0,0,0,0.1)); border-radius: 10px;
+  font-size: var(--fs-body);
 }
-.prompt { font-weight: var(--fw-title); color: var(--md-on-surface, #1c1c1c); }
+/* Shrinkable, so a long question wraps inside the row instead of pushing Yes
+   and No off the edge of a phone. */
+.prompt {
+  flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere;
+  font-weight: var(--fw-title); color: var(--md-on-surface, #1c1c1c);
+}
 
-.btnRow { display: inline-flex; gap: 6px; margin-left: auto; }
+.btnRow { display: inline-flex; flex: none; gap: 6px; margin-left: auto; }
 .btn {
-  display: inline-flex; align-items: center; gap: 5px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  flex: none; min-height: var(--ctl-h, 30px);
   border: 1px solid var(--md-outline-variant, rgba(0,0,0,0.14));
   background: var(--md-surface, #ffffff); color: var(--md-on-surface, #1c1c1c);
-  font: inherit; font-size: var(--fs-body); font-weight: var(--fw-title); cursor: pointer;
-  padding: 5px 13px; border-radius: 8px; transition: all 0.12s;
+  font: inherit; font-size: var(--fs-sub); font-weight: var(--fw-label); cursor: pointer;
+  padding: 0 11px; border-radius: 8px; transition: all 0.12s;
 }
 .yes:hover { border-color: var(--ac, #2563c9); color: var(--ac, #2563c9); }
 .no:hover  { border-color: #d9534f; color: #d9534f; }
@@ -27,33 +38,34 @@
 
 .pickRow { display: flex; align-items: center; gap: 8px; width: 100%; flex-wrap: wrap; }
 .select, .other {
-  font: inherit; font-size: var(--fs-section); color: var(--md-on-surface, #1c1c1c);
-  background: var(--md-surface, #fff);
+  font: inherit; font-size: var(--fs-sub); color: var(--md-on-surface, #1c1c1c);
+  background: var(--md-surface, #fff); min-height: var(--ctl-h, 30px);
   border: 1px solid var(--md-outline-variant, rgba(0,0,0,0.16)); border-radius: 8px;
-  padding: 7px 10px; min-width: 0;
+  padding: 0 10px; min-width: 0;
 }
 .select { flex: 1 1 auto; }
 .other  { flex: 1 1 120px; }
 .select:focus, .other:focus { outline: none; border-color: var(--ac, #2563c9); }
 .submit {
-  flex: none; border: none; cursor: pointer; font: inherit; font-size: var(--fs-body); font-weight: var(--fw-title);
-  color: #fff; background: var(--ac, #2563c9); padding: 7px 15px; border-radius: 8px;
+  flex: none; border: none; cursor: pointer; font: inherit; font-size: var(--fs-sub); font-weight: var(--fw-label);
+  min-height: var(--ctl-h, 30px);
+  color: #fff; background: var(--ac, #2563c9); padding: 0 12px; border-radius: 8px;
 }
 .submit:disabled { opacity: 0.45; cursor: default; }
 
 .saving, .done, .answered {
-  display: inline-flex; align-items: center; gap: 7px; font-size: var(--fs-body); font-weight: var(--fw-title);
+  display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-sub); font-weight: var(--fw-label);
 }
 .saving { color: var(--muted, #666666); }
 .done { color: #1a7f4b; }
 .answered {
-  width: 100%; color: var(--muted, #606060); font-weight: var(--fw-label); font-size: var(--fs-body);
-  padding: 7px 12px; margin-top: 8px;
+  width: 100%; color: var(--muted, #606060); font-weight: var(--fw-label); font-size: var(--fs-sub);
+  padding: 6px 10px;
   background: var(--md-surface-container, rgba(0,0,0,0.03));
   border: 1px solid var(--md-outline-variant, rgba(0,0,0,0.08)); border-radius: 10px;
 }
 .tick {
-  display: inline-flex; width: 18px; height: 18px; border-radius: 50%; flex: none;
+  display: inline-flex; width: 16px; height: 16px; border-radius: 50%; flex: none;
   align-items: center; justify-content: center; color: #fff; background: #1a7f4b;
 }
 .answeredText { color: var(--md-on-surface, #2c2c2c); font-weight: var(--fw-title); }

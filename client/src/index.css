@@ -205,6 +205,20 @@
      uppercase needs the extra tracking or it sets as a solid block. */
   --ls-caps: 0.06em;
 
+  /* ══ CONTROLS ═════════════════════════════════════════════════════════
+     One height for every small control that sits in a row with others - a
+     Yes/No button, a filter chip, a short input, the button beside it. They
+     were 28, 36 and 44 tall on the same screen, each with its own padding,
+     which is why a row of them read as three unrelated things stacked up.
+     Set the height here and pad with 0 <side>; the control centres itself.
+
+     A control that is the page's main action (Analyze, Sign in) is not one
+     of these - it keeps its own size. */
+  --ctl-h: 30px;
+  --ctl-px: 11px;     /* the side padding that goes with it */
+  --ctl-gap: 6px;     /* between two controls, and between two rows of them */
+  --ctl-radius: 8px;
+
   /* ══ THE BOTTOM BAR ═══════════════════════════════════════════════════
      The app's bar (BottomNav) and the rack's tabs (ScanTabBar) are one bar
      drawn twice, so both read these and cannot drift apart again. They were a

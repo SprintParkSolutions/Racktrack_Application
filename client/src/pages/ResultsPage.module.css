@@ -553,7 +553,7 @@
   min-height: 0;
   display: flex; flex-direction: column;
   padding: 10px 14px 14px;
-  gap: 8px;
+  gap: var(--ctl-gap, 6px);
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
@@ -769,9 +769,10 @@
 .portInput {
   flex: 1;
   min-width: 0;
-  padding: 10px 12px !important;
-  border-radius: 10px !important;
-  font-size: var(--fs-section) !important;
+  min-height: var(--ctl-h, 30px);
+  padding: 0 var(--ctl-px, 11px) !important;
+  border-radius: var(--ctl-radius, 8px) !important;
+  font-size: var(--fs-mono) !important;
   font-family: var(--mono) !important;
 }
 .portInput:focus {
@@ -780,10 +781,11 @@
 }
 .findBtn {
   flex-shrink: 0;
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 10px 14px !important;
-  border-radius: 10px !important;
-  font-size: var(--fs-body) !important;
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  min-height: var(--ctl-h, 30px);
+  padding: 0 12px !important;
+  border-radius: var(--ctl-radius, 8px) !important;
+  font-size: var(--fs-sub) !important;
   font-weight: var(--fw-label) !important;
   white-space: nowrap;
   background: #000000 !important;
@@ -996,7 +998,7 @@
   flex: 1; min-height: 0;
   display: flex; flex-direction: column;
   padding: 10px 14px 16px;
-  gap: 8px;
+  gap: var(--ctl-gap, 6px);
   overflow-y: auto;
   overflow-x: hidden;
   position: relative; z-index: 10;
@@ -3630,8 +3632,12 @@
 /* A group of facts, and the line that names it. */
 /* Compact: this screen is a table, a question and a row of ways on, and it
    should sit on one phone screen without scrolling to reach the buttons. */
+/* A block of the port screen, not a card: the column it sits in already
+   carries the gutter, so indenting it again put its contents on a fourth
+   left edge - "Find the other end" started 16px in from the question below
+   it and 14px in from the chips below that. */
 .pBlock {
-  padding: 8px 16px 0;
+  padding: 8px 0 0;
   border-top: 1px solid #EFEFEF;
 }
 .pBlockHead {
@@ -3685,16 +3691,17 @@
   flex: none;
 }
 .pNote {
-  display: flex; align-items: center; gap: 8px;
-  margin: 4px 0 2px;
-  font-size: var(--fs-body); color: #474747;
+  display: flex; align-items: center; gap: 6px;
+  margin: 0 0 6px;
+  font-size: var(--fs-sub); color: #474747;
 }
 .pAction {
   /* A quiet, small control: asking the switch is an option, not the page's
      business. It used to be a full-width button the size of the primary one. */
   display: inline-flex; align-items: center; justify-content: center;
-  min-height: 36px; padding: 0 12px; margin: 2px 0 8px;
-  border: 1px solid #EFEFEF; border-radius: 10px;
+  align-self: flex-start;
+  min-height: var(--ctl-h, 30px); padding: 0 var(--ctl-px, 11px); margin: 2px 0 6px;
+  border: 1px solid #EFEFEF; border-radius: var(--ctl-radius, 8px);
   background: #ffffff; color: #121212;
   font-family: var(--font); font-size: var(--fs-sub); font-weight: var(--fw-label);
   cursor: pointer;
@@ -3936,25 +3943,28 @@
 /* Jump-to-another-port - same card shell as the feedback and button rows */
 .prAnother {
   position: relative;
-  display: flex; align-items: stretch; gap: 8px;
-  margin: 0 14px 10px;
+  display: flex; align-items: stretch; gap: var(--ctl-gap, 6px);
+  margin: 0;
   padding: 0;
   background: transparent;
   border: none;
 }
+/* White, like every other field in the app. This was a dark pill left over
+   from the dark theme, sitting on a white page. */
 .prAnother input {
-  flex: 1;
-  padding: 10px 14px !important;
-  border-radius: 12px !important;
-  font-size: var(--fs-section) !important;
-  background: rgba(0,0,0,0.55) !important;
-  border: 1px solid rgba(255,255,255,0.14) !important;
-  color: #ffffff !important;
+  flex: 1; min-width: 0;
+  min-height: var(--ctl-h, 30px);
+  padding: 0 var(--ctl-px, 11px) !important;
+  border-radius: var(--ctl-radius, 8px) !important;
+  font-size: var(--fs-mono) !important;
+  background: var(--md-surface, #ffffff) !important;
+  border: 1px solid var(--md-outline-variant, rgba(0,0,0,0.14)) !important;
+  color: var(--md-on-surface, #1c1c1c) !important;
   font-family: var(--mono) !important;
   transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
 }
 .prAnother input:hover {
-  border-color: rgba(255,255,255,0.22) !important;
+  border-color: var(--md-on-surface, rgba(0,0,0,0.4)) !important;
 }
 .prAnother input:focus {
   border-color: color-mix(in srgb, var(--ac, #000000) 60%, transparent) !important;
@@ -3963,8 +3973,9 @@
   outline: none;
 }
 .prAnother button {
-  padding: 10px 16px !important;
-  border-radius: 12px !important;
+  min-height: var(--ctl-h, 30px);
+  padding: 0 12px !important;
+  border-radius: var(--ctl-radius, 8px) !important;
   font-size: var(--fs-sub) !important;
   font-weight: var(--fw-label) !important;
 }
@@ -4444,15 +4455,16 @@
 }
 .portTypeBtn {
   flex: 0 1 auto;
-  padding: 8px 14px;
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: var(--ctl-h, 30px);
+  padding: 0 12px;
   border-radius: 999px;
   border: 1px solid var(--md-outline-variant);
   background: var(--md-surface-container-lowest);
   color: var(--md-on-surface);
   font-family: var(--font);
-  font-size: var(--fs-body);
+  font-size: var(--fs-sub);
   font-weight: var(--fw-label);
-  line-height: 18px;
   cursor: pointer;
   transition: border-color 0.14s, background-color 0.14s, color 0.14s;
 }
@@ -5642,7 +5654,7 @@
 
 /* ── Compact port-type switch above the "another port" input ── */
 .prTypeSwitch {
-  display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px;
+  display: flex; flex-wrap: wrap; gap: var(--ctl-gap, 6px); margin: 0;
 }
 
 /* ── Low-confidence cable nudge (asks the tech to verify/correct) ── */
