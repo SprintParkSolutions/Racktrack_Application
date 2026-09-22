@@ -106,13 +106,25 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
   // 2. Wait for the uploaded build to appear + finish processing enough to be
   //    addressable. Apple takes a few minutes after upload.
+  //
+  //    The build NUMBER alone does not name a build. It is unique only within
+  //    one marketing version, and this app has restarted its numbering: asking
+  //    for "build 2" on 22 Sep 2026 matched 1.0 (2) from July - expired, in
+  //    nobody's hands - and the notes for 1.1 (2) were written onto it. So the
+  //    marketing version is part of the question, and where the API cannot be
+  //    asked for both at once, the newest upload wins.
   let build = null;
   const deadline = Date.now() + 30 * 60 * 1000;   // 30 min
-  process.stdout.write(`waiting for build ${buildNumber} to appear`);
+  const marketing = process.env.MARKETING_VERSION || null;
+  process.stdout.write(`waiting for build ${marketing ? `${marketing} (${buildNumber})` : buildNumber} to appear`);
   while (Date.now() < deadline) {
-    const r = await api('GET',
-      `/v1/builds?filter[app]=${app.id}&filter[version]=${encodeURIComponent(buildNumber)}&limit=1`);
-    build = r.data?.[0];
+    const q = [`filter[app]=${app.id}`, `filter[version]=${encodeURIComponent(buildNumber)}`,
+      ...(marketing ? [`filter[preReleaseVersion.version]=${encodeURIComponent(marketing)}`] : []),
+      'limit=10', 'sort=-uploadedDate'].join('&');
+    const r = await api('GET', `/v1/builds?${q}`);
+    const rows = (r.data || []).filter((b) => b.attributes?.processingState !== 'INVALID'
+      && b.attributes?.expired !== true);
+    build = rows[0] || null;
     if (build) break;
     process.stdout.write('.');
     await sleep(20000);

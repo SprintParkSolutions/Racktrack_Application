@@ -487,6 +487,11 @@ def _unit_rows_from_result(result, names):
     return units, racks, rails
 
 
+# The tallest rack anybody builds is 58U (a 48U cabinet plus its extras), so a
+# ladder taller than this is a failed estimate rather than a tall rack.
+MAX_RACK_UNITS = 58
+
+
 def _drop_duplicate_units(units):
     """Two detections on one physical row collapse to the more confident one.
 
@@ -1248,6 +1253,25 @@ def build_contiguous_unit_grid(devices, unit_h, rack_bounds=None, img_shape=None
         count += 1
     count = max(1, count)
 
+    # A rack does not have four thousand shelves.
+    #
+    # `unit_h` is estimated from what the detector found, and when that
+    # estimate collapses - a sliver misread as a whole unit, a rack read at a
+    # steep angle - this tiled the whole photograph into one-pixel rows. The
+    # labels then ran u01 to u4015, every device landed on one of them, and
+    # the owner's phone showed a patch panel called SP-RI-4015-PP1 on
+    # 22 September 2026.
+    #
+    # No rack made is taller than 58U, so a ladder that says otherwise is not
+    # a ladder. Saying nothing about which shelf a box is on is honest; saying
+    # shelf 4015 is not.
+    if count > MAX_RACK_UNITS:
+        print(
+            f"[units] ladder refused: {count} rows from unit_h={unit_h:.1f}px "
+            f"over {span_px}px - no rack is that tall"
+        )
+        return []
+
     # Number from the BOTTOM (standard rack convention: U1 = bottom, UN = top).
     # Iterate top-to-bottom in pixel space, but label so the bottom row is u01.
     units = []
@@ -1296,6 +1320,11 @@ def fill_unit_grid_gaps(units, unit_h, img_w, img_h, rack_bounds=None):
         if n == 0 and h >= 0.5 * unit_h:
             n = 1
         if n <= 0:
+            return
+        # And a gap is never a rack's worth of shelves: a collapsed unit_h
+        # would otherwise tile the photograph into hundreds of rows, which is
+        # what put shelf 4015 on a patch panel.
+        if len(filled) + n > MAX_RACK_UNITS:
             return
         step = h / n
         for i in range(n):

@@ -70,3 +70,21 @@ def test_too_few_ports_to_judge_are_left_alone():
     """One port is not a band, and a rule that cannot tell must not guess."""
     one = classified([port(10, 40)])
     assert confine_to_device(one)["main_ports"] == one["main_ports"]
+
+
+def test_the_unit_ladder_refuses_to_be_taller_than_a_rack():
+    """A collapsed unit height used to tile a photograph into a thousand
+    one-pixel shelves, and a patch panel came out named SP-RI-4015-PP1."""
+    from pipeline.detection import MAX_RACK_UNITS, build_contiguous_unit_grid
+
+    devices = [{"class_name": "Switch", "box": [100, 1000, 900, 1040]},
+               {"class_name": "Patch Panel", "box": [100, 3000, 900, 3080]}]
+    # A sane unit height gives a sane ladder: 100px units over a 4032px
+    # photograph is a 38U rack, which is a rack somebody owns.
+    good = build_contiguous_unit_grid(devices, 100, img_shape=(4032, 3024, 3))
+    assert 0 < len(good) <= MAX_RACK_UNITS
+    # So is one that would be 96 rows: a 4032px photo of 40px units is not a
+    # rack, it is a bad estimate, and it is refused too.
+    assert build_contiguous_unit_grid(devices, 40, img_shape=(4032, 3024, 3)) == []
+    # A collapsed one gives nothing at all, rather than thousands of shelves.
+    assert build_contiguous_unit_grid(devices, 1, img_shape=(4032, 3024, 3)) == []

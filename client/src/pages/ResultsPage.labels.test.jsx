@@ -80,3 +80,16 @@ describe('headerWhereLines', () => {
     expect(headerWhereLines(null, null)).toEqual([]);
   });
 });
+
+/* A ladder that collapsed labelled a rack u01..u4015, and the app printed the
+   number into the device's name: SP-RI-4015-PP1. No rack is that tall, so a
+   shelf over 58 is not a shelf, and the name simply leaves it out. */
+describe('a shelf nobody can stand on', () => {
+  test('an impossible unit is not printed as one', () => {
+    expect(buildDeviceLabels([dev('Patch Panel', 4015)], ['u4015'])).toEqual(['U01-PP01']);
+  });
+
+  test('and a real shelf still is', () => {
+    expect(buildDeviceLabels([dev('Patch Panel', 12)], ['u12'])).toEqual(['U12-PP01']);
+  });
+});

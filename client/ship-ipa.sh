@@ -33,6 +33,11 @@ cd "$(dirname "$0")"
 # Build number the IPA carries (used to find the build in App Store Connect).
 BUILD_NUM="$(grep -m1 -oE 'CURRENT_PROJECT_VERSION = [0-9]+' "$PBXPROJ" | grep -oE '[0-9]+')"
 [ -n "$BUILD_NUM" ] || { echo "✗ could not read CURRENT_PROJECT_VERSION"; exit 1; }
+# The marketing version goes with it. A build number is unique only inside one
+# of these, and this app has restarted its numbering, so "build 2" alone can
+# name a build from an older version that is long expired.
+MARKETING_VERSION="$(grep -m1 -oE 'MARKETING_VERSION = [0-9.]+' "$PBXPROJ" | grep -oE '[0-9.]+')"
+export MARKETING_VERSION
 
 # altool looks for the key in these dirs by convention.
 KEY_DIR="$HOME/.appstoreconnect/private_keys"
@@ -49,7 +54,7 @@ if [ ! -f "$KEY_DIR/$KEY_FILE" ]; then
   fi
 fi
 
-echo "→ uploading build $BUILD_NUM to TestFlight…"
+echo "→ uploading ${MARKETING_VERSION:-?} ($BUILD_NUM) to TestFlight…"
 xcrun altool --upload-app -t ios -f "$IPA" \
   --apiKey "$KEY_ID" --apiIssuer "$ISSUER_ID"
 echo "✔ upload accepted (Apple now processes the build)"
@@ -58,5 +63,5 @@ echo "→ setting \"What to Test\" notes…"
 node testflight-notes.mjs "$BUILD_NUM" "$NOTES"
 
 echo ""
-echo "✔ Shipped build $BUILD_NUM to TestFlight with release notes."
+echo "✔ Shipped ${MARKETING_VERSION:-?} ($BUILD_NUM) to TestFlight with release notes."
 echo "  Testers get it once Apple finishes processing."

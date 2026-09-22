@@ -42,9 +42,19 @@ const DEFAULT_COLOR = '#6366f1';
 
 function getColor(name) { return TYPE_COLOR[name] || DEFAULT_COLOR; }
 
+/* The tallest rack anybody builds is 58U, so a bigger number is not a shelf.
+   A scan whose unit ladder collapsed carried labels like u4015, and the app
+   printed them: SP-RI-4015-PP1 on the owner's phone, 22 Sep 2026. The reading
+   is fixed where it is made (pipeline/detection.py), and this is the guard
+   for every scan already stored: a shelf nobody can stand on is no shelf, and
+   the box simply says nothing about where it sits. */
+const MAX_RACK_UNITS = 58;
+
 function parseUnitNumber(label) {
   const match = String(label || '').match(/\d+/);
-  return match ? Number(match[0]) : null;
+  if (!match) return null;
+  const n = Number(match[0]);
+  return n >= 1 && n <= MAX_RACK_UNITS ? n : null;
 }
 
 function formatUnitsRange(units = []) {
