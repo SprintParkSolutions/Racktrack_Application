@@ -45,6 +45,9 @@ export const TwoRackIcon = () => (
 export const HistoryIcon = () => (
   <svg {...s}><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/><path d="M3.5 12H5"/></svg>
 );
+export const PortsIcon = () => (
+  <svg {...s}><rect x="3" y="7" width="18" height="10" rx="2"/><path d="M7 11v2"/><path d="M11 11v2"/><path d="M15 11v2"/></svg>
+);
 export const LabIcon = () => (
   <svg {...s}><path d="M9 3v6.5L4.5 18A2 2 0 006.3 21h11.4a2 2 0 001.8-3L15 9.5V3"/><path d="M8 3h8"/><path d="M7.5 14h9"/></svg>
 );
@@ -108,10 +111,28 @@ export function usePrimaryNav() {
     // Scan is the bar's raised centre action (BottomNav), so it takes no slot
     // in the row of four beside it.
     { group: 'work', to: '/scan', label: 'Scan a rack', icon: <ScanIcon />, end: false },
-    { group: 'work', to: '/multi-rack/new', label: 'Two racks', icon: <TwoRackIcon />, end: false,
-      inBar: true, barLabel: '2 Racks',
-      hint: 'Two racks as one job' },
-    { group: 'work', to: '/history', label: 'Scan history', icon: <HistoryIcon />, end: false },
+    // The bar carries four tabs around the raised Scan: two on each side. An
+    // odd number leaves the centre off-centre, which is what a technician had
+    // once the Desk came off their bar - the owner's words on 22 Sep 2026,
+    // "keep 3 or 5 when there is a centre button".
+    //
+    // So the fourth tab differs by who is looking. Somebody who decides gets
+    // the Desk (below); everybody else gets their own racks, which is what a
+    // technician opens next most often. Two racks as one job is a rarer piece
+    // of work and waits in the Menu for them.
+    ...(isAdmin || isSpoc
+      ? [{ group: 'work', to: '/multi-rack/new', label: 'Two racks', icon: <TwoRackIcon />, end: false,
+        inBar: true, barLabel: '2 Racks', hint: 'Two racks as one job' }]
+      : [{ group: 'work', to: '/multi-rack/new', label: 'Two racks', icon: <TwoRackIcon />, end: false,
+        hint: 'Two racks as one job' }]),
+    { group: 'work', to: '/history', label: 'Scan history', icon: <HistoryIcon />, end: false,
+      ...(isAdmin || isSpoc ? {} : { inBar: true, barLabel: 'Racks' }) },
+    // The technician's fourth tab. A person who has just checked a rack looks
+    // a port up next more often than they do anything else, and for somebody
+    // who decides that slot is the Desk instead.
+    ...(isAdmin || isSpoc ? [] : [{ group: 'work', to: '/port-history', label: 'Port history',
+      icon: <PortsIcon />, end: false, inBar: true, barLabel: 'Ports',
+      hint: 'What changed on a port' }]),
     // Approvals is its own application on its own address, so this entry
     // carries `href` instead of `to`: the bar, the Menu and the sidebar draw
     // it as a link that leaves the app (components/ExternalLink.jsx).

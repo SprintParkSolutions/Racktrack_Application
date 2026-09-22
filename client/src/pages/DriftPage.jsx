@@ -619,7 +619,12 @@ export default function DriftPage() {
           </button>
         )}
         {sent && plan && (
-          <ExternalLink className={styles.action} href={driftCheckUrl(plan.id)}>
+          /* Inside the app, for everybody. It used to leave for RackTrack
+             Drift Desk, which is a dashboard built for the people who decide -
+             a technician was sent to a queue of other people's work to find
+             out what happened to their own check. The Desk is one quiet row
+             at the foot of that page, for whoever may act there. */
+          <button type="button" className={styles.action} onClick={() => navigate(`/checks/${plan.id}`)}>
             <span className={styles.actionGlyph} aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
                 strokeLinecap="round" strokeLinejoin="round">
@@ -630,7 +635,7 @@ export default function DriftPage() {
               <b>Track this check</b>
               <small>Where it is, and who has it</small>
             </span>
-          </ExternalLink>
+          </button>
         )}
       </div>
       {reportable && !sent && (

@@ -98,7 +98,7 @@ describe('<DriftPage>', () => {
     expect(screen.queryByRole('group', { name: 'Summary of the comparison' })).toBeNull();
     expect(document.body.textContent).not.toMatch(/Send it to/);
     // Nothing to track until it has been sent.
-    expect(screen.queryByRole('link', { name: /Track this check/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Track this check/ })).toBeNull();
   });
 
   test('a server that names nobody: the button still raises the incident, and no Goes to block is drawn', async () => {
@@ -139,11 +139,12 @@ describe('<DriftPage>', () => {
     expect(document.body.textContent).not.toMatch(/Send it to/);
     expect(buttonNames().filter((n) => FORBIDDEN.test(n))).toEqual([]);
     expect(screen.getByText('Waiting on the SPOC')).toBeTruthy();
-    // One link out: this check, in RackTrack Approvals.
-    const track = screen.getAllByRole('link', { name: /Track this check/ });
+    // One way on, and it stays in the app: the check's own page, which is
+    // where a technician follows what they sent. Nothing leaves for the Desk.
+    const track = screen.getAllByRole('button', { name: /Track this check/ });
     expect(track).toHaveLength(1);
-    expect(track[0].getAttribute('href')).toBe('/approvals/drifts/7');
-    expect(track[0].getAttribute('target')).toBe('_blank');
+    expect(track[0].getAttribute('href')).toBe(null);
+    expect(document.querySelector('a[href*="/approvals/"]')).toBeNull();
   });
 
   test('a member whom the contacts route turns away still gets the page', async () => {
@@ -341,7 +342,7 @@ describe('<DriftPage> choosing and following', () => {
     expect(statusLine()).toBe('Written to NetBox');
     expect(screen.queryByRole('link', { name: /ServiceNow/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /^(Send|Raise)/ })).toBeNull();
-    expect(screen.getAllByRole('link', { name: /Track this check/ })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: /Track this check/ })).toHaveLength(1);
   });
 
   test('a written check on a server that cannot be followed still ends on Written', async () => {

@@ -65,6 +65,7 @@ const ReportPage = lazy(() => import('./pages/ReportPage.jsx'));
 const SetupPage = lazy(() => import('./pages/SetupPage.jsx'));
 import OrgConsolePage from './pages/OrgConsolePage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
+import CheckPage from './pages/CheckPage.jsx';
 import MultiRackNewPage from './pages/MultiRackNewPage.jsx';
 import { ShutterProvider } from './ShutterContext.jsx';
 import { AuthProvider, useAuth } from './AuthContext.jsx';
@@ -579,6 +580,11 @@ export default function App() {
             } />
             <Route path="/results/:rackId/netdisco" element={
               <ProtectedRoute><ResponsiveLayout><RackNetworkRoute /></ResponsiveLayout></ProtectedRoute>
+            } />
+            {/* One check, followed, inside the app. Where "Track this check"
+                goes for everybody: the Desk is for the people who decide. */}
+            <Route path="/checks/:planId" element={
+              <ProtectedRoute><ResponsiveLayout withBottomNav><CheckPage /></ResponsiveLayout></ProtectedRoute>
             } />
             <Route path="/port-history" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><PortHistoryPage /></ResponsiveLayout></ProtectedRoute>

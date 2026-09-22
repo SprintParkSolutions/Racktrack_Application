@@ -245,8 +245,10 @@ describe('<HomePage> with work behind it', () => {
     // Four are with this person and three are shown.
     expect(screen.getByText('and 1 more with you')).toBeTruthy();
 
+    // Inside the app: the Desk is for the people who decide.
     fireEvent.click(screen.getByText('INC0012345').closest('button'));
-    expect(opened.calls).toEqual(['/approvals/drifts/140']);
+    expect(screen.getByTestId('where').textContent).toBe('/checks/140');
+    expect(opened.calls).toEqual([]);
   });
 
   test('a rack with no name says so in the needs list too, never its hash', async () => {

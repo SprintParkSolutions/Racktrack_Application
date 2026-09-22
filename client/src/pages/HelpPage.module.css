@@ -204,22 +204,8 @@
 }
 /* A black tile with three stacked bars - a rack, in the same black as the
    sidebar's active pill and brand mark. */
-.introRule {
-  width: 56px; height: 56px;
-  border-radius: 14px;
-  margin: 0 auto 18px;
-  background: var(--ink);
-  display: grid;
-  place-items: center;
-}
-.introRule::before {
-  content: "";
-  display: block;
-  width: 22px; height: 2.5px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 6px 0 rgba(255, 255, 255, 0.9), 0 -6px 0 rgba(255, 255, 255, 0.9);
-}
+/* The black tile that sat over the greeting is gone: a drawing of nothing
+   above a sentence that says everything. */
 .intro h2 {
   margin: 0 0 clamp(18px, 4vw, 24px);
   font-size: clamp(1.05rem, 4vw, 1.22rem);

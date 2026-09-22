@@ -1,0 +1,146 @@
+/* One check, followed. See CheckPage.jsx for what it says and why.
+   White, one hairline at a time, and nothing on it that decides anything. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: var(--bg, #ffffff);
+}
+
+.scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 16px calc(24px + var(--nav-clear, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.waiting, .error {
+  margin: 14px 0 0;
+  font-family: var(--font);
+  font-size: var(--fs-body);
+  color: var(--muted, #5c646d);
+}
+.error { color: #c0392b; }
+
+/* Where it is: the first thing, and the largest. */
+.state {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 0 0;
+}
+.dot {
+  flex: 0 0 auto;
+  width: 10px; height: 10px;
+  margin-top: 7px;
+  border-radius: 50%;
+}
+.dotLive { background: #1F5FAE; }
+.dotDone { background: #0F7B4F; }
+.stateText { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.stateLine {
+  margin: 0;
+  font-family: var(--font);
+  font-size: var(--fs-head);
+  font-weight: var(--fw-title);
+  line-height: var(--lh-head);
+  letter-spacing: -0.02em;
+  color: var(--text, #121212);
+  text-wrap: balance;
+}
+.stateNote {
+  margin: 0;
+  font-family: var(--font);
+  font-size: var(--fs-body);
+  color: var(--muted, #5c646d);
+}
+
+/* The few facts worth carrying, as pairs rather than sentences. */
+.facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 12px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border, rgba(0,0,0,.09));
+}
+.facts > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding-top: 14px; }
+.facts dt {
+  font-family: var(--font);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-label);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--muted, #8a8f99);
+}
+.facts dd {
+  margin: 0;
+  font-family: var(--font);
+  font-size: var(--fs-item);
+  font-weight: var(--fw-label);
+  color: var(--text, #121212);
+  overflow-wrap: anywhere;
+}
+.mono { font-family: var(--mono, ui-monospace, monospace); }
+
+/* What happened, newest first. */
+.log { display: flex; flex-direction: column; }
+.logHead {
+  margin: 0 0 6px;
+  font-family: var(--font);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-title);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--muted, #8a8f99);
+}
+.log ul { list-style: none; margin: 0; padding: 0; }
+.log li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 11px 0;
+  border-top: 1px solid var(--border, rgba(0,0,0,.07));
+}
+.logWhat {
+  font-family: var(--font);
+  font-size: var(--fs-item);
+  font-weight: var(--fw-label);
+  color: var(--text, #121212);
+}
+.logWho {
+  margin-left: auto;
+  font-family: var(--font);
+  font-size: var(--fs-sub);
+  color: var(--muted, #8a8f99);
+  white-space: nowrap;
+}
+
+/* The ways on. Quiet rows, not buttons: nothing here is the point of the page. */
+.ways { display: flex; flex-direction: column; }
+.way {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0;
+  border: 0;
+  border-top: 1px solid var(--border, rgba(0,0,0,.09));
+  background: transparent;
+  color: var(--text, #121212);
+  font-family: var(--font);
+  font-size: var(--fs-item);
+  font-weight: var(--fw-label);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.way:active { opacity: .7; }
+.wayChev { color: var(--muted, #8a8f99); font-size: var(--fs-head); }
