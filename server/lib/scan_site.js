@@ -51,8 +51,12 @@ function flatSpaces(tenantId) {
 }
 
 function siteRow(t) {
+  // `id` is the rack's own row in this Site's setup, which is what
+  // POST /api/scan/:rackId/identity/confirm takes as knownRackId. The scan
+  // screen does not need it; the Overview does, so a person looking at a rack
+  // nothing could identify can pick it from the racks of their Site by hand.
   const racks = estate.listRacks(t.id).map((r) => ({
-    rackId: r.rack_id ?? null, name: r.name ?? null, spaceId: r.space_id ?? null,
+    id: r.id, rackId: r.rack_id ?? null, name: r.name ?? null, spaceId: r.space_id ?? null,
   }));
   return {
     id: t.id,

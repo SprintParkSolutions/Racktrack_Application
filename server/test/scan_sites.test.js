@@ -97,12 +97,13 @@ app.use('/api/scan-sites', (req, res, next) => {
 }, require('../routes/scan_sites'));
 
 let server, port, room;
+let rackRow;
 before(() => new Promise((resolve) => {
   // Site A2 is the one with something in it: a room inside a floor, one rack
   // in the room, a SPOC, and a location that must never reach the phone.
   const floor = estate.createSpace(SITE_A2, { name: 'Floor 1' }, ADMIN_A);
   room = estate.createSpace(SITE_A2, { name: 'RM01', parent_id: floor.id }, ADMIN_A);
-  estate.upsertRack(SITE_A2, { rack_id: RACK, name: 'SP-HYB-RM01-R01-R1', space_id: room.id }, ADMIN_A);
+  rackRow = estate.upsertRack(SITE_A2, { rack_id: RACK, name: 'SP-HYB-RM01-R01-R1', space_id: room.id }, ADMIN_A);
   estate.setApprover(SITE_A2, { user_id: MEMBER_A2 }, ADMIN_A);
   estate.updateDatacentre(SITE_A2, { address: '1 Test Street', lat: 17.44, lng: 78.38 }, ADMIN_A);
   server = app.listen(0, '127.0.0.1', () => { port = server.address().port; resolve(); });
@@ -143,7 +144,7 @@ test('a technician gets their one Site, preselected, in the shape the picker rea
     siteId: 'Site 32',
     name: 'Office-Sprintpark',
     rackCount: 1,
-    racks: [{ rackId: RACK, name: 'SP-HYB-RM01-R01-R1', spaceId: room.id }],
+    racks: [{ id: rackRow.rack.id, rackId: RACK, name: 'SP-HYB-RM01-R01-R1', spaceId: room.id }],
     spaces: [
       { id: room.parent_id, name: 'Floor 1', depth: 0 },
       { id: room.id, name: 'RM01', depth: 1 },

@@ -1,5 +1,5 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './ResultsPage.module.css';
 import { apiUrl, authFetch, bustUrl } from '../utils/api';
@@ -1709,6 +1709,10 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // RK-AD902EF2 and nothing about the site. Read-only: this asks, it never
   // confirms, and confirming stays where it was, on the drift check.
   const [identity, setIdentity] = useState(null);
+  // Choosing the rack by hand, when nothing could say which it is.
+  const [pickingRack, setPickingRack] = useState('');
+  const [pickRackBusy, setPickRackBusy] = useState(false);
+  const [pickRackError, setPickRackError] = useState('');
   // The Sites this person may scan for, with the racks of each. Already
   // fetched and cached by the hook; the header reads the Site's name off it.
   const { sites: scanSites } = useScanSite();
@@ -1754,6 +1758,45 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       }
     }
     return null;
+  }, [scanSites, rackId]);
+
+  // Say which rack this is, by hand. The same route the drift check's own
+  // picker uses, so a rack chosen here is the rack every later comparison and
+  // every write is keyed on.
+  const confirmRackByHand = useCallback(async (knownRackId) => {
+    if (!rackId || !knownRackId) return;
+    setPickRackBusy(true);
+    setPickRackError('');
+    try {
+      const r = await authFetch(apiUrl(`/api/scan/${encodeURIComponent(rackId)}/identity/confirm`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ knownRackId: Number(knownRackId) }),
+      });
+      const body = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        setPickRackError(body.error || 'That rack could not be confirmed. Try again.');
+        return;
+      }
+      if (body.identity) setIdentity(body.identity);
+      setPickingRack('');
+    } catch {
+      setPickRackError('That rack could not be confirmed. Check your connection.');
+    } finally {
+      setPickRackBusy(false);
+    }
+  }, [rackId]);
+
+  // Every rack set up for this rack's Site, for the person to choose from when
+  // nothing could say which rack the photograph is. The list the phone already
+  // holds, so this costs no request.
+  const racksAtSite = useMemo(() => {
+    if (!rackId) return [];
+    for (const site of scanSites || []) {
+      const holdsIt = (site.racks || []).some((r) => r && String(r.rackId) === String(rackId));
+      if (holdsIt) return (site.racks || []).filter((r) => r && r.id != null && r.name);
+    }
+    return [];
   }, [scanSites, rackId]);
 
   const whereLines = headerWhereLines(rackSaid, identity, siteOfRack);
@@ -5016,6 +5059,45 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
         {/* The photograph, and the two ways on. Nothing else: the rack is on
             screen above, so a tally of it and a list of what is in it were
             both saying again what the picture already says. */}
+        {/* Nothing could say which rack this is. Rather than leave the person
+            with a photograph and no record, offer the racks of their own Site
+            and let them say. The owner asked for this on 22 Sep 2026: a rack
+            that is not matched is not a dead end. */}
+        {!ticketMode && phase !== 'all' && !portMode
+          && identity && identity.decision !== 'matched' && racksAtSite.length > 0 && (
+          <div className={styles.pickRack}>
+            <label className={styles.pickRackLabel} htmlFor="rack-by-hand">
+              Which rack is this?
+            </label>
+            <div className={styles.pickRackRow}>
+              <select
+                id="rack-by-hand"
+                className={styles.pickRackSelect}
+                value={pickingRack}
+                disabled={pickRackBusy}
+                onChange={(e) => setPickingRack(e.target.value)}
+              >
+                <option value="">Choose a rack</option>
+                {racksAtSite.map((r) => (
+                  <option key={r.id} value={r.id}>{r.name}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className={styles.pickRackGo}
+                disabled={!pickingRack || pickRackBusy}
+                onClick={() => confirmRackByHand(pickingRack)}
+              >
+                {pickRackBusy ? 'Saving' : 'This one'}
+              </button>
+            </div>
+            <p className={styles.pickRackNote}>
+              Every check and every write for this photograph uses the rack you choose.
+            </p>
+            {pickRackError && <p className={styles.pickRackError} role="alert">{pickRackError}</p>}
+          </div>
+        )}
+
         {!ticketMode && phase !== 'all' && !portMode && (
           <div className={styles.stepChoices}>
             <button

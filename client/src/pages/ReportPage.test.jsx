@@ -6,7 +6,7 @@
  * the machine and by nobody else, the row says so.
  */
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 const { reply } = vi.hoisted(() => ({ reply: { view: null, doc: null } }));
@@ -95,6 +95,9 @@ describe('ReportPage', () => {
   test('the step after the report is a named control, and it gets there', async () => {
     draw();
     const go = await screen.findByRole('button', { name: 'Drift check' });
+    // It waits for the rack to be adopted before it can go anywhere, so wait
+    // for it to be live rather than clicking a disabled control.
+    await waitFor(() => expect(go.disabled).toBe(false));
     fireEvent.click(go);
     expect(await screen.findByText('the drift check')).toBeTruthy();
   });
