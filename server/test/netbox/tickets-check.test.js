@@ -211,17 +211,40 @@ describe('raising the incident of a check', () => {
     });
   });
 
-  it('still raises it when no ServiceNow user has the email, unassigned, and says why', async () => {
-    const impl = fake([NONE, ok([]), ok({ sys_id: '9d3', number: 'INC0010042', state: '1', assigned_to: '' }, 201)]);
+  /* An incident nobody holds is an incident nobody picks up, so when the
+     instance has no user for the person a check went to, RackTrack makes one
+     and assigns to it. */
+  it('makes the user when the instance has none, and assigns the incident to it', async () => {
+    const made = { sys_id: 'u-new', name: 'Spoc', email: 'spoc@dc007.example', user_name: 'dc007.spoc' };
+    const impl = fake([NONE, ok([]), ok(made, 201),
+      ok({ sys_id: '9d3', number: 'INC0010042', state: '1', assigned_to: 'u-new' }, 201)]);
     const out = await t.raiseCheck(CFG, CTX, impl);
-    assert.ok(!('assigned_to' in impl.calls[2].body), 'an empty assignee is left out, not sent empty');
-    assert.ok(!('caller_id' in impl.calls[2].body));
+    // The third call makes the user, from what RackTrack knows about them.
+    assert.equal(impl.calls[2].method, 'POST');
+    assert.match(impl.calls[2].url, /\/table\/sys_user$/);
+    assert.equal(impl.calls[2].body.email, 'spoc@dc007.example');
+    assert.equal(impl.calls[2].body.user_name, 'dc007.spoc');
+    assert.equal(impl.calls[2].body.source, 'racktrack');
+    // Nothing else: no password, no roles, no groups.
+    assert.deepEqual(Object.keys(impl.calls[2].body).sort(),
+      ['email', 'first_name', 'last_name', 'source', 'user_name']);
+    // And the incident is raised naming it.
+    assert.equal(impl.calls[3].body.assigned_to, 'u-new');
+    assert.equal(out.assigned, true);
+    assert.deepEqual(out.assignedTo, { sysId: 'u-new', name: 'Spoc' });
+    assert.equal(out.assignWarning, null);
+  });
+
+  it('still raises it when the instance will not create the user, and says why', async () => {
+    const impl = fake([NONE, ok([]), refused(403, 'Insufficient rights'),
+      ok({ sys_id: '9d3', number: 'INC0010042', state: '1', assigned_to: '' }, 201)]);
+    const out = await t.raiseCheck(CFG, CTX, impl);
+    assert.ok(!('assigned_to' in impl.calls[3].body), 'an empty assignee is left out, not sent empty');
     assert.equal(out.ok, true);
     assert.equal(out.number, 'INC0010042');
     assert.equal(out.assigned, false);
     assert.equal(out.assignedTo, null);
-    assert.equal(out.assignWarning,
-      'No ServiceNow user has the email spoc@dc007.example, so the incident is not assigned to anybody.');
+    assert.match(out.assignWarning, /would not create a user for spoc@dc007\.example/);
   });
 
   it('does not choose between two users with the same email', async () => {
@@ -278,11 +301,15 @@ describe('raising the incident of a check', () => {
     assert.equal(out.assigned, true);
     assert.deepEqual(out.assignedTo, { sysId: '6816', name: 'DC007 Spoc' });
 
-    const nobody = await t.raiseCheck(CFG, CTX, fake([ok([bare]), ok([])]));
+    // Nobody with that email: the user is made, and the incident it found is
+    // assigned to it.
+    const made = { sys_id: 'u-new', name: 'Spoc', email: 'spoc@dc007.example' };
+    const nobody = await t.raiseCheck(CFG, CTX,
+      fake([ok([bare]), ok([]), ok(made, 201), ok({ number: 'INC0010042', state: '7' })]));
     assert.equal(nobody.ok, true);
-    assert.equal(nobody.assigned, false);
-    assert.equal(nobody.assignWarning,
-      'No ServiceNow user has the email spoc@dc007.example, so the incident is not assigned to anybody.');
+    assert.equal(nobody.assigned, true);
+    assert.deepEqual(nobody.assignedTo, { sysId: 'u-new', name: 'Spoc' });
+    assert.equal(nobody.assignWarning, null);
 
     const refusedTo = await t.raiseCheck(CFG, CTX, fake([ok([bare]), ok([SPOC_USER]), refused(403, 'ACL')]));
     assert.equal(refusedTo.ok, true, 'the incident exists all the same');

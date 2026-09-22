@@ -77,6 +77,17 @@ function instance({ users = [{ sys_id: 'u-spoc', name: 'DC007 Spoc', email: SPOC
     const u = new URL(url);
     const query = u.searchParams.get('sysparm_query') || '';
     if (u.pathname.endsWith('/table/sys_user')) {
+      // Making a user, which is what RackTrack does when the instance has
+      // none for the person a check is going to.
+      if (method === 'POST') {
+        if (sn.noNewUsers) return { ok: false, status: 403, body: { error: { message: 'Insufficient rights' } } };
+        const row = { sys_id: `u-made-${sn.users.length + 1}`,
+          name: [body.first_name, body.last_name].filter(Boolean).join(' ') || body.user_name,
+          email: String(body.email || '').toLowerCase(), user_name: body.user_name, source: body.source };
+        sn.users.push(row);
+        sn.made = (sn.made || []).concat([row]);
+        return ok(row, 201);
+      }
       const asked = (query.match(/emailIN([^^]*)/) || [])[1].split(',');
       return ok(sn.users.filter((x) => asked.includes(x.email.toLowerCase())));
     }
@@ -265,24 +276,38 @@ describe('sending a check raises its incident', () => {
     assert.notEqual(later.out.incident.number, a.incident.number, 'an older check of the rack is never reused');
   });
 
-  it('raises it unassigned when nobody in ServiceNow has the email, and warns the admins', async () => {
+  /* There is no such thing as "no ServiceNow user" any more. A check goes to
+     the contact of a Site, and an incident nobody holds is an incident nobody
+     picks up, so the user is made and the incident is assigned to it. */
+  it('makes the ServiceNow user when the instance has none, and assigns the incident to it', async () => {
     sn.users = sn.users.filter((x) => x.sys_id !== 'u-spoc');
     const { id, out } = await send();
     assert.equal(out.incident.number, 'INC0010041');
+    assert.equal(out.incident.assigned, true, 'the incident has somebody');
+    assert.equal(out.incident.assignWarning, null);
+
+    // One user, made from what RackTrack knows about the person.
+    assert.equal((sn.made || []).length, 1);
+    const made = sn.made[0];
+    assert.equal(made.email, SPOC.email);
+    assert.equal(made.user_name, 'dc007.spoc');
+    assert.equal(made.source, 'racktrack');
+    // And the incident names it.
+    assert.equal(sn.of('POST', '/table/incident')[0].body.assigned_to, made.sys_id);
+    assert.deepEqual(problems(), []);
+    assert.equal(store.getPlan(id).status, 'assigned');
+  });
+
+  it('still raises the incident when the instance refuses to create the user', async () => {
+    sn.users = sn.users.filter((x) => x.sys_id !== 'u-spoc');
+    sn.noNewUsers = true;
+    const { id, out } = await send();
+    assert.equal(out.incident.number, 'INC0010041');
     assert.equal(out.incident.assigned, false);
-    assert.equal(out.incident.assignWarning,
-      'No ServiceNow user has the email dc007.spoc@dc007.example, so the incident is not assigned to anybody.');
+    assert.match(out.incident.assignWarning, /would not create a user for dc007\.spoc@dc007\.example/);
     assert.ok(!('assigned_to' in sn.of('POST', '/table/incident')[0].body));
     assert.deepEqual(problems(), ['unassigned']);
     assert.equal(store.getPlan(id).status, 'assigned', 'the check is with its SPOC all the same');
-
-    const notify = require('../../lib/approvals/notify');
-    const warning = heard.find((h) => h.event === 'incident_failed');
-    const { subject, body } = notify.wordsFor('incident_failed', warning.plan, warning, { name: 'Aasritha' });
-    assert.match(subject, /the ServiceNow incident for rack SP-HYB-RM01-R01-R1 needs a look/);
-    assert.match(body, /Incident INC0010041 was raised\. No ServiceNow user has the email/);
-    assert.doesNotMatch(body, /, but [A-Z]/);
-    assert.ok(!/[–—]/.test(body));
   });
 });
 

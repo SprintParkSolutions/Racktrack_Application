@@ -564,25 +564,32 @@
 .finishBad { margin: 0; font-size: var(--fs-body); color: #c0392b; }
 
 /* Adding a switch is a short errand: it opens over the page instead of pushing
-   the switch you were reading down the screen. */
+   the switch you were reading down the screen.
+
+   In the middle, not against the bottom edge. Anchored at the foot it sat
+   under the phone's floating bar, which covered its Save - and a form whose
+   one control is hidden is a form nobody can finish. The owner reported it on
+   22 Sep 2026. Centred, the bar can never reach it; the height it may take
+   already allows for the bar and for the notch. */
 .sheetBack {
   position: fixed; inset: 0; z-index: 60;
-  display: flex; align-items: flex-end; justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   background: rgba(0,0,0,.34);
-  padding: 0;
+  padding: 16px;
+  padding-bottom: calc(16px + var(--rt-bottom-nav-space, var(--nav-clear, 0px)));
+  box-sizing: border-box;
 }
 .sheet {
-  width: 100%; max-width: 560px; max-height: 88vh; overflow-y: auto;
+  width: 100%; max-width: 560px;
+  max-height: calc(100vh - 32px - var(--rt-bottom-nav-space, var(--nav-clear, 0px)));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   background: var(--bg1, #fff);
-  border-radius: 18px 18px 0 0;
-  box-shadow: 0 -8px 40px rgba(0,0,0,.18);
+  border-radius: 18px;
+  box-shadow: 0 18px 60px rgba(0,0,0,.24);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .sheet > .form { border: 0; border-radius: 0; margin: 0; }
-@media (min-width: 620px) {
-  .sheetBack { align-items: center; padding: 24px; }
-  .sheet { border-radius: 18px; }
-}
 
 /* A section a person opens only when they mean to act on it: the count is the
    answer, the list is behind the arrow. */

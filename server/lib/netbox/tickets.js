@@ -98,6 +98,7 @@ function toIncident({ item, rackId, rackName, siteName, spoc, question, planId, 
 const https = require('https');
 const dns = require('dns');
 const { URL } = require('url');
+const { logger } = require('../observability');
 
 // host -> IPv4, resolved once. getaddrinfo runs on the libuv threadpool, which
 // the server's other outbound calls saturate; a resolved-once cache plus a
@@ -574,7 +575,62 @@ async function findUsers(cfg, emails, fetchImpl = req) {
   }
 }
 
-/** The one user an email stands for, or the sentence that says why there is none. */
+/**
+ * The ServiceNow user an email stands for, made if there is none.
+ *
+ * A check goes to the single point of contact of a Site, and an incident that
+ * names nobody is an incident nobody picks up. The instance often has no user
+ * for that person - a new SPOC, a demo instance, a customer who keeps their
+ * directory somewhere else - and until 22 September 2026 RackTrack raised the
+ * incident unassigned and said so in a warning. The owner's direction that
+ * day: there should be no such case; make the user.
+ *
+ * So the record is created in sys_user with the email as its identity and the
+ * person's own name on it. Nothing else is set: no password, no roles, no
+ * groups - it is a person to address an incident to, not an account to sign
+ * in with, and giving it anything more would be RackTrack deciding who may do
+ * what inside somebody else's instance.
+ *
+ * A refusal is not an error worth failing a send over. The incident is still
+ * raised, and the caller still gets the old sentence saying nobody holds it.
+ */
+async function makeUser(cfg, person, fetchImpl = req) {
+  const email = norm(person && person.email).toLowerCase();
+  if (!email) return { user: null, why: 'no email address' };
+  // A username to show beside the incident. RackTrack's own username where
+  // there is one, the email's local part otherwise: a person reading the
+  // incident should see a name they recognise.
+  const userName = norm(person && person.username) || email.split('@')[0];
+  const full = norm(person && person.name) || userName;
+  const bits = full.split(/[\s._-]+/).filter(Boolean);
+  const first = bits[0] ? bits[0][0].toUpperCase() + bits[0].slice(1) : userName;
+  const last = bits.length > 1 ? bits.slice(1).map((b) => b[0].toUpperCase() + b.slice(1)).join(' ') : '';
+  try {
+    const r = await fetchImpl(base(cfg, 'sys_user'), 'POST', null, {
+      user_name: userName,
+      email,
+      first_name: first,
+      ...(last ? { last_name: last } : {}),
+      // Where it came from, so an operator looking at a user they did not
+      // create knows who did and why.
+      source: 'racktrack',
+    }, 15000, cfg);
+    if (!r.ok) return { user: null, why: `ServiceNow would not create a user for ${email} (${(failed(r) || {}).error || r.status})` };
+    const row = (r.body && r.body.result) || {};
+    if (!row.sys_id) return { user: null, why: `ServiceNow created no user for ${email}` };
+    logger.info({ event: 'servicenow.user.created', email, sysId: row.sys_id },
+      `created a ServiceNow user for ${email}`);
+    return { user: { sysId: row.sys_id, name: norm(row.name) || full }, why: null };
+  } catch (err) {
+    return { user: null, why: `ServiceNow could not be reached to create a user for ${email} (${err.message})` };
+  }
+}
+
+/**
+ * The one user an email stands for. A caller that can wait makes the user
+ * when the instance has none - see resolveUser below, which is what the
+ * incident path uses; this stays synchronous for everything that only looks.
+ */
 function oneUser(found, person) {
   const email = norm(person && person.email).toLowerCase();
   const nobody = 'so the incident is not assigned to anybody.';
@@ -585,6 +641,25 @@ function oneUser(found, person) {
   const users = found.byEmail[email] || [];
   if (users.length === 1) return { user: users[0], why: null };
   return { user: null, why: `${users.length ? 'More than one' : 'No'} ServiceNow user has the email ${email}, ${nobody}` };
+}
+
+/**
+ * Who to assign an incident to: the user the email names, or a new one.
+ *
+ * One place, so every path that assigns an incident behaves the same way and
+ * the rule "there is no such thing as no ServiceNow user" is written once.
+ */
+async function resolveUser(cfg, found, person, fetchImpl = req) {
+  const first = oneUser(found, person);
+  if (first.user) return first;
+  // More than one user with that email is ambiguous, not missing: making
+  // another would make it worse.
+  const email = norm(person && person.email).toLowerCase();
+  const many = email && ((found.byEmail || {})[email] || []).length > 1;
+  if (!email || many || !found.ok) return first;
+  const made = await makeUser(cfg, person, fetchImpl);
+  if (made.user) return made;
+  return { user: null, why: `${made.why}, so the incident is not assigned to anybody.` };
 }
 
 /**
@@ -623,7 +698,7 @@ async function raiseCheckInner(cfg, ctx, fetchImpl = req) {
     let user = null;
     let why = null;
     if (!to) {
-      ({ user, why } = oneUser(await findUsers(cfg, [holder && holder.email], fetchImpl), holder));
+      ({ user, why } = await resolveUser(cfg, await findUsers(cfg, [holder && holder.email], fetchImpl), holder, fetchImpl));
       if (user) {
         const set = await update(cfg, row.sys_id, { assigned_to: user.sysId }, fetchImpl);
         if (set.ok) to = user.sysId;
@@ -642,7 +717,10 @@ async function raiseCheckInner(cfg, ctx, fetchImpl = req) {
   }
 
   const users = await findUsers(cfg, [holder && holder.email, sender && sender.email], fetchImpl);
-  const assignee = oneUser(users, holder);
+  // The holder must end up with somebody: the user is made if the instance
+  // has none. The caller is only ever an existing user - RackTrack does not
+  // create a person to be the caller of a ticket.
+  const assignee = await resolveUser(cfg, users, holder, fetchImpl);
   const caller = sender && sender.email ? oneUser(users, sender).user : null;
 
   const r = await fetchImpl(base(cfg, cfg.incidentTable), 'POST', null, {
@@ -876,7 +954,7 @@ module.exports = {
   toIncident, describe, correlationFor, urgencyFor,
   raise, statusOf, findExisting, login,
   STATE, CLOSED_STATES,
-  correlationForCheck, toCheckIncident, appUrlFor, findUsers, raiseCheck,
+  correlationForCheck, toCheckIncident, appUrlFor, findUsers, makeUser, resolveUser, raiseCheck,
   update, setState, workNote, reassign,
   choices, pickCloseCode, pickHoldReason, attach,
   STATE_CODE,

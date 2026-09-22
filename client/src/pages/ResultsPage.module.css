@@ -286,7 +286,7 @@
      rather than a full-bleed slab running edge to edge into the panel below.
      The rack and its boxes are drawn exactly as before; only the container
      changed. */
-  margin: 8px 14px 0;
+  margin: 6px 12px 0;
   border: 1px solid #EFEFEF;
   border-radius: 16px;
 }
@@ -556,7 +556,10 @@
   flex: 1 1 auto;
   min-height: 0;
   display: flex; flex-direction: column;
-  padding: 10px 14px 14px;
+  /* Tighter than it was, so the photograph gets the difference: the owner
+     asked on 22 Sep 2026 for a slightly larger frame, and the sheet under it
+     is two buttons. */
+  padding: 8px 14px 10px;
   gap: var(--ctl-gap, 6px);
   overflow-y: auto;
   overflow-x: hidden;

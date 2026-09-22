@@ -4,15 +4,13 @@
   z-index: 900;
   background: rgba(18, 20, 23, 0.55);
   display: flex;
-  align-items: flex-end;
+  /* Centred at every width, and clear of the phone's floating bar: a sheet
+     against the bottom edge hides its own last control under it. */
+  align-items: center;
   justify-content: center;
   padding: 16px;
-}
-
-@media (min-width: 640px) {
-  .backdrop {
-    align-items: center;
-  }
+  padding-bottom: calc(16px + var(--rt-bottom-nav-space, var(--nav-clear, 0px)));
+  box-sizing: border-box;
 }
 
 .panel {
