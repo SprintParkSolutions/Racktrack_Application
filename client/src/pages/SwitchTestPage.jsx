@@ -1436,6 +1436,24 @@ export default function SwitchTestPage() {
                         ? ` \u00b7 ${cmp.disagree.length} disagree`
                         : ''}
                     </span>
+                    {/* A switch that has not been read says so, and until now
+                        that was all it did: the person had to pick the card
+                        and then find the way to read it somewhere else. The
+                        card carries the action it is asking for. */}
+                    {!r && busy !== sw.id && (
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        className={styles.pickRead}
+                        onClick={(e) => { e.stopPropagation(); setMenuFor(null); doRead(sw); }}
+                        onKeyDown={(e) => {
+                          if (e.key !== 'Enter' && e.key !== ' ') return;
+                          e.preventDefault(); e.stopPropagation(); setMenuFor(null); doRead(sw);
+                        }}
+                      >
+                        {errors[sw.id] ? 'Try again' : 'Read it'}
+                      </span>
+                    )}
                   </button>
                 );
               })}

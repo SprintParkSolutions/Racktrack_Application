@@ -181,6 +181,25 @@
 }
 .pickWhen { font-size: var(--fs-label); color: var(--muted); overflow-wrap: anywhere; }
 
+/* The card's own way to read a switch that has not been read. A span with a
+   button's role, because the card is itself a button and a button inside a
+   button is not markup a browser will keep. */
+.pickRead {
+  display: inline-flex; align-items: center; justify-content: center;
+  align-self: flex-start;
+  margin-top: 8px;
+  min-height: var(--ctl-h, 30px);
+  padding: 0 var(--ctl-px, 11px);
+  border: 1px solid var(--md-outline-variant, #E0E0E0);
+  border-radius: var(--ctl-radius, 8px);
+  background: var(--md-surface, #ffffff);
+  color: var(--md-on-surface, #121212);
+  font-size: var(--fs-sub); font-weight: var(--fw-label);
+  white-space: nowrap; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.pickRead:hover { border-color: var(--md-on-surface, #121212); }
+
 /* ── One switch ──
    Each switch is its own card, numbered, with a gap of page between it and
    the next: three switches read as three things, not one long sheet. The
