@@ -200,58 +200,80 @@ export function actionsFor({ role, waiting = 0, newest = null }) {
 
 export function RackArt({ className = '' }) {
   const shelves = [
-    { y: 34, ports: 6, read: false },
-    { y: 62, ports: 6, read: true },
+    { y: 30, ports: 8, read: false },
+    { y: 60, ports: 8, read: true },
     { y: 90, ports: 0, read: false },
-    { y: 118, ports: 0, read: false },
+    { y: 120, ports: 0, read: false },
   ];
   return (
-    <svg className={className} viewBox="0 0 156 196" fill="none" role="img"
+    <svg className={className} viewBox="0 0 168 200" fill="none" role="img"
       aria-label="A rack, drawn, with one shelf read through a viewfinder">
       <defs>
-        <pattern id="ra-grid" width="11" height="11" patternUnits="userSpaceOnUse">
-          <path d="M11 0H0V11" stroke="#EDEFF3" strokeWidth="1" fill="none" />
+        <pattern id="ra-grid" width="12" height="12" patternUnits="userSpaceOnUse">
+          <path d="M12 0H0V12" stroke="#E9ECF1" strokeWidth="1" fill="none" />
         </pattern>
+        {/* The grid is texture, not a box: it is strongest behind the rack and
+            gone by the edges, so the drawing sits on the page rather than in a
+            frame of its own. */}
+        <radialGradient id="ra-fade" cx="50%" cy="48%" r="52%">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+          <stop offset="62%" stopColor="#ffffff" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+        </radialGradient>
+        <mask id="ra-mask">
+          <rect x="0" y="0" width="168" height="200" fill="url(#ra-fade)" />
+        </mask>
+        {/* A wash under the read shelf alone, not behind the whole rack: a
+            halo round the body read as a smudge on the screen. */}
         <radialGradient id="ra-glow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#0F7B4F" stopOpacity="0.14" />
+          <stop offset="0%" stopColor="#0F7B4F" stopOpacity="0.16" />
           <stop offset="100%" stopColor="#0F7B4F" stopOpacity="0" />
         </radialGradient>
+        <linearGradient id="ra-body" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#FFFFFF" />
+          <stop offset="100%" stopColor="#FBFBFD" />
+        </linearGradient>
       </defs>
 
-      <rect x="0" y="0" width="156" height="196" fill="url(#ra-grid)" />
-      <ellipse cx="78" cy="76" rx="74" ry="40" fill="url(#ra-glow)" />
+      <rect x="0" y="0" width="168" height="200" fill="url(#ra-grid)" mask="url(#ra-mask)" />
+      <ellipse cx="84" cy="72" rx="62" ry="26" fill="url(#ra-glow)" />
 
-      {/* The rack itself, with its rails and its feet. */}
-      <rect x="26" y="16" width="104" height="156" rx="13" fill="#FFFFFF" stroke="#D9DDE4" strokeWidth="1.6" />
-      <line x1="37" y1="24" x2="37" y2="164" stroke="#EDEFF3" strokeWidth="1.4" />
-      <line x1="119" y1="24" x2="119" y2="164" stroke="#EDEFF3" strokeWidth="1.4" />
+      {/* The rack: a body with rails, four shelves, and the one that has been
+          read carrying lit ports and a tick. */}
+      <rect x="30" y="14" width="108" height="162" rx="14"
+        fill="url(#ra-body)" stroke="#C6CCD6" strokeWidth="2" />
+      <line x1="41" y1="22" x2="41" y2="168" stroke="#EBEEF2" strokeWidth="1.4" />
+      <line x1="127" y1="22" x2="127" y2="168" stroke="#EBEEF2" strokeWidth="1.4" />
       {shelves.map((sh) => (
         <g key={sh.y}>
-          <rect x="42" y={sh.y} width="72" height="22" rx="6"
-            fill={sh.read ? '#E9F3ED' : '#F4F5F8'}
-            stroke={sh.read ? '#BCDBCB' : '#E7E9EE'} strokeWidth="1.2" />
+          <rect x="46" y={sh.y} width="76" height="23" rx="6.5"
+            fill={sh.read ? '#E8F3EC' : '#F4F5F8'}
+            stroke={sh.read ? '#B9DAC9' : '#E6E9EE'} strokeWidth="1.2" />
           {Array.from({ length: sh.ports }, (_, i) => (
-            <rect key={i} x={48 + i * 10} y={sh.y + 13} width="6" height="4.5" rx="1.4"
-              fill={sh.read ? '#5CA47E' : '#D5D9E0'} />
+            <rect key={i} x={52 + i * 7.6} y={sh.y + 13.5} width="5" height="4.5" rx="1.3"
+              fill={sh.read ? '#5CA47E' : '#D6DAE1'} />
           ))}
           {sh.read && (
-            <path d={`M100 ${sh.y + 10} l2.6 2.8 5-5.6`} stroke="#0F7B4F" strokeWidth="2"
+            <path d={`M108 ${sh.y + 10.5} l2.6 2.8 5-5.8`} stroke="#0F7B4F" strokeWidth="2.1"
               strokeLinecap="round" strokeLinejoin="round" fill="none" />
           )}
         </g>
       ))}
       {/* One cable, leaving the read shelf. A rack is never only boxes. */}
-      <path d="M114 74 C 132 78, 134 104, 122 126" stroke="#CFD4DC" strokeWidth="1.8"
+      <path d="M122 72 C 142 78, 144 108, 130 130" stroke="#CDD2DB" strokeWidth="1.8"
         strokeLinecap="round" fill="none" />
-      <line x1="46" y1="172" x2="46" y2="180" stroke="#D9DDE4" strokeWidth="2.6" strokeLinecap="round" />
-      <line x1="110" y1="172" x2="110" y2="180" stroke="#D9DDE4" strokeWidth="2.6" strokeLinecap="round" />
+      <line x1="50" y1="176" x2="50" y2="186" stroke="#C6CCD6" strokeWidth="2.8" strokeLinecap="round" />
+      <line x1="118" y1="176" x2="118" y2="186" stroke="#C6CCD6" strokeWidth="2.8" strokeLinecap="round" />
+      {/* What it stands on, so it is not floating. */}
+      <ellipse cx="84" cy="190" rx="50" ry="4" fill="#0B0B0C" opacity="0.05" />
 
-      {/* The viewfinder: the one motif that says photograph without printing one. */}
-      <g stroke="#0F7B4F" strokeWidth="2.2" strokeLinecap="round" fill="none">
-        <path d="M10 26 V12 H24" />
-        <path d="M132 12 H146 V26" />
-        <path d="M146 170 V184 H132" />
-        <path d="M24 184 H10 V170" />
+      {/* The viewfinder: the one motif that says photograph without printing
+          one. Longer arms than corners alone, so it reads as framing. */}
+      <g stroke="#0F7B4F" strokeWidth="2.3" strokeLinecap="round" fill="none">
+        <path d="M8 30 V10 H28" />
+        <path d="M140 10 H160 V30" />
+        <path d="M160 170 V190 H140" />
+        <path d="M28 190 H8 V170" />
       </g>
     </svg>
   );

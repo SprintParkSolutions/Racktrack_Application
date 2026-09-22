@@ -55,7 +55,9 @@
   width: 100%;
   box-sizing: border-box;
   padding: 24px 22px 0;
-  padding-bottom: var(--rt-bottom-nav-space, var(--nav-clear));
+  /* The floating bar stood on the last row of the list: its own height, and
+     then room to see a whole row under it. */
+  padding-bottom: calc(var(--rt-bottom-nav-space, var(--nav-clear)) + 16px);
   display: flex;
   flex-direction: column;
   gap: 26px;
@@ -117,24 +119,17 @@
 }
 
 /* ── The banner ─────────────────────────────────────────────────────
-   The drawn rack and what this person is here for, side by side. A light
-   ground rather than a white one, so the block has an edge without a border
-   and without a shadow, and the artwork sits on something. */
+   No box. The words and the drawing sit on the page, the drawing running out
+   into the right gutter, so the head of the page reads as a spread rather
+   than a card with a picture pasted into it. The tinted rectangle that was
+   here added an edge which said nothing. */
 .lead { display: flex; flex-direction: column; }
 
 .banner {
-  position: relative;
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 22px 20px;
-  border-radius: 26px;
-  overflow: hidden;
-  /* Not a flat grey: a wash that lifts towards the drawing, so the block has
-     depth without a shadow and the artwork has something to sit in. */
-  background:
-    radial-gradient(120% 140% at 100% 0%, rgba(15, 123, 79, 0.07) 0%, rgba(15, 123, 79, 0) 58%),
-    linear-gradient(180deg, #FAFBFC 0%, #F4F5F8 100%);
+  padding: 2px 0 0;
 }
 .bannerText { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
 .bannerTitle {
@@ -142,17 +137,18 @@
   font-family: var(--font);
   font-size: var(--fs-head);
   font-weight: var(--fw-title);
-  line-height: var(--lh-head);
-  letter-spacing: -0.022em;
+  line-height: 1.16;
+  letter-spacing: -0.026em;
   color: var(--hm-ink);
   text-wrap: balance;
 }
 .bannerWords {
-  margin: 7px 0 0;
+  margin: 9px 0 0;
+  max-width: 30ch;
   font-family: var(--font);
   font-size: var(--fs-body);
   font-weight: var(--fw-body);
-  line-height: var(--lh-body);
+  line-height: 1.45;
   color: var(--hm-ink-2);
 }
 /* On a new account, the three things a first scan does, under the words. */
@@ -170,16 +166,18 @@
   line-height: var(--lh-sub);
   color: var(--hm-ink-2);
 }
-/* The drawing keeps its proportions and gives way first on a narrow phone. */
+/* The drawing runs into the page's right gutter, and gives way first on a
+   narrow phone. */
 .bannerArt {
   flex: 0 1 auto;
-  width: 118px;
-  height: 148px;
-  min-width: 86px;
+  width: 140px;
+  height: 166px;
+  min-width: 98px;
+  margin-right: -12px;
 }
 @media (max-width: 359px) {
-  .banner { gap: 10px; padding: 20px 16px; }
-  .bannerArt { width: 92px; height: 116px; }
+  .banner { gap: 10px; }
+  .bannerArt { width: 106px; height: 126px; margin-right: -8px; }
 }
 
 /* ── The action ─────────────────────────────────────────────────────
@@ -188,11 +186,11 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 18px;
+  margin-top: 16px;
 }
 .go {
   width: 100%;
-  min-height: 52px;
+  min-height: 50px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -200,7 +198,7 @@
   padding: 0 22px;
   box-sizing: border-box;
   border: 0;
-  border-radius: 999px;
+  border-radius: 16px;
   background: var(--hm-ink);
   color: #ffffff;
   font-family: var(--font);
@@ -223,7 +221,7 @@
   padding: 0 22px;
   box-sizing: border-box;
   border: 0;
-  border-radius: 999px;
+  border-radius: 16px;
   background: transparent;
   color: var(--hm-ink-2);
   font-family: var(--font);
