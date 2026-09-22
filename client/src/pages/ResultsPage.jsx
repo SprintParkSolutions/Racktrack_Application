@@ -1497,7 +1497,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   const [error,       setError]       = useState(null);
   const [nextPort,  setNextPort]  = useState('');
   const [rackImg,   setRackImg]   = useState(null);
-  const [portView,  setPortView]  = useState('rack'); // 'rack' → 'device' → 'zoom' → 'rack'
+  const [portView,  setPortView]  = useState('rack'); // 'rack' ⇄ 'device'
   const [feedbackStatus, setFeedbackStatus] = useState('idle'); // 'idle' | 'wrong-port' | 'wrong-color' | 'submitting' | 'submitted' | 'hidden'
   const [actualPortInput, setActualPortInput] = useState('');
   const [actualCableColor, setActualCableColor] = useState('');
@@ -3908,48 +3908,58 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             </div>
           )}
 
-          {/* Port image - tap to cycle: rack → device → zoomed port → rack */}
+          {/* Port image - the rack, and the device the port is on. Two views,
+              because there were three and the middle one was broken: the
+              device crop is a strip about eight times wider than it is tall,
+              and the frame showed it `cover`, so tapping "device view" threw
+              away the whole switch and left a magnified square of its middle.
+              That square is what looked like a zoom to the centre. It is
+              `contain` now - the whole device, at the width of the screen,
+              with the port marked on it - and the third step, which zoomed
+              that strip further, is gone. */}
           {(() => {
-            const cycleView = () => {
-              if (portView === 'rack') setPortView('device');
-              else if (portView === 'device') setPortView('zoom');
-              else setPortView('rack');
-            };
             const isRack = portView === 'rack' && rackImg;
-            const isZoom = portView === 'zoom';
+            const cycleView = () => setPortView(isRack ? 'device' : 'rack');
             // Fall back to whichever port image exists, then the annotated rack,
             // so the located view always shows something.
             const imgSrc = (isRack ? rackImg : resultImg) || resultImg || rackImg
               || (result?.imageUrl ? apiUrl(result.imageUrl) : null);
-            const wrapClass = isRack ? styles.portImgRack : isZoom ? styles.portImgZoom : styles.portImgDev;
-            const hint = isRack ? 'Tap for device view' : isZoom ? 'Tap for rack view' : 'Tap to zoom port';
-
-            let zoomStyle = {};
-            if (isZoom && portInfo?.location && selectedDevice?.box) {
-              const [px1, py1, px2, py2] = portInfo.location;
-              const [dx1, dy1, dx2, dy2] = selectedDevice.box;
+            const wrapClass = isRack ? styles.portImgRack : styles.portImgDev;
+            const hint = isRack ? 'Tap for the device' : 'Tap for the rack';
+            const askable = neighborStatus === 'idle' || neighborStatus === 'empty' || neighborStatus === 'error';
+            // Where the located port sits along the device, as a percentage of
+            // its width. The device view holds that point in the middle of the
+            // frame - see --port-x in the stylesheet.
+            let portX = null;
+            if (portInfo?.location && selectedDevice?.box) {
+              const [px1, , px2] = portInfo.location;
+              const [dx1, , dx2] = selectedDevice.box;
               const devW = dx2 - dx1;
-              const devH = dy2 - dy1;
-              const portW = px2 - px1;
-              const portH = py2 - py1;
-              const pctX = Math.max(10, Math.min(90, (((px1 + px2) / 2 - dx1) / devW) * 100));
-              const rawY = (((py1 + py2) / 2 - dy1) / devH) * 100;
-              const pctY = Math.max(25, Math.min(75, rawY));
-              const scale = Math.min(devW / (portW * 2.2), devH / (portH * 2.2), 6);
-              zoomStyle = { transform: `scale(${scale}) translateY(8%)`, transformOrigin: `${pctX}% ${pctY}%` };
+              if (devW > 0) portX = Math.max(0, Math.min(100, (((px1 + px2) / 2 - dx1) / devW) * 100));
             }
 
             return (
-              <div className={`${styles.portImgWrap} ${wrapClass}`} data-tour="port-image-tap" onClick={cycleView}>
+              <div className={`${styles.portImgWrap} ${wrapClass}`} data-tour="port-image-tap" onClick={cycleView}
+                style={portX == null ? undefined : { '--port-x': `${portX.toFixed(1)}%` }}>
                 {/* AssetImg so a token that landed late (or expired while the
                     page sat open) re-mints and retries instead of leaving a
                     permanently broken picture - this is the image users
                     actually look at after a scan. */}
                 <AssetImg src={imgSrc} alt="Port located"
                   className={styles.portImg}
-                  style={zoomStyle}
                   draggable="false" />
                 <span className={styles.portImgHint}>{hint}</span>
+                {/* Asking the switch what is plugged in is a small thing about
+                    the port in the picture, so it sits in the picture's corner
+                    rather than taking a row of its own further down. */}
+                {askable && (
+                  <button type="button" className={styles.portImgAsk}
+                    onClick={(e) => { e.stopPropagation(); findNeighbor(); }}
+                    title="Ask the switch what is on the other end of this port">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    {neighborStatus === 'idle' ? 'Other end' : 'Ask again'}
+                  </button>
+                )}
               </div>
             );
           })()}
@@ -4049,11 +4059,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             {neighborStatus === 'error' && (
               <p className={styles.pNote}>The switch could not be asked.</p>
             )}
-            {(neighborStatus === 'idle' || neighborStatus === 'empty' || neighborStatus === 'error') && (
-              <button type="button" className={styles.pAction} onClick={() => findNeighbor()}>
-                {neighborStatus === 'idle' ? 'Find the other end' : 'Ask again'}
-              </button>
-            )}
+            {/* Asking again is the chip on the picture - see portImgAsk. */}
           </div>
           )}
 
@@ -4263,8 +4269,10 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                 </>
               )}
             </div>
-            {/* Change Device + New Scan sit in the same 4-column row as View + Share. */}
-            <button className={styles.reportChip} onClick={() => {
+            {/* View and Share act on the port that is on screen; the two after
+                this leave it. They go on their own line, quieter. */}
+            <span className={styles.reportRowSplit} aria-hidden="true" />
+            <button className={`${styles.reportChip} ${styles.reportChipQuiet}`} onClick={() => {
               setPhase('detect');
               setTab('overview');
               setSelectedIdx(null);
@@ -4282,7 +4290,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="4" rx="1"/><rect x="2" y="10" width="20" height="4" rx="1"/><rect x="2" y="17" width="20" height="4" rx="1"/></svg>
               Another device
             </button>
-            <button className={styles.reportChip} onClick={() => navigate('/scan')}>
+            <button className={`${styles.reportChip} ${styles.reportChipQuiet}`} onClick={() => navigate('/scan')}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
               New scan
             </button>

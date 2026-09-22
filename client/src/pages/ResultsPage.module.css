@@ -1021,6 +1021,7 @@
   height: 64vh;
   min-height: 340px;
   max-height: 72vh;
+  transition: height .35s cubic-bezier(.25,.8,.25,1);
   overflow: hidden;
   border-radius: 20px;
   border: 1px solid #EFEFEF;
@@ -1036,9 +1037,55 @@
   .portImgWrap { height: 52vh; min-height: 300px; max-height: 58vh; }
 }
 /* per-view classes kept for potential tweaks but no longer set fixed heights */
-.portImgRack,
-.portImgDev,
-.portImgZoom { /* image always fills remaining vertical space */ }
+/* The rack: a tall photograph in a tall frame, filling it. */
+.portImgRack { /* the wrapper's own height */ }
+
+/* The device: a strip roughly eight times wider than it is tall. A tall frame
+   around it is black down both sides, and filling that frame means cropping
+   everything away but the middle - which is what "tap for device view" used
+   to do, and what read as a zoom to the centre. The frame comes down to the
+   shape of the strip instead, and the whole device is shown. */
+.portImgDev {
+  height: 132px;
+  min-height: 0;
+  max-height: 30vh;
+  background: var(--md-surface-container-lowest, #fafafa);
+}
+/* The whole strip across the screen is forty pixels tall, which is true to the
+   device and no use for finding one port on a fifty-two port switch. The frame
+   keeps a readable height and holds the located port in the middle of it -
+   --port-x is where that port sits along the device, worked out from the box
+   the model drew. Default centre, for a device with no port located on it. */
+.portImgDev .portImg {
+  object-fit: cover;
+  object-position: var(--port-x, 50%) 50%;
+}
+/* The one small control that belongs to the picture: what is on the other end
+   of this port. It had a row of its own under the facts, for a question about
+   the thing in the frame. */
+.portImgAsk {
+  position: absolute; right: 8px; bottom: 8px; z-index: 2;
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  min-height: 26px; padding: 0 10px;
+  border-radius: var(--ctl-radius, 8px);
+  border: 1px solid rgba(255,255,255,0.22);
+  background: rgba(0,0,0,0.62);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  color: #ffffff;
+  font-family: var(--font); font-size: var(--fs-label); font-weight: var(--fw-label);
+  white-space: nowrap; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.portImgAsk:hover { background: rgba(0,0,0,0.78); border-color: rgba(255,255,255,0.4); }
+/* Over the pale device frame the same chip needs the opposite contrast. */
+.portImgDev .portImgAsk {
+  background: var(--md-surface, #ffffff);
+  border-color: var(--md-outline-variant, rgba(0,0,0,0.14));
+  color: var(--md-on-surface, #1c1c1c);
+}
+.portImgDev .portImgAsk:hover { border-color: var(--md-on-surface, #1c1c1c); background: #ffffff; }
+.portImgDev .portImgHint { color: rgba(0,0,0,0.45); background: rgba(255,255,255,0.75); }
+
 .portImg {
   width: 100%; height: 100%;
   display: block;
@@ -1052,7 +1099,7 @@
   user-select: none;
 }
 .portImgHint {
-  position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+  position: absolute; bottom: 6px; left: 10px;
   font-family: var(--mono); font-size: .56rem; font-weight: var(--fw-label);
   color: rgba(255,255,255,0.35);
   background: rgba(0,0,0,0.5);
@@ -2268,23 +2315,30 @@
    own styles: one viewer for every screen that shows a report. */
 
 /* ── Report view/download row ── */
+/* Four buttons in four equal columns, each padded and centred: "View" swam in
+   its column while "Another device" was cut to "Another devic" - and under
+   400px they turned into four stacked icon-over-word tiles, a third shape for
+   the same four things. They are the width of their own words now, at the
+   height every other control on this screen is.
+
+   Four of them do not fit on one line of a phone at that size, and pretending
+   otherwise is what clipped the label. So they break where the meaning breaks:
+   what to do with this port's report, then how to leave it. The second pair is
+   quieter, because going somewhere else is not what this screen is for. */
 .reportRow {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
-  margin: 8px 14px 10px;
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: var(--ctl-gap, 6px);
+  margin: 2px 0 0;
 }
-/* Four buttons, one row, on every phone. With Read again gone there are exactly
-   four, and at 360px each still has 78px: the icon sits above the word there so
-   no label is clipped, rather than the row breaking into two. */
-@media (max-width: 400px) {
-  .reportRow { gap: 4px; margin: 0 10px 10px; }
-  .reportRow .reportChip { flex-direction: column; gap: 3px; padding: 8px 2px; font-size: var(--fs-label); line-height: 1.1; }
-}
+.reportRowSplit { flex: 0 0 100%; height: 0; }
 /* Unified action pill - white-focused, black accent */
 .reportChip {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  flex: 0 0 auto;
   min-width: 0;
-  padding: 8px 10px;
-  border-radius: 10px;
+  min-height: var(--ctl-h, 30px);
+  padding: 0 11px;
+  border-radius: var(--ctl-radius, 8px);
   background: #ffffff;
   color: #000000;
   border: 1px solid #EFEFEF;
@@ -2292,8 +2346,6 @@
   cursor: pointer;
   transition: background .15s ease, color .15s ease, border-color .15s ease, transform .1s ease, box-shadow .15s ease;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   -webkit-tap-highlight-color: transparent;
   box-shadow: var(--shadow-soft, 0 1px 2px rgba(0,0,0,0.04));
 }
@@ -2305,6 +2357,22 @@
   box-shadow: var(--shadow-soft, 0 4px 12px rgba(0,0,0,0.08));
 }
 .reportChip:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+/* The two that leave the port: present, not offered. After .reportChip, or
+   the border it sets would win on equal specificity. */
+.reportChipQuiet {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--muted, #5a5a5a);
+  padding: 0 8px;
+}
+.reportChipQuiet:hover {
+  background: var(--md-surface, #ffffff);
+  border-color: var(--md-outline-variant, rgba(0,0,0,0.14));
+  color: var(--md-on-surface, #121212);
+  box-shadow: none;
+}
 /* Variants kept as no-ops so className refs don't break; uniform look across all chips */
 .reportChipView, .reportChipConsole, .reportChipShare, .reportChipSlack, .reportChipSwitchInfo {}
 .reportChipConsole:disabled, .reportChipShare:disabled, .reportChipSlack:disabled, .reportChipSwitchInfo:disabled { opacity: .55; cursor: progress; }
@@ -2315,7 +2383,7 @@
   display: flex;
   min-width: 0;
 }
-.shareWrap > .reportChip { flex: 1; width: 100%; }
+.shareWrap > .reportChip { flex: 0 0 auto; }
 .shareBackdrop {
   position: fixed; inset: 0; z-index: 40; background: transparent;
 }
@@ -4856,6 +4924,17 @@
 }
 
 /* Report row chips */
+:global([data-theme='light']) .reportChipQuiet {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: #5a5a5a;
+}
+:global([data-theme='light']) .reportChipQuiet:hover {
+  background: #ffffff;
+  border-color: #c6c6c6;
+  color: #000000;
+}
 :global([data-theme='light']) .reportChip {
   background: #ffffff;
   border: 1px solid #c6c6c6;
