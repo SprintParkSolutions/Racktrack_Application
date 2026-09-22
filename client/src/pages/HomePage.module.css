@@ -24,6 +24,21 @@
  * those words, which would put a lift shadow under half of this page.
  */
 
+/* The band runs up behind the status bar. The notch is kept clear by padding
+   on #root, and the page's own scroller clips anything drawn above it, so the
+   strip is painted against the viewport itself - fixed, the full width, the
+   height of the inset, in the band's own top colour. On a phone with no
+   notch the inset is zero and nothing is drawn. */
+.home::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: env(safe-area-inset-top, 0px);
+  background: #EEF3F8;
+  z-index: 1;
+  pointer-events: none;
+}
+
 .home {
   position: relative;
   display: flex;
@@ -54,28 +69,69 @@
   -webkit-overflow-scrolling: touch;
   width: 100%;
   box-sizing: border-box;
-  padding: 24px 22px 0;
+  padding: 0 0 0;
   /* The floating bar stood on the last row of the list: its own height, and
      then room to see a whole row under it. */
   padding-bottom: calc(var(--rt-bottom-nav-space, var(--nav-clear)) + 16px);
   display: flex;
   flex-direction: column;
-  gap: 26px;
+  gap: 24px;
 }
+/* Everything but the band keeps the page's own gutter. The band itself runs
+   to both edges, which is what makes it read as the top of the screen rather
+   than a box on it. */
 .main > * { flex-shrink: 0; }
+.main > *:not(.line) { margin-left: 22px; margin-right: 22px; }
 /* The page ends on air, not on the last hairline. */
 .main::after { content: ''; display: block; height: 6px; }
 
 /* ── The line ───────────────────────────────────────────────────────
-   The hour, the name, and what this person is here. The mark is the only
-   round thing on the page and gives the line something to sit against. */
+   The top of the screen, on a shade of its own: the hour, the name, and what
+   this person is here, over a soft wash that runs to both edges and ends in a
+   curve. The owner asked on 22 Sep 2026 for the home header to have a style
+   of its own - still white, still quiet, but no longer the same sheet of
+   paper as everything under it. The banner below overlaps its foot, so the
+   page reads as content lifting off the header rather than stacked on it. */
 .line {
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: 14px;
   min-width: 0;
+  padding: 24px 22px 52px;
+  /* No rounded corners and no shadow: the band is a SHADE the page starts on,
+     not a container sitting on the page. The owner asked why the header was
+     being boxed as well - it was, and it should not be. The depth on this
+     screen comes from the white card that sits on it, and from nothing else. */
+  overflow: hidden;
+  /* Depth, from three things rather than a colour: a wash that is lighter at
+     the top than at the foot, a hint of the app's green in one corner and of
+     its blue in the other, and a white hairline along the very top edge so
+     the band has a lit face. */
+  background:
+    radial-gradient(120% 86% at 92% -10%, rgba(15, 123, 79, .16) 0%, rgba(15, 123, 79, 0) 58%),
+    radial-gradient(90% 70% at -10% 110%, rgba(31, 95, 174, .12) 0%, rgba(31, 95, 174, 0) 62%),
+    linear-gradient(180deg, #ECF1F7 0%, #F2F6FA 58%, #FAFBFD 100%);
 }
-.lineText { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+/* The rails of a rack, drawn faintly across the band: the product's own
+   texture, at an opacity where it is felt rather than read. It fades out
+   towards the foot so the words always sit on plain ground. */
+.line::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    180deg,
+    rgba(12, 22, 40, .045) 0px,
+    rgba(12, 22, 40, .045) 1px,
+    transparent 1px,
+    transparent 13px
+  );
+  -webkit-mask-image: radial-gradient(120% 90% at 85% 0%, #000 0%, rgba(0, 0, 0, .35) 45%, transparent 78%);
+  mask-image: radial-gradient(120% 90% at 85% 0%, #000 0%, rgba(0, 0, 0, .35) 45%, transparent 78%);
+  pointer-events: none;
+}
+.lineText { position: relative; z-index: 1; flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
 .hour {
   margin: 0;
   font-family: var(--font);
@@ -105,12 +161,20 @@
   line-height: var(--lh-sub);
   color: var(--hm-ink-2);
 }
+/* The mark sits on white and is raised off the band: a lit top edge, a ring,
+   and a shadow that puts it above the texture. */
 .mark {
+  position: relative;
+  z-index: 1;
   flex: 0 0 auto;
-  width: 44px; height: 44px;
+  width: 46px; height: 46px;
   display: inline-flex; align-items: center; justify-content: center;
   border-radius: 50%;
-  background: var(--hm-tray);
+  background: linear-gradient(180deg, #ffffff 0%, #F7F9FB 100%);
+  box-shadow:
+    inset 0 1px 0 #ffffff,
+    0 0 0 1px rgba(12, 22, 40, .05),
+    0 6px 14px -8px rgba(12, 22, 40, .45);
   font-family: var(--font);
   font-size: var(--fs-sub);
   font-weight: var(--fw-title);
@@ -123,13 +187,32 @@
    into the right gutter, so the head of the page reads as a spread rather
    than a card with a picture pasted into it. The tinted rectangle that was
    here added an edge which said nothing. */
-.lead { display: flex; flex-direction: column; }
+/* The card on the band. This is where the page gets its depth: a white
+   container that sits ON the shade rather than under it, lifted by a shadow
+   and pulled up over the band's curve. The owner asked for exactly this on
+   22 Sep 2026 - the shape every banking app uses for the balance card. */
+.lead {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  margin-top: -34px;
+  padding: 18px 18px 18px;
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow:
+    inset 0 1px 0 #ffffff,
+    0 1px 2px rgba(12, 22, 40, .06),
+    0 18px 34px -20px rgba(12, 22, 40, .45);
+}
 
 .banner {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 2px 0 0;
+  /* Up into the band's curve: the head of the page is one thing, not two. */
+  margin-top: -18px;
+  padding: 0;
 }
 .bannerText { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
 .bannerTitle {
@@ -170,14 +253,14 @@
    narrow phone. */
 .bannerArt {
   flex: 0 1 auto;
-  width: 140px;
-  height: 166px;
-  min-width: 98px;
-  margin-right: -12px;
+  width: 128px;
+  height: 152px;
+  min-width: 92px;
+  margin-right: -6px;
 }
 @media (max-width: 359px) {
   .banner { gap: 10px; }
-  .bannerArt { width: 106px; height: 126px; margin-right: -8px; }
+  .bannerArt { width: 100px; height: 118px; margin-right: -4px; }
 }
 
 /* ── The action ─────────────────────────────────────────────────────
