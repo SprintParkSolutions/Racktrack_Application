@@ -352,7 +352,10 @@ export function waysFor(role) {
      None of them repeats the bottom bar: scanning is its raised control, and
      the Desk is a row on it for whoever works there. */
   const first = role === 'spoc'
-    ? { key: 'mine', label: 'Your checks', icon: 'clock', to: '/my-checks' }
+    // Not the clock: scan history is a clock with an arrow round it, and two
+    // tiles in the same row read as the same thing. A check arrives for this
+    // person and waits to be read, so it is the envelope.
+    ? { key: 'mine', label: 'Your checks', icon: 'mail', to: '/my-checks' }
     : role === 'admin'
       ? { key: 'org', label: 'Organization', icon: 'apartment', to: '/organizations' }
       : { key: 'switches', label: 'Switches', icon: 'dns', to: '/switch-info' };
