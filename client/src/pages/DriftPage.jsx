@@ -160,7 +160,46 @@ function diffLines(diff) {
     }));
 }
 
-const show = (v) => (v === null || v === undefined || v === '' ? ' - ' : String(v));
+const show = (v) => (v === null || v === undefined || v === '' ? 'nothing' : String(v));
+
+/* What each field is called on a rack, rather than in a record schema. The
+   owner asked on 22 Sep 2026 for the differences to be detailed and clear:
+   "position: 20 -> 22" is neither until it says shelf, and says which side is
+   the record and which is the photograph. */
+const FIELD = {
+  position: 'Shelf',
+  u_height: 'Height',
+  name: 'Name',
+  device_type: 'Model',
+  manufacturer: 'Make',
+  serial: 'Serial number',
+  asset_tag: 'Asset tag',
+  status: 'Status',
+  face: 'Face',
+  role: 'Role',
+  portCount: 'Ports',
+  port_count: 'Ports',
+  ports: 'Ports',
+  type: 'Port type',
+  colour: 'Cable colour',
+  color: 'Cable colour',
+  label: 'Label',
+  rack: 'Rack',
+  site: 'Site',
+  comments: 'Note',
+};
+const fieldWord = (f) => FIELD[f] || String(f).replace(/[_.]/g, ' ').replace(/^./, (c) => c.toUpperCase());
+
+/* A value in the words of the thing it describes. A shelf is U20, not 20. */
+function valueWord(field, v) {
+  if (v === null || v === undefined || v === '') return 'nothing';
+  if (field === 'position' || field === 'u_height') {
+    const n = Number(v);
+    return Number.isFinite(n) ? `U${n}` : String(v);
+  }
+  if (typeof v === 'object') return show(v.name || v.label || v.value || JSON.stringify(v));
+  return String(v);
+}
 
 /**
  * Where a sent check has got to, in one line: With <name>, Approved, Written to
@@ -840,24 +879,34 @@ export default function DriftPage() {
               </div>
               {meaningOf(item) && <p className={styles.means}>{meaningOf(item)}</p>}
 
-              <details className={styles.more}>
-                <summary>Read more</summary>
-                <span className={styles.againstWhy}>
-                  {item.type}: {item.name}
-                </span>
-                {lines.length > 0 && (
-                  <ul className={styles.diff}>
-                    {lines.map((l) => (
-                      <li key={l.field}>
-                        <span className={styles.field}>{l.field}</span>
-                        <span className={styles.from}>NetBox says {show(l.from)}</span>
-                        <span className={styles.to}>you saw {show(l.to)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {item.reason && <span className={styles.againstWhy}>{item.reason}</span>}
-              </details>
+              {/* What differs, field by field, on the page. It used to be
+                  behind a "Read more" fold, so the screen said a box was
+                  "Different from your records" and made a person open a
+                  disclosure to learn what was different. Two columns: what the
+                  record holds, and what the photograph showed. */}
+              {lines.length > 0 && (
+                <div className={styles.diffTable}>
+                  <div className={styles.diffHead}>
+                    <span />
+                    <span>Your records</span>
+                    <span>In the rack</span>
+                  </div>
+                  {lines.map((l) => (
+                    <div className={styles.diffRow} key={l.field}>
+                      <span className={styles.field}>{fieldWord(l.field)}</span>
+                      <span className={styles.from}>{valueWord(l.field, l.from)}</span>
+                      <span className={styles.to}>{valueWord(l.field, l.to)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* What this thing is, and why the comparison says what it says.
+                  A line each, quiet, under the difference itself. */}
+              <p className={styles.itemWhat}>
+                <span className={styles.itemKind}>{item.type}</span>
+                {item.reason ? <span className={styles.itemWhy}>{item.reason}</span> : null}
+              </p>
 
               {/* What is true of THIS difference. Who holds the check and
                   which incident it is are facts of the whole check, said once

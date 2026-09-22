@@ -195,6 +195,55 @@
 .moreLabel { font-size: var(--fs-label); letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); }
 .how { margin: 6px 0 0; padding-left: 18px; font-size: var(--fs-body); line-height: 1.5; color: var(--muted-1); }
 .how li { margin-bottom: 2px; }
+
+/* What differs, field by field: what the record holds against what the
+   photograph showed. It was a fold called "Read more", so the screen said a
+   box was different and made a person open a disclosure to learn how. */
+.diffTable {
+  margin: 8px 0 0;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.diffHead, .diffRow {
+  display: grid;
+  grid-template-columns: minmax(64px, 0.9fr) 1fr 1fr;
+  gap: 8px;
+  padding: 7px 10px;
+  align-items: baseline;
+}
+.diffHead {
+  background: var(--bg2, #f3f4f7);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--muted-1, #5c646d);
+}
+.diffRow + .diffRow, .diffHead + .diffRow { border-top: 1px solid var(--hair); }
+.diffTable .field {
+  font-size: var(--fs-sub);
+  font-weight: var(--fw-label);
+  color: var(--muted-1, #5c646d);
+  overflow-wrap: anywhere;
+}
+.diffTable .from, .diffTable .to {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: var(--fs-sub);
+  overflow-wrap: anywhere;
+}
+.diffTable .from { color: var(--muted-1, #5c646d); text-decoration: line-through; text-decoration-thickness: 1px; }
+.diffTable .to { color: var(--text, #1c1c1c); font-weight: var(--fw-label); }
+
+/* What the thing is, and why the comparison says what it says. */
+.itemWhat {
+  display: flex; flex-wrap: wrap; gap: 4px 10px;
+  margin: 7px 0 0;
+  font-size: var(--fs-label);
+  color: var(--muted-2, #8a8f99);
+}
+.itemKind { text-transform: uppercase; letter-spacing: var(--ls-caps); }
+.itemWhy { flex-basis: 100%; line-height: 1.45; }
+
 .means { margin: 4px 0 0; font-size: var(--fs-body); line-height: 1.45; color: var(--muted-1); }
 
 /* the differences, as rows - the substance of the page */

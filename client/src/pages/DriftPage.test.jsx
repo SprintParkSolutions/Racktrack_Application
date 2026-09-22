@@ -693,4 +693,30 @@ describe('<DriftPage> which rack', () => {
     expect(screen.queryByText(KNOWN.why)).toBeNull();
     expect(screen.queryByText('Which rack is this?')).toBeNull();
   });
+
+  /* A difference says what differs, on the page. It used to say only that the
+     box was "Different from your records" and hide the fields behind a fold. */
+  it('says which field differs, what the record holds and what the rack showed', async () => {
+    const withDiff = plan('open');
+    withDiff.items = [{
+      uid: DEV, type: 'Device', name: 'Router U20', action: 'update',
+      decidable: true, decision: 'pending',
+      diff: { position: { from: 22, to: 20 }, serial: { from: null, to: 'FOC1' } },
+    }];
+    stub('open', { body: { ...toSpoc.body, matchedRack: KNOWN } },
+      { 'GET /api/nb/plans/7': { body: withDiff } });
+    mount();
+    await screen.findByText('1 difference');
+
+    const head = document.querySelector('[class*="diffHead"]');
+    expect(head.textContent).toContain('Your records');
+    expect(head.textContent).toContain('In the rack');
+    const rows = [...document.querySelectorAll('[class*="diffRow"]')].map((r) => r.textContent);
+    // The shelf, in the words of a rack, and both sides of it.
+    expect(rows.some((t) => /Shelf/.test(t) && /U22/.test(t) && /U20/.test(t))).toBe(true);
+    // A field the record has nothing for says nothing, not a dash.
+    expect(rows.some((t) => /Serial number/.test(t) && /nothing/.test(t) && /FOC1/.test(t))).toBe(true);
+    // And nothing is hidden behind a disclosure.
+    expect(screen.queryByText('Read more')).toBe(null);
+  });
 });
