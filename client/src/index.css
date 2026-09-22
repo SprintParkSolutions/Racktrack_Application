@@ -214,11 +214,21 @@
 
      A control that is the page's main action (Analyze, Sign in) is not one
      of these - it keeps its own size. */
-  --ctl-h: 30px;      /* a chip, a Yes/No, a short input beside a button */
-  --field-h: 36px;    /* a field you tap to open: a picker, a search box */
+  --ctl-h: 30px;      /* a chip, a Yes/No, a button in a row of them */
+  --field-h: 36px;    /* anything you type into, and any field you tap open */
   --ctl-px: 11px;     /* the side padding that goes with --ctl-h */
   --ctl-gap: 6px;     /* between two controls, and between two rows of them */
   --ctl-radius: 8px;
+
+  /* The one size on this page that is not a choice. iOS zooms the whole page
+     in when a text control smaller than 16px takes focus, and it does not zoom
+     back out - the app is left scrolled sideways inside itself. The port
+     number field is focused the moment a device is picked, so picking a device
+     zoomed the screen. Every input, select and textarea therefore sets this,
+     whatever the type scale says; the control is kept compact with --field-h
+     and its padding instead. A button or a chip is not focusable text entry
+     and is not affected, which is why those stay at --fs-sub. */
+  --fs-field: 16px;
 
   /* ══ THE BOTTOM BAR ═══════════════════════════════════════════════════
      The app's bar (BottomNav) and the rack's tabs (ScanTabBar) are one bar
@@ -301,6 +311,28 @@
   --dur-fast:    150ms;
   --dur-med:     280ms;
   --dur-slow:    450ms;
+}
+
+/* ── The 16px floor on text entry ─────────────────────────────────────
+   iOS zooms the whole page in when a focused input, select or textarea is
+   smaller than 16px, and it does not zoom back out: the app is left scrolled
+   sideways inside itself with no way back but a pinch. The port number field
+   is focused the moment a device is picked, so picking a device zoomed the
+   screen - but this was never one screen's bug. Thirty-three controls across
+   the app were set at 14 or 15px, one or two pixels short of the line.
+
+   So the floor is set once, here, for the things that take text. `max` never
+   shrinks anything, so a control that already asks for more keeps it. This
+   beats the modules' own !important sizes on specificity, which is the point:
+   a module cannot opt out of it by accident.
+
+   Buttons, chips and tabs are not text entry and are not touched - that is
+   why they can stay at --fs-sub. A checkbox, radio, range or colour swatch
+   has no text to zoom to, so they are left alone too. */
+html input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']),
+html textarea,
+html select {
+  font-size: max(var(--fs-field, 16px), 1em) !important;
 }
 
 html {

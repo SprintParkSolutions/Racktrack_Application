@@ -37,9 +37,10 @@
 .close:hover { background: rgba(0,0,0,0.06); }
 
 .pickRow { display: flex; align-items: center; gap: 8px; width: 100%; flex-wrap: wrap; }
+/* Typed into or chosen from, so --fs-field: see the note on that token. */
 .select, .other {
-  font: inherit; font-size: var(--fs-sub); color: var(--md-on-surface, #1c1c1c);
-  background: var(--md-surface, #fff); min-height: var(--ctl-h, 30px);
+  font: inherit; font-size: var(--fs-field); color: var(--md-on-surface, #1c1c1c);
+  background: var(--md-surface, #fff); min-height: var(--field-h, 36px);
   border: 1px solid var(--md-outline-variant, rgba(0,0,0,0.16)); border-radius: 8px;
   padding: 0 10px; min-width: 0;
 }
@@ -48,7 +49,7 @@
 .select:focus, .other:focus { outline: none; border-color: var(--ac, #2563c9); }
 .submit {
   flex: none; border: none; cursor: pointer; font: inherit; font-size: var(--fs-sub); font-weight: var(--fw-label);
-  min-height: var(--ctl-h, 30px);
+  min-height: var(--field-h, 36px);
   color: #fff; background: var(--ac, #2563c9); padding: 0 12px; border-radius: 8px;
 }
 .submit:disabled { opacity: 0.45; cursor: default; }

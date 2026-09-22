@@ -804,10 +804,10 @@
 .portInput {
   flex: 1;
   min-width: 0;
-  min-height: var(--ctl-h, 30px);
+  min-height: var(--field-h, 36px);
   padding: 0 var(--ctl-px, 11px) !important;
   border-radius: var(--ctl-radius, 8px) !important;
-  font-size: var(--fs-mono) !important;
+  font-size: var(--fs-field) !important;
   font-family: var(--mono) !important;
   background: var(--md-surface-container-lowest, #ffffff) !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
@@ -825,7 +825,7 @@
 .findBtn {
   flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center; gap: 5px;
-  min-height: var(--ctl-h, 30px);
+  min-height: var(--field-h, 36px);
   padding: 0 12px !important;
   border-radius: var(--ctl-radius, 8px) !important;
   font-size: var(--fs-sub) !important;
@@ -4076,10 +4076,10 @@
    from the dark theme, sitting on a white page. */
 .prAnother input {
   flex: 1; min-width: 0;
-  min-height: var(--ctl-h, 30px);
+  min-height: var(--field-h, 36px);
   padding: 0 var(--ctl-px, 11px) !important;
   border-radius: var(--ctl-radius, 8px) !important;
-  font-size: var(--fs-mono) !important;
+  font-size: var(--fs-field) !important;
   background: var(--md-surface, #ffffff) !important;
   border: 1px solid var(--md-outline-variant, rgba(0,0,0,0.14)) !important;
   color: var(--md-on-surface, #1c1c1c) !important;
@@ -4096,7 +4096,7 @@
   outline: none;
 }
 .prAnother button {
-  min-height: var(--ctl-h, 30px);
+  min-height: var(--field-h, 36px);
   padding: 0 12px !important;
   border-radius: var(--ctl-radius, 8px) !important;
   font-size: var(--fs-sub) !important;
