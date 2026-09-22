@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import PageHeader from '../components/PageHeader.jsx';
+import { useRackFlow } from '../hooks/useRackFlow.js';
+import { PORT } from '../utils/rackFlow.js';
 import { apiUrl, authFetch } from '../utils/api';
 import ExportSheet from '../components/ExportSheet.jsx';
 import ShareSheet from '../components/ShareSheet.jsx';
@@ -236,6 +238,10 @@ function derive(doc, view) {
 export default function ReportPage() {
   const { rackId } = useParams();
   const navigate = useNavigate();
+  // Which job this rack is in. Checking the rack against the record belongs
+  // to analysing the rack; somebody who came here looking a port up is not
+  // offered it, on the owner's direction of 22 Sep 2026.
+  const flow = useRackFlow(rackId);
   const goBack = useSmartBack(`/results/${rackId}`);
 
   const [doc, setDoc] = useState(null);     // the report
@@ -391,14 +397,16 @@ export default function ReportPage() {
           file format, a destination and the next step of the workflow on the
           same footing, and the step that matters was the middle of them. */}
       <div className={styles.tools}>
-        <button
-          type="button"
-          className={styles.check}
-          disabled={!doc || scanId === null}
-          onClick={() => navigate(`/results/${encodeURIComponent(rackId)}/drift`)}
-        >
-          Drift check
-        </button>
+        {flow !== PORT && (
+          <button
+            type="button"
+            className={styles.check}
+            disabled={!doc || scanId === null}
+            onClick={() => navigate(`/results/${encodeURIComponent(rackId)}/drift`)}
+          >
+            Drift check
+          </button>
+        )}
         {[
           ['download', 'Download', <IconDownload key="i" />, [
             ['CSV', () => getFile('csv'), fileBusy === 'csv'],

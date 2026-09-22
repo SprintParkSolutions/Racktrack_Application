@@ -81,6 +81,17 @@ describe('ReportPage', () => {
      The people testing it did not find the way on, because it was an item
      inside a menu called Check, so the step is now a control of its own, said
      in words, and it is the only filled one on the page. */
+  /* Looking a port up never offers the rack-wide check: that belongs to
+     analysing the rack. */
+  test('the port workflow gets no drift check on the report', async () => {
+    const { setRackFlow, PORT } = await import('../utils/rackFlow.js');
+    setRackFlow('r1', PORT);
+    draw();
+    await screen.findByRole('heading', { name: /Rack not identified yet|SP-/ });
+    expect(screen.queryByRole('button', { name: 'Drift check' })).toBeNull();
+    setRackFlow('r1', null);
+  });
+
   test('the step after the report is a named control, and it gets there', async () => {
     draw();
     const go = await screen.findByRole('button', { name: 'Drift check' });

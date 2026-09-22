@@ -107,11 +107,34 @@
 }
 .paneHead {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  padding: 12px 14px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--border, rgba(0,0,0,.08));
 }
 .paneTitle { margin: 0; font-size: var(--fs-section); font-weight: var(--fw-title); color: var(--text); }
-.paneBody { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.paneBody { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+
+/* A long list folded behind its own count. The owner asked for this screen to
+   be shorter; nothing was taken away, it opens when somebody wants it. */
+.fold { border-top: 1px solid var(--border, rgba(0,0,0,.08)); padding-top: 8px; }
+.fold > summary {
+  display: flex; align-items: center; gap: 8px;
+  min-height: 36px;
+  list-style: none; cursor: pointer;
+  font-size: var(--fs-body); font-weight: var(--fw-title); color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+}
+.fold > summary::-webkit-details-marker { display: none; }
+.fold > summary::after {
+  content: ''; margin-left: auto;
+  width: 7px; height: 7px;
+  border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor;
+  transform: rotate(45deg); opacity: .5;
+}
+.fold[open] > summary::after { transform: rotate(225deg); }
+.fold > summary b {
+  font-family: ui-monospace, Menlo, monospace; font-weight: var(--fw-label);
+  color: var(--muted); font-variant-numeric: tabular-nums;
+}
 .paneBody + .paneBody { border-top: 1px dashed var(--border, rgba(0,0,0,.14)); }
 .paneBlank { margin: 0; padding: 18px 14px; color: var(--muted); font-size: var(--fs-body); line-height: 1.5; }
 .paneFoot {

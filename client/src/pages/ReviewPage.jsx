@@ -466,12 +466,6 @@ export default function ReviewPage() {
 
     body = (
       <>
-        <div className={styles.intro}>
-          <p>
-            Choose which switch is which box, then confirm each one.
-          </p>
-        </div>
-
         <div className={styles.panes}>
 
           {/* ── The join ── */}
@@ -807,9 +801,16 @@ export default function ReviewPage() {
                 {/* Every value, named, with the device it lands on. This is what
                     "what will be written" actually means; three numbers is a
                     summary of it, not a statement of it. */}
+                {/* Every value, named, with the device it lands on - folded.
+                    The count above answers the question most people have, and
+                    the owner asked on 22 Sep 2026 for this screen to be
+                    shorter; whoever wants the list opens it. */}
                 {changes.length > 0 && (
-                  <>
-                    <p className={styles.k}>Every value the switches supply</p>
+                  <details className={styles.fold}>
+                    <summary>
+                      Every value the switches supply
+                      <b>{changes.length}</b>
+                    </summary>
                     <div className={styles.writeList}>
                       {Object.entries(byDevice(changes)).map(([device, rows]) => (
                         <div key={device} className={styles.writeGroup}>
@@ -824,7 +825,7 @@ export default function ReviewPage() {
                         </div>
                       ))}
                     </div>
-                  </>
+                  </details>
                 )}
 
                 {changes.length === 0 && (
