@@ -1,40 +1,38 @@
 import { useEffect, useRef, useState } from 'react';
 import styles from './ScanTabBar.module.css';
 
-// The rack's tab bar on a phone: Overview, Network, Report, Drift.
+// The rack's tab bar on a phone.
 //
-// One bar, four tabs, the same four on every page of a rack. It was briefly two
-// rows of five - one for analysing the network, one for looking up a port - and
-// before that one row of four with a More button holding Topology, Switches and
-// Timeline. Both are gone: the bar is the four places a technician goes, and
-// nothing hides behind a menu.
+// A rack holds two jobs, and the Overview asks which one you are here for:
+// analyse the network, or look up a port. They want different screens in
+// different orders, so each has its own bar - and the whole point of a bar is
+// that it is the SAME bar on every screen of the job it belongs to. Which job
+// a rack is in is remembered in utils/rackFlow.js, not worked out per screen:
+// it used to be page state, so it died on every route change and the bar
+// quietly turned into the other workflow's halfway through.
 //
-// Ports is gone too. Network IS the live switches now - read from this phone
-// over SNMP - which is what Ports was trying to do over SSH from a server that
-// could never reach them.
+// Analysing the network is the rack as a whole - four plain tabs, nothing
+// behind a menu. Topology and Switches are opened from the Overview page (and
+// on a desktop from the sidebar); they belong to Overview, so the bar lights
+// Overview while one of them is up, and Back returns there.
 //
-// Where the other screens live:
-//   Timeline   a section of the Network page - what changed on these ports.
-//   Topology   and Switches: opened from the Overview page, and on a desktop
-//              from the sidebar. The bar lights Overview while one of them is
-//              up, because that is the page they belong to and the page Back
-//              returns to.
-//   Port lookup   the Overview page's own "Look up a port" button.
+// Looking a port up is one socket, and the screens that job leads to are more
+// than a bar holds. Four tabs then, and a More for the rest - a bar that
+// slides sideways under the thumb hides half of itself and never says so.
 //
-// Network, Report and Drift open their own screens; the page handles that in
-// onTabChange.
-const TABS = [
+// Ports - the old page of that name - is gone from both. Network IS the live
+// switches now, read from this phone over SNMP, which is what Ports was trying
+// to do over SSH from a server that could never reach them.
+const NETWORK_TABS = [
   { key: 'overview', label: 'Overview', icon: <IconRack /> },
   { key: 'network',  label: 'Network',  icon: <IconNetwork /> },
   { key: 'report',   label: 'Report',   icon: <IconReport /> },
   { key: 'drift',    label: 'Drift',    icon: <IconDrift /> },
 ];
 
-export const TAB_KEYS = TABS.map((t) => t.key);
-
-/* Looking a port up is its own job, so while a person is in it the bar is the
-   places that job leads to. Report and Drift are about the whole rack and had
-   no business on a screen about one socket. */
+/* Looking a port up leads with the rack, then the port itself, then every
+   other way on. Report and Drift are about the whole rack and had no business
+   in the front row of a screen about one socket, so they are under More. */
 const PORT_TABS = [
   { key: 'overview', label: 'Rack',     icon: <IconRack /> },
   { key: 'result',   label: 'Port',     icon: <IconPort /> },
@@ -45,18 +43,30 @@ const PORT_TABS = [
   { key: 'report',   label: 'Report',   icon: <IconReport /> },
 ];
 
-/** Screens that belong to Overview, so the bar lights Overview on them. */
+/** The tabs of a workflow, in the order the bar has them. */
+export const tabsFor = (flow) => (flow === 'port' ? PORT_TABS : NETWORK_TABS);
+/** Every screen a workflow's bar can reach. */
+export const tabKeysFor = (flow) => tabsFor(flow).map((t) => t.key);
+
+/* Screens that belong to Overview while the rack is being analysed as a whole,
+   so the bar lights Overview on them. In the port workflow they are tabs of
+   their own and light themselves. */
 const UNDER_OVERVIEW = ['result', 'topology', 'switches'];
 
-export default function ScanTabBar({ activeTab, onTabChange, badges = {}, flow = 'rack' }) {
-  const port = flow === 'port';
-  const tabs = port ? PORT_TABS : TABS;
-  const active = port ? activeTab
-    : (UNDER_OVERVIEW.includes(activeTab) ? 'overview' : activeTab);
+/** Which tab of this workflow is lit on this screen - always one the bar has. */
+export function activeTabFor(flow, activeTab) {
+  const keys = tabKeysFor(flow);
+  if (keys.includes(activeTab)) return activeTab;
+  if (flow !== 'port' && UNDER_OVERVIEW.includes(activeTab)) return 'overview';
+  return 'overview';
+}
+
+export default function ScanTabBar({ activeTab, onTabChange, badges = {}, flow = 'network' }) {
+  const tabs = tabsFor(flow);
+  const active = activeTabFor(flow, activeTab);
 
   // The bar holds five slots. With more ways on than that, four are tabs and
-  // the fifth opens the rest over the bar. A bar that scrolls sideways under
-  // the thumb hides half of itself and never says so.
+  // the fifth opens the rest over the bar.
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef(null);
   useEffect(() => {
@@ -88,7 +98,8 @@ export default function ScanTabBar({ activeTab, onTabChange, badges = {}, flow =
   );
 
   return (
-    <nav className={styles.tabBar} role="tablist" aria-label="Scan results tabs">
+    <nav className={styles.tabBar} role="tablist"
+      aria-label={flow === 'port' ? 'Port lookup tabs' : 'Network analysis tabs'}>
       <div className={styles.bar}>
         {shown.map(tabButton)}
         {rest.length > 0 && (

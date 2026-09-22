@@ -17,7 +17,7 @@ import styles from './SitePicker.module.css';
  *   several - the dropdown opens on "Choose a site". The scan waits for a
  *             choice, which is why this is the one field on the screen that
  *             carries an asterisk.
- * Under it, the racks of the chosen site, by name.
+ * Under it, how many racks the chosen site has.
  */
 
 /* "Site 32". The server sends it ready made; a server that does not is still
@@ -27,21 +27,14 @@ export const siteLabel = (s) => String(s?.siteId || `Site ${s?.id}`);
 const rackWords = (n) => `${n} ${n === 1 ? 'rack' : 'racks'}`;
 const rackTotal = (s) => (Number.isFinite(s?.rackCount) ? s.rackCount : (s?.racks || []).length);
 
-/* A rack nobody has named yet is known only by its internal id, which is not
-   something to print. It still counts towards the total. */
-const rackName = (r) => {
-  const n = String(r?.name || '').trim();
-  return n && !/^RK-[0-9A-F]+$/i.test(n) ? n : null;
-};
-
-/* The second line of a row: up to three racks by name, then how many more. */
+/* The second line of a row: how many racks the site has, and not which.
+   This screen comes before the scan. Naming the racks here hands the person
+   the answer the photograph is meant to give - they read the name off this
+   line, and nobody ever learns whether the app could read it off the rack.
+   The count is neither a label nor an id, so it stays. */
 export function rackLine(s) {
   const total = rackTotal(s);
-  if (!total) return 'No racks yet';
-  const names = (s.racks || []).map(rackName).filter(Boolean).slice(0, 3);
-  if (!names.length) return rackWords(total);
-  const rest = total - names.length;
-  return names.join(', ') + (rest > 0 ? ` and ${rest} more` : '');
+  return total ? rackWords(total) : 'No racks yet';
 }
 
 /* By number ("32"), by the words on the row ("site 32") or by name. */

@@ -30,12 +30,12 @@ const optionNames = () => [...pick().options].map((o) => o.textContent);
 afterEach(cleanup);
 
 describe('<SitePicker>', () => {
-  test('one site: the dropdown holds it, already chosen, with its racks under it', () => {
+  test('one site: the dropdown holds it, already chosen, with how many racks under it', () => {
     render(<Held sites={[OFFICE]} />);
     expect(pick().tagName).toBe('SELECT');
     expect(pick().value).toBe('32');
     expect(optionNames()).toEqual(['Site 32 - Office-Sprintpark']);
-    expect(screen.getByText('SP-HYB-RM01-R01-R1')).toBeTruthy();
+    expect(screen.getByText('1 rack')).toBeTruthy();
     expect(screen.queryAllByRole('button')).toEqual([]);
     // Nothing to fill in, so nothing is marked as mandatory.
     expect(document.body.textContent).not.toContain('*');
@@ -50,8 +50,8 @@ describe('<SitePicker>', () => {
     fireEvent.change(pick(), { target: { value: '7' } });
     expect(onChange).toHaveBeenCalledWith('7');
     expect(pick().value).toBe('7');
-    // Chosen: its racks are named under it, and it can be changed in place.
-    expect(screen.getByText('A1, A2, A3 and 2 more')).toBeTruthy();
+    // Chosen: how many racks it has is under it, and it can be changed in place.
+    expect(screen.getByText('5 racks')).toBeTruthy();
     fireEvent.change(pick(), { target: { value: '132' } });
     expect(onChange).toHaveBeenLastCalledWith('132');
     expect(screen.getByText('No racks yet')).toBeTruthy();
@@ -68,15 +68,16 @@ describe('<SitePicker>', () => {
     expect(container.innerHTML).toBe('');
   });
 
-  test('a rack is named by its name, never by its internal id, and nothing is a plus button', () => {
+  test('no rack is named before the scan - the line counts them, and nothing is a plus button', () => {
     const unnamed = { id: 9, name: 'Depot', rackCount: 2, racks: [{ rackId: 'RK-AAAAAAAA', name: 'RK-AAAAAAAA' }, { rackId: 'RK-BBBBBBBB', name: '' }] };
     expect(rackLine(unnamed)).toBe('2 racks');
     expect(rackLine(NORTH)).toBe('No racks yet');
-    expect(rackLine(OFFICE)).toBe('SP-HYB-RM01-R01-R1');
-    expect(rackLine(HARBOUR)).toBe('A1, A2, A3 and 2 more');
+    expect(rackLine(OFFICE)).toBe('1 rack');
+    expect(rackLine(HARBOUR)).toBe('5 racks');
     // A server that sends no ready-made "Site 9" is still sending the number.
     expect(siteMatches(unnamed, 'site 9')).toBe(true);
     render(<Held sites={[OFFICE, unnamed]} />);
-    expect(document.body.textContent).not.toMatch(/RK-|[\u2013\u2014]|\+/);
+    // Neither the name a rack carries nor the id behind it reaches this screen.
+    expect(document.body.textContent).not.toMatch(/RK-|SP-HYB|[\u2013\u2014]|\+/);
   });
 });

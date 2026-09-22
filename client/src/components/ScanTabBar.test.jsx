@@ -2,8 +2,11 @@ import { describe, test, expect, afterEach, vi } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import ScanTabBar from './ScanTabBar.jsx';
 
-/* The rack's tab bar: one row of four, the same four everywhere. There is no
-   More tab, no menu behind it and no second row for a different job. */
+/* The rack's tab bar. A rack holds two jobs and each has its own bar; what
+   matters is that a bar never changes shape within its own job.
+
+   Analysing the network is one row of four, with no menu behind it. Looking a
+   port up leads to more screens than a bar holds, so it is four and a More. */
 
 const labels = () => screen.getAllByRole('tab').map((t) => t.textContent);
 const selected = () => screen.getAllByRole('tab').filter((t) => t.getAttribute('aria-selected') === 'true').map((t) => t.textContent);
@@ -48,5 +51,38 @@ describe('<ScanTabBar>', () => {
     const drift = screen.getByRole('tab', { name: /Drift/ });
     expect(drift.textContent).toContain('3');
     expect(screen.getByRole('tab', { name: /Report/ }).textContent).toBe('Report');
+  });
+
+  test('the port workflow leads with the rack, then the port, then the rest under More', () => {
+    render(<ScanTabBar flow="port" activeTab="result" onTabChange={() => {}} />);
+    expect(labels()).toEqual(['Rack', 'Port', 'Switches', 'Network']);
+    expect(selected()).toEqual(['Port']);
+    fireEvent.click(screen.getByRole('button', { name: /More/ }));
+    expect(screen.getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Drift', 'Topology', 'Report']);
+  });
+
+  test('in the port workflow Switches and Topology are tabs of their own, not Overview', () => {
+    render(<ScanTabBar flow="port" activeTab="switches" onTabChange={() => {}} />);
+    expect(selected()).toEqual(['Switches']);
+    cleanup();
+    // Under More, so nothing in the row is lit - the More button carries it.
+    render(<ScanTabBar flow="port" activeTab="topology" onTabChange={() => {}} />);
+    expect(selected()).toEqual([]);
+  });
+
+  test('a screen the workflow does not have falls back to its first tab, never to nothing', () => {
+    render(<ScanTabBar flow="port" activeTab="nowhere" onTabChange={() => {}} />);
+    expect(selected()).toEqual(['Rack']);
+    cleanup();
+    render(<ScanTabBar activeTab="nowhere" onTabChange={() => {}} />);
+    expect(selected()).toEqual(['Overview']);
+  });
+
+  test('each bar says which job it belongs to', () => {
+    render(<ScanTabBar activeTab="overview" onTabChange={() => {}} />);
+    expect(screen.getByRole('tablist').getAttribute('aria-label')).toBe('Network analysis tabs');
+    cleanup();
+    render(<ScanTabBar flow="port" activeTab="result" onTabChange={() => {}} />);
+    expect(screen.getByRole('tablist').getAttribute('aria-label')).toBe('Port lookup tabs');
   });
 });

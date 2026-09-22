@@ -2,8 +2,10 @@ import { describe, test, expect, afterEach, vi } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 
-/* On a rack's own pages the bottom bar is the rack's four tabs. Anywhere else
-   it is the app's navigation. */
+/* On a rack's own pages the bottom bar is the rack's own tabs - which tabs
+   depends on the job the rack is in, and that is the whole point of these:
+   the bar has to be the SAME bar on every screen of a job. Anywhere else it
+   is the app's navigation. */
 
 vi.mock('../ShutterContext.jsx', () => ({ useShutter: () => ({ fn: null, canShoot: false }) }));
 vi.mock('../AuthContext.jsx', () => ({ useAuth: () => ({ isAuthed: true }) }));
@@ -15,6 +17,7 @@ vi.mock('../nav/navLinks.jsx', () => ({
 }));
 
 import BottomNav from './BottomNav.jsx';
+import { setRackFlow, getRackFlow, NETWORK, PORT } from '../utils/rackFlow.js';
 
 function Where() { const l = useLocation(); return <p data-testid="where">{l.pathname + l.hash}</p>; }
 const mountAt = (path) => render(<MemoryRouter initialEntries={[path]}><BottomNav /><Where /></MemoryRouter>);
@@ -22,7 +25,15 @@ const labels = () => screen.getAllByRole('tab').map((t) => t.textContent);
 const selected = () => screen.getAllByRole('tab').filter((t) => t.getAttribute('aria-selected') === 'true').map((t) => t.textContent);
 const tap = (name) => { fireEvent.click(screen.getByRole('tab', { name })); return screen.getByTestId('where').textContent; };
 
-afterEach(cleanup);
+const more = () => screen.getByRole('button', { name: /More/ });
+const inMore = () => { fireEvent.click(more()); return screen.getAllByRole('menuitem').map((i) => i.textContent); };
+const tapInMore = (name) => {
+  fireEvent.click(more());
+  fireEvent.click(screen.getByRole('menuitem', { name }));
+  return screen.getByTestId('where').textContent;
+};
+
+afterEach(() => { cleanup(); sessionStorage.clear(); });
 
 describe('<BottomNav> on a rack', () => {
   test('four tabs, each opening the page it names', () => {
@@ -71,5 +82,62 @@ describe('<BottomNav> on a rack', () => {
     mountAt('/results/RK-1/network');
     expect(screen.queryByRole('button', { name: 'Look up a port' })).toBeNull();
     expect(tap('Report')).toBe('/results/RK-1/report');
+  });
+
+  test('the port workflow carries its own bar, unchanged, on every screen it leads to', () => {
+    setRackFlow('RK-1', PORT);
+    // The bar is the same four and the same More on the rack's own page, on
+    // Network, and on Switches - it used to become the other workflow's the
+    // moment the person left the located port.
+    for (const where of ['/results/RK-1', '/results/RK-1/network', '/switch-info/RK-1', '/results/RK-1/drift']) {
+      mountAt(where);
+      expect(labels()).toEqual(['Rack', 'Port', 'Switches', 'Network']);
+      expect(inMore()).toEqual(['Drift', 'Topology', 'Report']);
+      cleanup();
+    }
+  });
+
+  test('in the port workflow every screen lights its own tab', () => {
+    setRackFlow('RK-1', PORT);
+    mountAt('/switch-info/RK-1');
+    expect(selected()).toEqual(['Switches']);
+    cleanup();
+    mountAt('/results/RK-1/network');
+    expect(selected()).toEqual(['Network']);
+    cleanup();
+    // The rack's root IS the port lookup while that is the job.
+    mountAt('/results/RK-1');
+    expect(selected()).toEqual(['Port']);
+  });
+
+  test('picking the job is what changes the bar, and it changes everywhere at once', () => {
+    mountAt('/results/RK-1/network');
+    expect(labels()).toEqual(['Overview', 'Network', 'Report', 'Drift']);
+    // Nothing here chooses the port workflow, so the bar cannot offer Port.
+    expect(screen.queryByRole('tab', { name: 'Port' })).toBeNull();
+    cleanup();
+
+    setRackFlow('RK-1', PORT);
+    mountAt('/results/RK-1/network');
+    expect(tap('Port')).toBe('/results/RK-1#port');
+    expect(getRackFlow('RK-1')).toBe(PORT);
+    // Back to the rack itself, which is where the other job starts.
+    expect(tap('Rack')).toBe('/results/RK-1');
+    expect(getRackFlow('RK-1')).toBe(NETWORK);
+    expect(labels()).toEqual(['Overview', 'Network', 'Report', 'Drift']);
+  });
+
+  test("the port workflow's More opens the rack-wide screens", () => {
+    setRackFlow('RK-1', PORT);
+    mountAt('/results/RK-1/network');
+    expect(tapInMore('Topology')).toBe('/results/RK-1/topology');
+    expect(tapInMore('Report')).toBe('/results/RK-1/report');
+    expect(tapInMore('Drift')).toBe('/results/RK-1/drift');
+  });
+
+  test('one rack in the port workflow does not drag another into it', () => {
+    setRackFlow('RK-1', PORT);
+    mountAt('/results/RK-2/network');
+    expect(labels()).toEqual(['Overview', 'Network', 'Report', 'Drift']);
   });
 });

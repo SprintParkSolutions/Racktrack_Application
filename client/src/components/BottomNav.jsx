@@ -6,6 +6,8 @@ import { useAuth } from '../AuthContext.jsx';
 import { usePrimaryNav, MoreIcon, ScanIcon } from '../nav/navLinks.jsx';
 import MoreSheet from './MoreSheet.jsx';
 import ScanTabBar from './ScanTabBar.jsx';
+import { useRackFlow } from '../hooks/useRackFlow.js';
+import { setRackFlow, NETWORK, PORT } from '../utils/rackFlow.js';
 import ExternalLink from './ExternalLink.jsx';
 
 /* ──────────────────────────────────────────────────────────────────────
@@ -37,36 +39,35 @@ import ExternalLink from './ExternalLink.jsx';
  * bottom bar underneath you, which is exactly the kind of thing that makes an
  * app feel like several apps. Same bar on every page of a rack.
  *
- * Which five tabs that is depends on the job the person chose on the review
- * page - analyse the network, or look up a port. Network and
- * Timeline are in both, so the choice is read here rather than guessed from
- * the page.
+ * Which tabs that is depends on the job the person chose on the rack's
+ * Overview - analyse the network, or look up a port. The choice is READ here,
+ * from the rack's own memory of it (utils/rackFlow.js), rather than guessed
+ * from the page: guessing is what made the bar change shape between the port
+ * result and every screen it led to.
  */
 function RackTabs({ rackId, pathname, hash }) {
   const navigate = useNavigate();
+  const flow = useRackFlow(rackId);
+  const base = `/results/${encodeURIComponent(rackId)}`;
+  // Which screen this is. The rack's root is the port lookup while the rack is
+  // in that workflow - that is what the results page opens there - and the
+  // plain Overview otherwise.
   const active = pathname.endsWith('/network') ? 'network'
     : pathname.endsWith('/report') ? 'report'
       : pathname.endsWith('/topology') ? 'topology'
         : pathname.endsWith('/drift') ? 'drift'
           : pathname.startsWith('/switch-info') ? 'switches'
-            : hash === '#drift' ? 'timeline'
+            : hash === '#port' || flow === PORT ? 'result'
               : 'overview';
-  const base = `/results/${encodeURIComponent(rackId)}`;
   const go = (key) => {
-    // The rack's bar is four plain tabs. Looking a port up is the Overview's
-    // own button, which is where a person is when they want it.
-    if (key === 'port') { navigate(`${base}#port`); return; }
-    navigate(
-      // Result is the results page again, which opens in its port mode while
-      // the rack is in that flow.
-      key === 'overview' || key === 'result' ? base
-        : key === 'drift' ? `${base}/drift`
-          : key === 'timeline' ? `${base}#drift`
-          : key === 'switches' ? `/switch-info/${encodeURIComponent(rackId)}`
-            : `${base}/${key}`,
-    );
+    // Both of the rack's own screens are the results page: Overview is the
+    // rack, Port is the same page in its port lookup. The hash says which,
+    // because the page is already mounted when the tap comes from it.
+    if (key === 'overview') { setRackFlow(rackId, NETWORK); navigate(base); return; }
+    if (key === 'result')   { setRackFlow(rackId, PORT);    navigate(`${base}#port`); return; }
+    navigate(key === 'switches' ? `/switch-info/${encodeURIComponent(rackId)}` : `${base}/${key}`);
   };
-  return <ScanTabBar rackId={rackId} activeTab={active} onTabChange={go} />;
+  return <ScanTabBar flow={flow} activeTab={active} onTabChange={go} />;
 }
 
 export default function BottomNav() {
@@ -80,11 +81,6 @@ export default function BottomNav() {
   // A rack's own pages keep the rack's tabs. (/results/:rackId itself draws
   // them inside the page, so it never reaches here.)
   const rack = location.pathname.match(/^\/(?:results|switch-info)\/([^/]+)/);
-  // The flow a rack is in lasts while the person moves between that rack's
-  // pages. Anywhere else it is forgotten, so a rack opened again - after a new
-  // scan, from History, from Profile - starts on Analyse the network.
-  const onRack = !!rack;
-
   if (!isAuthed) return null;
 
   if (rack) {

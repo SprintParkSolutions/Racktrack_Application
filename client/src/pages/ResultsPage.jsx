@@ -7,6 +7,8 @@ import { getItem, getJSON, setItem, setJSON } from '../utils/safeStorage';
 import CmdbApprovalModal from '../components/CmdbApprovalModal.jsx';
 import BackButton from '../components/BackButton.jsx';
 import ScanTabBar from '../components/ScanTabBar.jsx';
+import { useRackFlow } from '../hooks/useRackFlow.js';
+import { getRackFlow, setRackFlow, NETWORK, PORT } from '../utils/rackFlow.js';
 import ReportViewer from '../components/ReportViewer.jsx';
 import { useIsDesktop } from '../hooks/useIsDesktop';
 import RackTabs from '../components/RackTabs.jsx';
@@ -1357,7 +1359,9 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   const handleTabChange = (newTab) => {
     // 'port' is the tab bar's centre action, not a tab: it is the same thing
     // the "Look up a port" button on this page does.
-    if (newTab === 'port') { enterPortFlow(); return; }
+    if (newTab === 'port' || newTab === 'result') { enterPortFlow(); setPhase('detect'); return; }
+    // Overview is the rack itself, which is the other workflow's first screen.
+    if (newTab === 'overview') leavePortFlow();
     // Network is the live switches, read from this phone over SNMP. It is a
     // page of its own rather than a tab of this one, because reading a switch
     // is work with its own state - credentials, a reading, where it sits in
@@ -1366,7 +1370,6 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     // Topology and Switches are not tabs. They are views of this page, opened
     // from the two links on Overview, and the bar keeps Overview lit while one
     // of them is up.
-    if (newTab === 'result') newTab = 'overview';
     if (newTab === 'network' || newTab === 'report' || newTab === 'drift') {
       // urlRackId first: it is the id in the address bar and is set before the
       // scan result has loaded, whereas `rackId` comes out of that result.
@@ -1386,6 +1389,13 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   //     (overview is the root of this rack - back means "exit the rack")
   //   • on any other tab → pop the in-page tab history if there's any,
   //     otherwise fall back to Overview.
+  // A located port - looked up here, or opened straight from a ticket - is the
+  // port workflow, whether or not the person came through the Overview's two
+  // buttons. Saying so here is what keeps the bar the same on Network, on
+  // Switches and on everything else that screen leads to.
+  useEffect(() => {
+    if (phase === 'port') setRackFlow(urlRackId, PORT);
+  }, [phase, urlRackId]);
   // Out of the port view, back to the rack. One function, so the arrow on the
   // screen and the back button on the phone do the same thing.
   const leavePortView = () => {
@@ -1538,11 +1548,27 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // of two tab bars was up; there is one bar now, so it is plain page state.
   // A rack drawn inside another page (two racks side by side) has no bar.
   const [portMode, setPortMode] = useState(false);
-  useEffect(() => { setPortMode(false); }, [urlRackId]);
-  const enterPortFlow = () => { setPortMode(true); setDeviceListOpen(true); };
-  // That screen's own Back: out of the port lookup, back to the two choices.
+  // Which of the rack's two workflows this is, as both tab bars read it.
+  const rackFlow = useRackFlow(urlRackId);
+  // Coming back to the rack's root while the port lookup is the job - from
+  // Network, from Switches, from the bar's own Port tab - opens the lookup
+  // rather than the rack. Without this the workflow ended at the first route
+  // change: the page remounted with portMode false and the bar under it turned
+  // into the other workflow's.
+  useEffect(() => {
+    const wanted = getRackFlow(urlRackId) === PORT
+      || String(location.hash || '').toLowerCase() === '#port';
+    setPortMode(wanted);
+    setDeviceListOpen(wanted);
+  }, [urlRackId, location.hash]);
+  const enterPortFlow = () => {
+    setPortMode(true); setDeviceListOpen(true);
+    setRackFlow(urlRackId, PORT);
+  };
+  // That screen's own Back: out of the port lookup, back to the two choices - and out of the port workflow, so the bar goes back with it.
   const leavePortFlow = () => {
     setPortMode(false); setDeviceListOpen(false); setSelectedIdx(null);
+    setRackFlow(urlRackId, NETWORK);
   };
   const [shareStatus, setShareStatus] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'error'
   const [shareMsg, setShareMsg] = useState(null);
@@ -3461,7 +3487,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             located port meant going back first. Picking a tab leaves the view. */}
         {!isDesktop && !embeddedProp && (
           <ScanTabBar
-            flow="port"
+            flow={PORT}
             activeTab="result"
             onTabChange={(key) => {
               // Staying on the port needs nothing; everywhere else leaves it.
@@ -4658,7 +4684,8 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           either one brings the tabs in, and they stay for the rest of the rack. */}
       {!isDesktop && !embeddedProp && (
         <ScanTabBar
-          activeTab={tab}
+          flow={rackFlow}
+          activeTab={portMode && tab === 'overview' ? 'result' : tab}
           onTabChange={handleTabChange}
           badges={{
             ports: devices.filter(d => d.class_name === 'Switch').reduce((s, d) => s + (d.port_count || 0), 0) || undefined,
@@ -4957,7 +4984,10 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             <button
               type="button"
               className={`${styles.stepChoice} ${styles.stepChoicePrimary}`}
-              onClick={() => navigate(`/results/${encodeURIComponent(urlRackId || rackId)}/network`)}
+              onClick={() => {
+                setRackFlow(urlRackId, NETWORK);
+                navigate(`/results/${encodeURIComponent(urlRackId || rackId)}/network`);
+              }}
             >
               Analyse the network
             </button>
