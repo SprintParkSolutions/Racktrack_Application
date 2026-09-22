@@ -201,82 +201,138 @@ export function actionsFor({ role, waiting = 0 }) {
 }
 
 export function RackArt({ className = '' }) {
-  const shelves = [
-    { y: 30, ports: 8, read: false },
-    { y: 60, ports: 8, read: true },
-    { y: 90, ports: 0, read: false },
-    { y: 120, ports: 0, read: false },
+  /* The rack, drawn in three dimensions and standing on a floor.
+   *
+   * It was a flat elevation, which said "a rack" and nothing else. The owner
+   * asked on 22 Sep 2026 for something premium: a real 3D rack, alive, or a
+   * data centre floor. So it is a cabinet seen from the front-left in true
+   * isometric - a front face, a side face and a lit top - standing on a floor
+   * that recedes, with a second cabinet behind it to say this is a row and
+   * not an object on a shelf.
+   *
+   * The geometry is one projection used twice. A point on the front face is
+   * (u across, v down); a point on the side face is (t back, v down). Every
+   * shelf, port and edge is placed through those two functions, so the whole
+   * drawing keeps one vanishing direction and nothing has to be eyeballed.
+   */
+  const X0 = 44;      // where the front-left upright stands
+  const Y0 = 58;
+  const FW = 74;      // the front face, across
+  const FS = 26;      // and how far it drops as it goes right
+  const H = 112;      // how tall the cabinet is
+  const SW = 38;      // the side face, going back
+  const SS = 22;      // and how far it rises
+
+  const F = (u, v) => [X0 + u * FW, Y0 + u * FS + v];
+  const S = (t, v) => [X0 + FW + t * SW, Y0 + FS - t * SS + v];
+  const pts = (...list) => list.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+
+  /* Four shelves. The second has been read: its ports are lit and it carries
+     the tick, which is the one piece of colour in the drawing. */
+  const SHELVES = [
+    { v: 16, ports: 7, read: false },
+    { v: 40, ports: 7, read: true },
+    { v: 64, ports: 0, read: false },
+    { v: 88, ports: 0, read: false },
   ];
+  const SH = 15;      // how tall one shelf is on the face
+
   return (
-    <svg className={className} viewBox="0 0 168 200" fill="none" role="img"
-      aria-label="A rack, drawn, with one shelf read through a viewfinder">
+    <svg className={className} viewBox="0 0 200 230" fill="none" role="img"
+      aria-label="A rack, drawn in three dimensions, with one shelf read">
       <defs>
-        <pattern id="ra-grid" width="12" height="12" patternUnits="userSpaceOnUse">
-          <path d="M12 0H0V12" stroke="#E9ECF1" strokeWidth="1" fill="none" />
-        </pattern>
-        {/* The grid is texture, not a box: it is strongest behind the rack and
-            gone by the edges, so the drawing sits on the page rather than in a
-            frame of its own. */}
-        <radialGradient id="ra-fade" cx="50%" cy="48%" r="52%">
-          <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
-          <stop offset="62%" stopColor="#ffffff" stopOpacity="0.55" />
-          <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
-        </radialGradient>
-        <mask id="ra-mask">
-          <rect x="0" y="0" width="168" height="200" fill="url(#ra-fade)" />
-        </mask>
-        {/* A wash under the read shelf alone, not behind the whole rack: a
-            halo round the body read as a smudge on the screen. */}
-        <radialGradient id="ra-glow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#0F7B4F" stopOpacity="0.16" />
-          <stop offset="100%" stopColor="#0F7B4F" stopOpacity="0" />
-        </radialGradient>
-        <linearGradient id="ra-body" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id="ra-front" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#FFFFFF" />
-          <stop offset="100%" stopColor="#FBFBFD" />
+          <stop offset="100%" stopColor="#F1F4F8" />
         </linearGradient>
+        <linearGradient id="ra-side" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#E7ECF2" />
+          <stop offset="100%" stopColor="#DCE3EB" />
+        </linearGradient>
+        <linearGradient id="ra-top" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#FFFFFF" />
+          <stop offset="100%" stopColor="#F4F7FA" />
+        </linearGradient>
+        <radialGradient id="ra-floor" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#0B1524" stopOpacity=".20" />
+          <stop offset="70%" stopColor="#0B1524" stopOpacity=".05" />
+          <stop offset="100%" stopColor="#0B1524" stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id="ra-glow" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#0F7B4F" stopOpacity="0" />
+          <stop offset="50%" stopColor="#0F7B4F" stopOpacity=".55" />
+          <stop offset="100%" stopColor="#0F7B4F" stopOpacity="0" />
+        </linearGradient>
+        <clipPath id="ra-face">
+          <polygon points={pts(F(0, 0), F(1, 0), F(1, H), F(0, H))} />
+        </clipPath>
       </defs>
 
-      <rect x="0" y="0" width="168" height="200" fill="url(#ra-grid)" mask="url(#ra-mask)" />
-      <ellipse cx="84" cy="72" rx="62" ry="26" fill="url(#ra-glow)" />
+      {/* The floor: two lines running back to the same vanishing direction as
+          the cabinet, and the shadow it casts on them. */}
+      <g stroke="#DDE3EA" strokeWidth="1">
+        <line x1="10" y1="196" x2={X0 + FW + SW + 26} y2={196 - 24} />
+        <line x1="16" y1="212" x2={X0 + FW + SW + 34} y2={212 - 26} />
+      </g>
+      <ellipse cx={X0 + FW * 0.62} cy={Y0 + H + FS + 14} rx="74" ry="17" fill="url(#ra-floor)" />
 
-      {/* The rack: a body with rails, four shelves, and the one that has been
-          read carrying lit ports and a tick. */}
-      <rect x="30" y="14" width="108" height="162" rx="14"
-        fill="url(#ra-body)" stroke="#C6CCD6" strokeWidth="2" />
-      <line x1="41" y1="22" x2="41" y2="168" stroke="#EBEEF2" strokeWidth="1.4" />
-      <line x1="127" y1="22" x2="127" y2="168" stroke="#EBEEF2" strokeWidth="1.4" />
-      {shelves.map((sh) => (
-        <g key={sh.y}>
-          <rect x="46" y={sh.y} width="76" height="23" rx="6.5"
-            fill={sh.read ? '#E8F3EC' : '#F4F5F8'}
-            stroke={sh.read ? '#B9DAC9' : '#E6E9EE'} strokeWidth="1.2" />
-          {Array.from({ length: sh.ports }, (_, i) => (
-            <rect key={i} x={52 + i * 7.6} y={sh.y + 13.5} width="5" height="4.5" rx="1.3"
-              fill={sh.read ? '#5CA47E' : '#D6DAE1'} />
-          ))}
+      {/* The cabinet behind, which makes it a row rather than one box. */}
+      <g opacity=".45">
+        <polygon points={pts([X0 - 26, Y0 - 16], [X0 - 26 + 52, Y0 - 16 + 18],
+          [X0 - 26 + 52, Y0 - 16 + 18 + 84], [X0 - 26, Y0 - 16 + 84])}
+          fill="#F4F7FA" stroke="#E2E8EF" strokeWidth="1.4" />
+        <polygon points={pts([X0 - 26, Y0 - 16], [X0 - 26 + 52, Y0 - 16 + 18],
+          [X0 - 26 + 52 + 22, Y0 - 16 + 18 - 12], [X0 - 26 + 22, Y0 - 16 - 12])}
+          fill="#FAFCFE" stroke="#E2E8EF" strokeWidth="1.2" />
+      </g>
+
+      {/* The cabinet: side, top, then the front over them. */}
+      <polygon points={pts(F(1, 0), S(1, 0), S(1, H), F(1, H))}
+        fill="url(#ra-side)" stroke="#CBD4DE" strokeWidth="1.4" strokeLinejoin="round" />
+      <polygon points={pts(F(0, 0), F(1, 0), S(1, 0), [X0 + SW, Y0 - SS])}
+        fill="url(#ra-top)" stroke="#CBD4DE" strokeWidth="1.4" strokeLinejoin="round" />
+      <polygon points={pts(F(0, 0), F(1, 0), F(1, H), F(0, H))}
+        fill="url(#ra-front)" stroke="#C3CDD9" strokeWidth="1.6" strokeLinejoin="round" />
+
+      {/* The rails, just inside the uprights. */}
+      <polyline points={pts(F(0.07, 6), F(0.07, H - 6))} stroke="#E6EBF1" strokeWidth="1.4" />
+      <polyline points={pts(F(0.93, 6), F(0.93, H - 6))} stroke="#E6EBF1" strokeWidth="1.4" />
+
+      {SHELVES.map((sh) => (
+        <g key={sh.v}>
+          <polygon
+            points={pts(F(0.1, sh.v), F(0.9, sh.v), F(0.9, sh.v + SH), F(0.1, sh.v + SH))}
+            fill={sh.read ? '#E6F3EC' : '#F5F7FA'}
+            stroke={sh.read ? '#B2D8C6' : '#E3E8EF'}
+            strokeWidth="1.2"
+            strokeLinejoin="round"
+          />
+          {Array.from({ length: sh.ports }, (_, i) => {
+            const u = 0.17 + i * 0.095;
+            const [px, py] = F(u, sh.v + SH * 0.62);
+            return (
+              <rect key={i} x={px - 2.6} y={py - 2} width="5.2" height="4" rx="1.2"
+                fill={sh.read ? '#4F9C78' : '#D6DCE4'} />
+            );
+          })}
           {sh.read && (
-            <path d={`M108 ${sh.y + 10.5} l2.6 2.8 5-5.8`} stroke="#0F7B4F" strokeWidth="2.1"
-              strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            <path d={`M${F(0.83, sh.v + 7)[0]} ${F(0.83, sh.v + 7)[1]} l2.4 2.6 4.6 -5.4`}
+              stroke="#0F7B4F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
           )}
         </g>
       ))}
-      {/* One cable, leaving the read shelf. A rack is never only boxes. */}
-      <path d="M122 72 C 142 78, 144 108, 130 130" stroke="#CDD2DB" strokeWidth="1.8"
-        strokeLinecap="round" fill="none" />
-      <line x1="50" y1="176" x2="50" y2="186" stroke="#C6CCD6" strokeWidth="2.8" strokeLinecap="round" />
-      <line x1="118" y1="176" x2="118" y2="186" stroke="#C6CCD6" strokeWidth="2.8" strokeLinecap="round" />
-      {/* What it stands on, so it is not floating. */}
-      <ellipse cx="84" cy="190" rx="50" ry="4" fill="#0B0B0C" opacity="0.05" />
 
-      {/* The viewfinder: the one motif that says photograph without printing
-          one. Longer arms than corners alone, so it reads as framing. */}
-      <g stroke="#0F7B4F" strokeWidth="2.3" strokeLinecap="round" fill="none">
-        <path d="M8 30 V10 H28" />
-        <path d="M140 10 H160 V30" />
-        <path d="M160 170 V190 H140" />
-        <path d="M28 190 H8 V170" />
+      {/* The reading, passing down the face. It rests out of sight above the
+          cabinet, so the drawing at rest is the rack itself. */}
+      <g clipPath="url(#ra-face)">
+        <polygon className="ra-sweep" points={pts(F(0, -18), F(1, -18), F(1, 6), F(0, 6))}
+          fill="url(#ra-glow)" />
       </g>
+
+      {/* The feet it stands on. */}
+      <polyline points={pts(F(0.12, H), F(0.12, H + 7))} stroke="#C3CDD9" strokeWidth="2.4" strokeLinecap="round" />
+      <polyline points={pts(F(0.88, H), F(0.88, H + 7))} stroke="#C3CDD9" strokeWidth="2.4" strokeLinecap="round" />
+      <polyline points={pts(S(1, H), S(1, H + 6))} stroke="#C3CDD9" strokeWidth="2.2" strokeLinecap="round" />
     </svg>
   );
 }

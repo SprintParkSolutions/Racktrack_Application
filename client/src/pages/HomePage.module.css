@@ -245,14 +245,29 @@
    narrow phone. */
 .bannerArt {
   flex: 0 1 auto;
-  width: 128px;
-  height: 152px;
-  min-width: 92px;
-  margin-right: -6px;
+  width: 148px;
+  height: 170px;
+  min-width: 104px;
+  margin-right: -8px;
+}
+/* The reading passes down the face, once every few seconds. It rests above
+   the cabinet, out of the clip, so the drawing at rest is the rack itself and
+   nothing is mid-animation in a screenshot. */
+:global(.ra-sweep) {
+  animation: ra-read 4.2s cubic-bezier(.4, 0, .2, 1) infinite;
+}
+@keyframes ra-read {
+  0%, 12% { transform: translateY(0); opacity: 0; }
+  20% { opacity: 1; }
+  74% { transform: translateY(118px); opacity: 1; }
+  86%, 100% { transform: translateY(118px); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :global(.ra-sweep) { animation: none; opacity: 0; }
 }
 @media (max-width: 359px) {
   .banner { gap: 10px; }
-  .bannerArt { width: 100px; height: 118px; margin-right: -4px; }
+  .bannerArt { width: 112px; height: 130px; margin-right: -6px; }
 }
 
 /* ── The action ─────────────────────────────────────────────────────
