@@ -662,6 +662,25 @@ export default function ReportPage() {
               </section>
             )}
 
+            {/* What to do once the report has been read, said at the end of it.
+                Reading the report is not the job - checking the rack against
+                the customer's record is - and until 22 Sep 2026 the only way on
+                was an item inside a menu called Check, which the people testing
+                it did not find. The page now closes on the next step, in the
+                words of the thing it does. */}
+            <section className={styles.next}>
+              <p className={styles.nextLine}>
+                This is what the rack holds. Nothing here has been checked against your record yet.
+              </p>
+              <button
+                type="button"
+                className={styles.nextGo}
+                onClick={() => navigate(`/results/${encodeURIComponent(rackId)}/drift`)}
+              >
+                Check against the record
+              </button>
+            </section>
+
           </>
         )}
 

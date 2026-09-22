@@ -66,6 +66,9 @@ const draw = () => render(
   <MemoryRouter initialEntries={['/results/r1/report']}>
     <Routes>
       <Route path="/results/:rackId/report" element={<ReportPage />} />
+      {/* Where the report's closing step goes. Named here so a test can follow
+          the button rather than assert on its handler. */}
+      <Route path="/results/:rackId/drift" element={<p>the drift check</p>} />
     </Routes>
   </MemoryRouter>,
 );
@@ -74,6 +77,17 @@ beforeEach(() => { reply.doc = doc(); reply.view = view(); });
 afterEach(cleanup);
 
 describe('ReportPage', () => {
+  /* The report is read and then the rack has to be checked against the record.
+     The people testing it did not find the way on, because it was an item
+     inside a menu, so the page closes on the step itself. */
+  test('the report closes on the check, and the button gets there', async () => {
+    draw();
+    const go = await screen.findByRole('button', { name: 'Check against the record' });
+    expect(screen.getByText(/Nothing here has been checked against your record yet/)).toBeTruthy();
+    fireEvent.click(go);
+    expect(await screen.findByText('the drift check')).toBeTruthy();
+  });
+
   test('a match nobody confirmed is named as a proposal', async () => {
     draw();
     // One phrase for every matched device; the colour - carried as data-match -

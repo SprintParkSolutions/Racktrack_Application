@@ -327,3 +327,21 @@
 .chevOpen { transform: rotate(180deg); }
 @media (prefers-reduced-motion: reduce) { .chev { transition: none; } }
 .rowHead:focus-visible { outline: 2px solid #1f4e79; outline-offset: 2px; border-radius: 4px; }
+
+/* ── The way on, at the end of the report ── */
+.next {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
+  margin: 22px 16px calc(24px + var(--nav-clear, 0px));
+  padding: 16px;
+  border: 1px solid var(--border, rgba(0,0,0,.12)); border-radius: 12px;
+  background: var(--card, #ffffff);
+}
+.nextLine { margin: 0; font-size: var(--fs-body); color: var(--muted); }
+.nextGo {
+  min-height: 44px; padding: 10px 18px;
+  border: 0; border-radius: 10px;
+  background: #0f7b4f; color: #ffffff;
+  font-family: var(--font); font-size: var(--fs-item); font-weight: var(--fw-title);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.nextGo:active { opacity: .9; }
