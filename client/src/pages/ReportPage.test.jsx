@@ -83,7 +83,7 @@ describe('ReportPage', () => {
      in words, and it is the only filled one on the page. */
   test('the step after the report is a named control, and it gets there', async () => {
     draw();
-    const go = await screen.findByRole('button', { name: 'Check against the record' });
+    const go = await screen.findByRole('button', { name: 'Drift check' });
     fireEvent.click(go);
     expect(await screen.findByText('the drift check')).toBeTruthy();
   });

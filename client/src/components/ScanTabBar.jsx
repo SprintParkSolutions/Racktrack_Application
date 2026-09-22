@@ -33,12 +33,15 @@ const NETWORK_TABS = [
 /* Looking a port up leads with the rack, then the port itself, then every
    other way on. Report and Drift are about the whole rack and had no business
    in the front row of a screen about one socket, so they are under More. */
+/* Looking a port up. No Drift: comparing the rack against the record is the
+   other workflow's job, and the owner asked on 22 Sep 2026 for it to stop
+   appearing here. Everything else a person may want after finding a port is
+   still one tap away. */
 const PORT_TABS = [
   { key: 'overview', label: 'Rack',     icon: <IconRack /> },
   { key: 'result',   label: 'Port',     icon: <IconPort /> },
   { key: 'switches', label: 'Switches', icon: <IconSwitch /> },
   { key: 'network',  label: 'Network',  icon: <IconNetwork /> },
-  { key: 'drift',    label: 'Drift',    icon: <IconDrift /> },
   { key: 'topology', label: 'Topology', icon: <IconTopology /> },
   { key: 'report',   label: 'Report',   icon: <IconReport /> },
 ];

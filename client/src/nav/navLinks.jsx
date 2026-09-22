@@ -11,6 +11,7 @@
  * everywhere or nowhere. Add new destinations HERE, not in a component.
  */
 import { useAuth } from '../AuthContext.jsx';
+import { useApprovalsCan } from '../hooks/useApprovalsCan.js';
 import { APPROVALS_URL } from '../utils/approvals.js';
 
 /* ── icons ─────────────────────────────────────────────────────────────
@@ -90,6 +91,10 @@ export function usePrimaryNav() {
   const { user } = useAuth();
   const isOwner = user?.role === 'owner';
   const isAdmin = isOwner || user?.role === 'org_admin';
+  // Whether this account is the single point of contact of a Site, which is
+  // the server's answer and not something a role implies.
+  const can = useApprovalsCan();
+  const isSpoc = Boolean(can && can.spoc);
 
   return [
     // ── Rack work. Home is first: "/" is the app's landing screen again, so
@@ -107,20 +112,20 @@ export function usePrimaryNav() {
       inBar: true, barLabel: '2 Racks',
       hint: 'Two racks as one job' },
     { group: 'work', to: '/history', label: 'Scan history', icon: <HistoryIcon />, end: false },
-    // Approvals is its own application on its own address, so this
-    // entry carries `href` instead of `to`: the bar, the Menu and the sidebar
-    // draw it as a link that leaves the app (components/ExternalLink.jsx).
-    // Not gated. A technician has a real queue in RackTrack Drift Desk - their own
-    // tickets and their verification queue - and GET /api/approvals/me confirms
-    // it, returning verify:true for a member. Hiding the link asked them to
-    // check the rack and then gave them nowhere to see what they had checked,
-    // and left their phone bar with two entries where an admin has three. What
-    // each person may DO there is decided server side and unchanged by this.
-    // `barLabel` because the bar carries five tabs now: "DRIFT DESK" wrapped
-    // onto two lines and pushed its own row out of line with the others.
-    { group: 'work', href: APPROVALS_URL, label: 'Drift Desk', icon: <InboxIcon />,
+    // Approvals is its own application on its own address, so this entry
+    // carries `href` instead of `to`: the bar, the Menu and the sidebar draw
+    // it as a link that leaves the app (components/ExternalLink.jsx).
+    //
+    // Who sees it: an organisation admin, and whoever is a Site's single
+    // point of contact. Not a technician. The owner's direction on 22 Sep
+    // 2026 - a technician does not run a drift dashboard, they check a rack
+    // and then follow the one check they sent, which the drift screen's
+    // "Track this check" gives them. Deciding by `can.spoc` rather than by
+    // role is the point: a technician who is a Site's contact does hold
+    // checks, and does get the Desk.
+    ...(isAdmin || isSpoc ? [{ group: 'work', href: APPROVALS_URL, label: 'Drift Desk', icon: <InboxIcon />,
       inBar: true, barLabel: 'Drift',
-      hint: isAdmin ? 'Opens RackTrack Drift Desk' : 'Your checks in RackTrack Drift Desk' },
+      hint: isAdmin ? 'Opens RackTrack Drift Desk' : 'The checks that are with you' }] : []),
 
     // ── Organization: owners and organisation admins.
     ...(isAdmin ? [{ group: 'org', to: '/organizations', label: 'Organizations', icon: <OrgIcon />, end: false,
@@ -129,14 +134,13 @@ export function usePrimaryNav() {
     // Profile page and the organisation console, not from the rail.
     ...(isAdmin ? [{ group: 'org', to: '/connections', label: 'Data sources', icon: <DataSourcesIcon />, end: false,
       hint: 'NetBox and ServiceNow' }] : []),
-    ...(isAdmin ? [{ group: 'org', to: '/marketplace', label: 'Marketplace', icon: <MarketIcon />, end: false,
-      hint: 'Buy and sell hardware' }] : []),
+    // Marketplace and Lab are not linked from anywhere for now, on the
+    // owner's direction of 22 Sep 2026. Their routes and their screens are
+    // untouched, so putting either back is one line here.
 
     // ── Platform: the owner's tools.
     ...(isOwner ? [{ group: 'platform', to: '/dashboard', label: 'Console', icon: <DashboardIcon />, end: false,
       hint: 'Live operations and logs' }] : []),
-    ...(isOwner ? [{ group: 'platform', to: '/lab', label: 'Lab', icon: <LabIcon />, end: false,
-      hint: 'Switches in the test lab' }] : []),
 
     // ── Help
     { group: 'help', to: '/help', label: 'Ask DOT', icon: <HelpIcon />, end: false,

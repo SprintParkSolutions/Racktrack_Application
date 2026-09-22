@@ -1329,23 +1329,28 @@ export default function SwitchTestPage() {
       <PageHeader title="Network" back={() => navigate(-1)} action={<ThemeToggle />} />
 
       {/* Two halves of one page: the switches as they are now, and what has
-          changed on their ports over time. */}
-      <div className={styles.viewSeg} role="tablist" aria-label="What to show">
-        <button
-          type="button" role="tab" aria-selected={view === 'switches'}
-          className={`${styles.viewBtn} ${view === 'switches' ? styles.viewOn : ''}`}
-          onClick={() => setView('switches')}
-        >
-          Switches
-        </button>
-        <button
-          type="button" role="tab" aria-selected={view === 'timeline'}
-          className={`${styles.viewBtn} ${view === 'timeline' ? styles.viewOn : ''}`}
-          onClick={() => setView('timeline')}
-        >
-          Timeline
-        </button>
-      </div>
+          changed on their ports over time. The Timeline only exists once a
+          switch does - there is no history of ports nobody has read, and the
+          owner asked on 22 Sep 2026 for it to stop offering an empty page
+          before the first switch is added. */}
+      {switches.length > 0 && (
+        <div className={styles.viewSeg} role="tablist" aria-label="What to show">
+          <button
+            type="button" role="tab" aria-selected={view === 'switches'}
+            className={`${styles.viewBtn} ${view === 'switches' ? styles.viewOn : ''}`}
+            onClick={() => setView('switches')}
+          >
+            Switches
+          </button>
+          <button
+            type="button" role="tab" aria-selected={view === 'timeline'}
+            className={`${styles.viewBtn} ${view === 'timeline' ? styles.viewOn : ''}`}
+            onClick={() => setView('timeline')}
+          >
+            Timeline
+          </button>
+        </div>
+      )}
 
       <div className={styles.scroll}>
         {/* The phone does the reading, so say so before anyone presses a button
@@ -1356,7 +1361,7 @@ export default function SwitchTestPage() {
           </p>
         )}
 
-        {view === 'timeline' ? (
+        {view === 'timeline' && switches.length > 0 ? (
           <section className={styles.panel}>
             <div className={styles.bandHead}>
               <h2>What changed on these ports</h2>

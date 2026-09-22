@@ -47,7 +47,12 @@ import ExternalLink from './ExternalLink.jsx';
  */
 function RackTabs({ rackId, pathname, hash }) {
   const navigate = useNavigate();
-  const flow = useRackFlow(rackId);
+  // Null means nobody has chosen a job yet. That only happens on the rack's
+  // own Overview, which draws no bar at all and never reaches here; on any
+  // other screen of the rack - a link straight into Report, say - the network
+  // workflow is the one the Overview offers first, so its bar is the honest
+  // one to draw.
+  const flow = useRackFlow(rackId) || NETWORK;
   const base = `/results/${encodeURIComponent(rackId)}`;
   // Which screen this is. The rack's root is the port lookup while the rack is
   // in that workflow - that is what the results page opens there - and the

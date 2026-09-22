@@ -397,7 +397,7 @@ export default function ReportPage() {
           disabled={!doc || scanId === null}
           onClick={() => navigate(`/results/${encodeURIComponent(rackId)}/drift`)}
         >
-          Check against the record
+          Drift check
         </button>
         {[
           ['download', 'Download', <IconDownload key="i" />, [

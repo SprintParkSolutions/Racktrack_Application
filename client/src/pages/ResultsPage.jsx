@@ -4714,11 +4714,12 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
       {/* Rack-tab strip - only renders when this rack is part of a multi-rack scan */}
       {!embeddedProp && <RackTabs rackId={rackId || scanId} />}
 
-      {/* The rack's tabs appear once there is a job in progress, not before.
-          Straight after a scan the page is the photograph and one question - read the switches, or look at a port - and a row of tabs under it
-          would be five more answers to a question nobody asked yet. Choosing
-          either one brings the tabs in, and they stay for the rest of the rack. */}
-      {!isDesktop && !embeddedProp && (
+      {/* The rack's tabs appear once a job has been chosen, not before.
+          Straight after a scan the page is the photograph and one question -
+          analyse the rack, or look a port up - and a row of tabs under it
+          answers a question nobody asked yet. Choosing either one brings the
+          tabs in, and they stay for the rest of the rack. */}
+      {!isDesktop && !embeddedProp && rackFlow && (
         <ScanTabBar
           flow={rackFlow}
           activeTab={portMode && tab === 'overview' ? 'result' : tab}

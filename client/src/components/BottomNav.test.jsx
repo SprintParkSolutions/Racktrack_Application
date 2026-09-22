@@ -89,10 +89,11 @@ describe('<BottomNav> on a rack', () => {
     // The bar is the same four and the same More on the rack's own page, on
     // Network, and on Switches - it used to become the other workflow's the
     // moment the person left the located port.
-    for (const where of ['/results/RK-1', '/results/RK-1/network', '/switch-info/RK-1', '/results/RK-1/drift']) {
+    for (const where of ['/results/RK-1', '/results/RK-1/network', '/switch-info/RK-1']) {
       mountAt(where);
       expect(labels()).toEqual(['Rack', 'Port', 'Switches', 'Network']);
-      expect(inMore()).toEqual(['Drift', 'Topology', 'Report']);
+      // No Drift: comparing the rack against the record is the other job.
+      expect(inMore()).toEqual(['Topology', 'Report']);
       cleanup();
     }
   });
@@ -132,7 +133,14 @@ describe('<BottomNav> on a rack', () => {
     mountAt('/results/RK-1/network');
     expect(tapInMore('Topology')).toBe('/results/RK-1/topology');
     expect(tapInMore('Report')).toBe('/results/RK-1/report');
-    expect(tapInMore('Drift')).toBe('/results/RK-1/drift');
+  });
+
+  /* Nobody has chosen a job yet: every other screen of the rack still draws a
+     bar, and it is the one the Overview offers first. The Overview itself
+     draws none, which is the results page's own doing. */
+  test('a rack with no job chosen still carries the network bar on its other screens', () => {
+    mountAt('/results/RK-9/report');
+    expect(labels()).toEqual(['Overview', 'Network', 'Report', 'Drift']);
   });
 
   test('one rack in the port workflow does not drag another into it', () => {

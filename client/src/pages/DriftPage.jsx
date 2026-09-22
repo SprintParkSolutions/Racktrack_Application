@@ -597,28 +597,44 @@ export default function DriftPage() {
   // something - so they are one row of the same control, and the sentence
   // that explained the report is the one line under the row.
   const reportable = plan && !busy && compared;
-  const canOpenIncident = sent && incident && incident.system !== 'none'
-    && incident.number && /^https?:\/\//.test(String(incident.url || ''));
-  const actions = (reportable || canOpenIncident || (sent && plan)) ? (
+  // Opening ServiceNow came off on 22 Sep 2026: the incident number is on the
+  // screen already, the people who work incidents work them in ServiceNow
+  // anyway, and a third control on this row made the two that matter smaller.
+  const actions = (reportable || (sent && plan)) ? (
     <div className={styles.actions}>
       <div className={styles.actionRow}>
-        {canOpenIncident && (
-          <ExternalLink className={styles.action} href={incident.url}>Open in ServiceNow</ExternalLink>
-        )}
         {reportable && (
           <button type="button" className={styles.action} onClick={openReport} disabled={reportBusy}>
-            {reportBusy ? 'Opening the report' : 'Drift report'}
+            <span className={styles.actionGlyph} aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+                strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z" />
+                <path d="M14 3v5h5" /><path d="M9 13h6" /><path d="M9 17h4" />
+              </svg>
+            </span>
+            <span className={styles.actionText}>
+              <b>{reportBusy ? 'Opening the report' : 'Drift report'}</b>
+              <small>One page of this comparison</small>
+            </span>
           </button>
         )}
         {sent && plan && (
-          <ExternalLink className={styles.action} href={driftCheckUrl(plan.id)}>Track this check</ExternalLink>
+          <ExternalLink className={styles.action} href={driftCheckUrl(plan.id)}>
+            <span className={styles.actionGlyph} aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+                strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.5 2" />
+              </svg>
+            </span>
+            <span className={styles.actionText}>
+              <b>Track this check</b>
+              <small>Where it is, and who has it</small>
+            </span>
+          </ExternalLink>
         )}
       </div>
-      {reportable && (
-        <p className={styles.actionNote}>
-          The drift report is one page of this comparison.
-          {!sent ? ' It is attached to the incident when you send.' : incident?.number ? ' It is attached to the incident.' : ''}
-        </p>
+      {reportable && !sent && (
+        <p className={styles.actionNote}>The report is attached to the incident when you send.</p>
       )}
     </div>
   ) : null;
@@ -877,6 +893,11 @@ export default function DriftPage() {
           {/* The three counts were the last thing on the page with nothing
               saying what they counted. */}
           <h2 className={styles.sectionHead}>The rest of the rack</h2>
+          {/* These were three outlined pills on a white ground and testers
+              did not know they were controls at all: "I did not know they
+              were buttons". They are filled now, each with a chevron that
+              turns when its list is open, so the shape says press me and the
+              mark says this opens. */}
           <div className={styles.quietPick} role="tablist" aria-label="The rest of the rack">
             {compared && matching.length > 0 && (
               <button type="button" role="tab" aria-selected={rest === 'matched'}
@@ -884,6 +905,7 @@ export default function DriftPage() {
                 onClick={() => setRest(rest === 'matched' ? null : 'matched')}>
                 <span className={styles.dotOk} aria-hidden="true" />
                 Matched<b>{matching.length}</b>
+                <i className={styles.quietChev} aria-hidden="true" />
               </button>
             )}
             {compared && notSeen.length > 0 && (
@@ -892,6 +914,7 @@ export default function DriftPage() {
                 onClick={() => setRest(rest === 'notseen' ? null : 'notseen')}>
                 <span className={styles.dotIdle} aria-hidden="true" />
                 Not seen<b>{notSeen.length}</b>
+                <i className={styles.quietChev} aria-hidden="true" />
               </button>
             )}
             {ports && (
@@ -900,6 +923,7 @@ export default function DriftPage() {
                 onClick={() => setRest(rest === 'ports' ? null : 'ports')}>
                 <span className={styles.dotPort} aria-hidden="true" />
                 Ports<b>{portTotal}</b>
+                <i className={styles.quietChev} aria-hidden="true" />
               </button>
             )}
           </div>

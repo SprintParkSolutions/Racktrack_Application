@@ -27,20 +27,35 @@ const KEY = (rackId) => `rt.rack.flow.${rackId}`;
  *  one the phone's bottom nav draws - redraw together. */
 export const RACK_FLOW_EVENT = 'rt:rack-flow-changed';
 
-/** The workflow this rack is in. Unset, unreadable or unknown → the network one. */
+/**
+ * The workflow this rack is in, or null when nobody has chosen one yet.
+ *
+ * Null is the state straight after a scan, and it matters: the owner asked on
+ * 22 Sep 2026 for no tab bar before a person has picked analysing the rack or
+ * looking a port up. A bar of tabs under a screen that is asking one question
+ * answers a question nobody asked. Every caller that needs a concrete
+ * workflow reads `getRackFlowOr()` instead.
+ */
 export function getRackFlow(rackId) {
-  if (!rackId) return NETWORK;
-  return getItem(KEY(rackId), 'session') === PORT ? PORT : NETWORK;
+  if (!rackId) return null;
+  const held = getItem(KEY(rackId), 'session');
+  if (held === PORT) return PORT;
+  if (held === NETWORK) return NETWORK;
+  return null;
 }
+
+/** The workflow, with the network one standing in for "not chosen yet". */
+export const getRackFlowOr = (rackId) => getRackFlow(rackId) || NETWORK;
 
 export function setRackFlow(rackId, flow) {
   if (!rackId) return;
   if (flow === PORT) setItem(KEY(rackId), PORT, 'session');
+  else if (flow === NETWORK) setItem(KEY(rackId), NETWORK, 'session');
   else removeItem(KEY(rackId), 'session');
   try {
     window.dispatchEvent(new CustomEvent(RACK_FLOW_EVENT, { detail: { rackId, flow: flow === PORT ? PORT : NETWORK } }));
   } catch { /* no window (tests, SSR) - the next read still gets the value */ }
 }
 
-/** Back to the workflow the Overview offers first. */
-export const clearRackFlow = (rackId) => setRackFlow(rackId, NETWORK);
+/** Back to no workflow at all: the Overview asks again. */
+export const clearRackFlow = (rackId) => setRackFlow(rackId, null);

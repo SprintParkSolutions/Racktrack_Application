@@ -58,7 +58,15 @@ describe('<ScanTabBar>', () => {
     expect(labels()).toEqual(['Rack', 'Port', 'Switches', 'Network']);
     expect(selected()).toEqual(['Port']);
     fireEvent.click(screen.getByRole('button', { name: /More/ }));
-    expect(screen.getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Drift', 'Topology', 'Report']);
+    expect(screen.getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Topology', 'Report']);
+  });
+
+  /* Comparing the rack against the record belongs to the other workflow.
+     Looking a port up never offers it, on the bar or under More. */
+  test('no Drift anywhere in the port workflow', () => {
+    render(<ScanTabBar flow="port" activeTab="result" onTabChange={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: /More/ }));
+    expect(screen.queryByText('Drift')).toBeNull();
   });
 
   test('in the port workflow Switches and Topology are tabs of their own, not Overview', () => {

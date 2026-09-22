@@ -98,7 +98,7 @@ describe('<DriftPage>', () => {
     expect(screen.queryByRole('group', { name: 'Summary of the comparison' })).toBeNull();
     expect(document.body.textContent).not.toMatch(/Send it to/);
     // Nothing to track until it has been sent.
-    expect(screen.queryByRole('link', { name: 'Track this check' })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Track this check/ })).toBeNull();
   });
 
   test('a server that names nobody: the button still raises the incident, and no Goes to block is drawn', async () => {
@@ -140,7 +140,7 @@ describe('<DriftPage>', () => {
     expect(buttonNames().filter((n) => FORBIDDEN.test(n))).toEqual([]);
     expect(screen.getByText('Waiting on the SPOC')).toBeTruthy();
     // One link out: this check, in RackTrack Approvals.
-    const track = screen.getAllByRole('link', { name: 'Track this check' });
+    const track = screen.getAllByRole('link', { name: /Track this check/ });
     expect(track).toHaveLength(1);
     expect(track[0].getAttribute('href')).toBe('/approvals/drifts/7');
     expect(track[0].getAttribute('target')).toBe('_blank');
@@ -237,9 +237,9 @@ describe('<DriftPage> choosing and following', () => {
     // the four steps are that one line now
     expect(document.querySelector('ol[aria-label="Progress of this check"]')).toBeNull();
     expect(document.body.textContent).not.toMatch(/Sent to dc007\.spoc|It is with/);
-    // one incident for the check, and the way to it - never its address in words
-    const link = screen.getByRole('link', { name: 'Open in ServiceNow' });
-    expect(link.getAttribute('href')).toBe(INCIDENT.url);
+    // The incident's number is on the screen; the way into ServiceNow is not
+    // a control here any more, and no address is ever printed.
+    expect(screen.queryByRole('link', { name: /ServiceNow/ })).toBeNull();
     expect(document.body.textContent).not.toMatch(/https?:\/\//);
     // one line says who has it; the ticket per difference is not listed
     expect(screen.queryByText(/INC0010042 - open/)).toBeNull();
@@ -251,12 +251,13 @@ describe('<DriftPage> choosing and following', () => {
     routes.current[FLOW] = { body: { plan: { id: 7, status: 'assigned' }, holder: { username: 'dc007.spoc' }, incident: INCIDENT } };
     mount();
     await screen.findByText(/^(Sent|It needs an admin|The record has been updated)$/);
-    const reports = screen.getAllByRole('button', { name: 'Drift report' });
+    const reports = screen.getAllByRole('button', { name: /Drift report/ });
     expect(reports).toHaveLength(1);
     expect(sentBlock().nextElementSibling.contains(reports[0])).toBe(true);
-    // it has been sent, so the line beside it no longer says "when you send"
+    // Two blocks, each saying what it opens, and no sentence under them once
+    // the check has been sent.
     expect(sentBlock().nextElementSibling.textContent)
-      .toBe('Open in ServiceNowDrift reportTrack this checkThe drift report is one page of this comparison. It is attached to the incident.');
+      .toBe('Drift reportOne page of this comparisonTrack this checkWhere it is, and who has it');
   });
 
   test('right after Send the line starts where the check landed, without waiting to be told again', async () => {
@@ -338,9 +339,9 @@ describe('<DriftPage> choosing and following', () => {
     mount();
     await screen.findByText(/^(Sent|It needs an admin|The record has been updated)$/);
     expect(statusLine()).toBe('Written to NetBox');
-    expect(screen.getByRole('link', { name: 'Open in ServiceNow' })).toBeTruthy();
+    expect(screen.queryByRole('link', { name: /ServiceNow/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /^(Send|Raise)/ })).toBeNull();
-    expect(screen.getAllByRole('link', { name: 'Track this check' })).toHaveLength(1);
+    expect(screen.getAllByRole('link', { name: /Track this check/ })).toHaveLength(1);
   });
 
   test('a written check on a server that cannot be followed still ends on Written', async () => {
@@ -462,8 +463,9 @@ describe('<DriftPage> the whole comparison', () => {
     expect(document.body.textContent).not.toMatch(/Matching your records|not seen in the photo/);
     // the count is said once, and the sentence under it says the rest agrees
     expect(document.body.textContent.match(/1 difference/g)).toHaveLength(1);
-    expect(screen.getByRole('button', { name: 'Drift report' })).toBeTruthy();
-    expect(screen.getByText('The drift report is one page of this comparison. It is attached to the incident when you send.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Drift report/ })).toBeTruthy();
+    expect(screen.getByText('One page of this comparison')).toBeTruthy();
+    expect(screen.getByText('The report is attached to the incident when you send.')).toBeTruthy();
   });
 
   test('each thing is said once, and in the order a person needs it', async () => {
@@ -500,7 +502,7 @@ describe('<DriftPage> the whole comparison', () => {
     const opened = vi.spyOn(window, 'open').mockImplementation(() => null);
     mount();
     await screen.findByText('SW-16');
-    fireEvent.click(screen.getByRole('button', { name: 'Drift report' }));
+    fireEvent.click(screen.getByRole('button', { name: /Drift report/ }));
     const frame = await screen.findByTitle('Drift report');
     expect(frame.tagName).toBe('IFRAME');
     expect(frame.getAttribute('src')).toMatch(/\/api\/scan\/RK-1\/drift-report\?plan=7&t=tok$/);
@@ -515,7 +517,7 @@ describe('<DriftPage> the whole comparison', () => {
     stub('open', contactsFor(KNOWN), { 'GET /api/scan/RK-1/report-token': { body: { token: 'tok' } } });
     mount();
     await screen.findByText('SW-16');
-    fireEvent.click(screen.getByRole('button', { name: 'Drift report' }));
+    fireEvent.click(screen.getByRole('button', { name: /Drift report/ }));
     const report = await screen.findByRole('dialog', { name: 'Drift report' });
     fireEvent.click(within(report).getByRole('button', { name: 'Back' }));
     expect(screen.queryByRole('dialog', { name: 'Drift report' })).toBeNull();
@@ -526,7 +528,7 @@ describe('<DriftPage> the whole comparison', () => {
     stub('open', contactsFor(KNOWN), { 'GET /api/scan/RK-1/report-token': { body: { token: 'tok' } } });
     mount();
     await screen.findByText('SW-16');
-    fireEvent.click(screen.getByRole('button', { name: 'Drift report' }));
+    fireEvent.click(screen.getByRole('button', { name: /Drift report/ }));
     await screen.findByRole('dialog', { name: 'Drift report' });
     // App.jsx asks the screen first and takes a cancelled event as "handled here"
     let handled = true;

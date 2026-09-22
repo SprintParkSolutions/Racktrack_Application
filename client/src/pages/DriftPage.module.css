@@ -120,22 +120,46 @@
 /* Everything a person can open from this page, on one line, all the same
    control - see the note where the row is built. */
 .actions { padding: 12px var(--gutter); border-bottom: 1px solid var(--hair); }
-.actionRow { display: flex; flex-wrap: wrap; gap: var(--ctl-gap, 6px); }
+/* Two blocks side by side, each carrying its own mark and a line saying what
+   it opens. They were bordered text buttons in a wrapping row with a
+   paragraph under them; at that size the two that matter looked like the
+   third one that has now gone. */
+.actionRow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.actionRow > :only-child { grid-column: 1 / -1; }
 .action {
-  display: inline-flex; align-items: center; justify-content: center;
+  display: flex; align-items: center; gap: 10px;
+  min-height: 60px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--bg2, #f3f4f7);
+  color: var(--text, #1c1c1c);
+  font: inherit;
+  text-align: left; text-decoration: none; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color .14s;
+}
+.action:active { background: var(--hair, #e6e7eb); }
+.action:disabled { opacity: .55; cursor: default; }
+.actionGlyph {
   flex: 0 0 auto;
-  min-height: var(--field-h, 36px);
-  padding: 0 12px;
-  border: 1px solid var(--hair);
-  border-radius: var(--ctl-radius, 8px);
+  width: 32px; height: 32px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 10px;
   background: var(--bg, #fff);
   color: var(--text, #1c1c1c);
-  font: inherit; font-size: var(--fs-body); font-weight: var(--fw-label);
-  text-decoration: none; white-space: nowrap; cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
 }
-.action:hover { border-color: var(--text, #1c1c1c); }
-.action:disabled { opacity: .55; cursor: default; }
+.actionGlyph svg { width: 17px; height: 17px; }
+.actionText { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.actionText b {
+  font-size: var(--fs-body); font-weight: var(--fw-title);
+  color: var(--text, #1c1c1c);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.actionText small {
+  font-size: var(--fs-label); color: var(--muted-1);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .actionNote { margin: 8px 0 0; font-size: var(--fs-sub); line-height: 1.45; color: var(--muted-1); }
 
 /* Read more: the working, for whoever wants it. Closed by default, so the
@@ -280,14 +304,32 @@
 .quiet > .sectionHead { padding: 0 var(--gutter); }
 .quietPick { display: flex; flex-wrap: wrap; gap: var(--ctl-gap, 6px); padding: 0 var(--gutter) 10px; }
 .quietPick::-webkit-scrollbar { display: none; }
+/* Filled, not outlined: testers reported they could not tell these were
+   controls at all. The chevron says the list opens under them, and turns when
+   it is open. */
 .quietTab {
-  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px;
-  min-height: var(--field-h, 36px); padding: 0 12px;
-  border: 1px solid var(--hair); border-radius: 999px;
-  background: transparent; color: var(--muted-1);
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px;
+  min-height: 40px; padding: 0 12px;
+  border: 0; border-radius: 12px;
+  background: var(--bg2, #f3f4f7); color: var(--text, #1c1c1c);
   font-family: var(--font); font-size: var(--fs-body); font-weight: var(--fw-label);
   cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: background-color .14s;
 }
-.quietTab b { font-family: ui-monospace, Menlo, monospace; font-weight: var(--fw-label); color: inherit; }
-.quietOn { border-color: var(--text, #1c1c1c); color: var(--text, #1c1c1c); }
+.quietTab:active { background: var(--hair, #e6e7eb); }
+.quietTab b {
+  font-family: ui-monospace, Menlo, monospace; font-weight: var(--fw-title);
+  color: inherit; font-variant-numeric: tabular-nums;
+}
+.quietChev {
+  width: 7px; height: 7px; margin-left: 1px;
+  border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor;
+  transform: rotate(45deg) translate(-1px, -1px);
+  opacity: .55;
+  transition: transform .16s ease;
+}
+.quietOn { background: var(--text, #1c1c1c); color: var(--bg, #fff); }
+.quietOn .quietChev { transform: rotate(225deg) translate(-1px, -1px); opacity: .8; }
+.quietOn:active { background: #2b2b2b; }
+@media (prefers-reduced-motion: reduce) { .quietChev { transition: none; } }
 .dotPort { width: 7px; height: 7px; border-radius: 50%; background: var(--muted-2, #9a9a9a); flex: none; }
