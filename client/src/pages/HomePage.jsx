@@ -267,14 +267,14 @@ export function RackArt({ className = '' }) {
           <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
         </linearGradient>
         <radialGradient id="rk-halo" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#2E68D6" stopOpacity=".10" />
-          <stop offset="70%" stopColor="#2E68D6" stopOpacity=".02" />
-          <stop offset="100%" stopColor="#2E68D6" stopOpacity="0" />
+          <stop offset="0%" stopColor="#2B5CE0" stopOpacity=".12" />
+          <stop offset="70%" stopColor="#2B5CE0" stopOpacity=".025" />
+          <stop offset="100%" stopColor="#2B5CE0" stopOpacity="0" />
         </radialGradient>
         <radialGradient id="rk-pool" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#0F7B4F" stopOpacity=".38" />
-          <stop offset="58%" stopColor="#0F7B4F" stopOpacity=".10" />
-          <stop offset="100%" stopColor="#0F7B4F" stopOpacity="0" />
+          <stop offset="0%" stopColor="#2B5CE0" stopOpacity=".26" />
+          <stop offset="55%" stopColor="#2B5CE0" stopOpacity=".07" />
+          <stop offset="100%" stopColor="#2B5CE0" stopOpacity="0" />
         </radialGradient>
         <radialGradient id="rk-shadow" cx="50%" cy="50%" r="50%">
           <stop offset="0%" stopColor="#0B1524" stopOpacity=".34" />
@@ -282,27 +282,19 @@ export function RackArt({ className = '' }) {
           <stop offset="100%" stopColor="#0B1524" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="rk-sweep" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#25D07E" stopOpacity="0" />
-          <stop offset="45%" stopColor="#25D07E" stopOpacity=".8" />
-          <stop offset="100%" stopColor="#25D07E" stopOpacity="0" />
+          <stop offset="0%" stopColor="#5AA9FF" stopOpacity="0" />
+          <stop offset="45%" stopColor="#5AA9FF" stopOpacity=".38" />
+          <stop offset="100%" stopColor="#5AA9FF" stopOpacity="0" />
         </linearGradient>
         <clipPath id="rk-face"><polygon points={FACE} /></clipPath>
-        {/* the reflection fades out within a cabinet's own height */}
-        <linearGradient id="rk-fade" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#FFFFFF" stopOpacity=".3" />
-          <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
-        </linearGradient>
-        <mask id="rk-mirror">
-          <rect x="0" y={BASE - 28} width="210" height="90" fill="url(#rk-fade)" />
-        </mask>
       </defs>
 
       {/* the light it stands in */}
       <ellipse cx="108" cy="120" rx="104" ry="112" fill="url(#rk-halo)" />
 
       {/* what it puts on the floor */}
-      <ellipse cx={X0 + FW * 0.66} cy={BASE + 12} rx="104" ry="21" fill="url(#rk-shadow)" />
-      <ellipse cx={X0 + FW * 0.55} cy={BASE + 9} rx="70" ry="14" fill="url(#rk-pool)" />
+      <ellipse cx={X0 + FW * 0.66} cy={BASE + 14} rx="98" ry="18" fill="url(#rk-shadow)" />
+      <ellipse cx={X0 + FW * 0.55} cy={BASE + 14} rx="62" ry="11" fill="url(#rk-pool)" />
 
       {/* the cabinet: side, top, front */}
       <polygon points={SIDE} fill="url(#rk-side)" stroke="#0C1015" strokeWidth="1" strokeLinejoin="round" />
@@ -329,11 +321,11 @@ export function RackArt({ className = '' }) {
             const on = sh.lit && i % 3 !== 2;
             return (
               <rect key={i} x={px - 2.7} y={py - 2.1} width="5.4" height="4.2" rx="1.1"
-                fill={on ? '#3BE08C' : '#59636E'} />
+                fill={on ? '#6BB4FF' : '#59636E'} />
             );
           })}
           {sh.lit && (
-            <circle cx={F(0.875, sh.v + SH * 0.5)[0]} cy={F(0.875, sh.v + SH * 0.5)[1]} r="2.3" fill="#3BE08C" />
+            <circle cx={F(0.875, sh.v + SH * 0.5)[0]} cy={F(0.875, sh.v + SH * 0.5)[1]} r="2.3" fill="#6BB4FF" />
           )}
         </g>
       ))}
@@ -341,17 +333,13 @@ export function RackArt({ className = '' }) {
       {/* the glass door, and the reading passing down behind it */}
       <polygon points={FACE} fill="url(#rk-glass)" />
       <g clipPath="url(#rk-face)">
-        <polygon className="ra-sweep" points={pts(F(0, -24), F(1, -24), F(1, 10), F(0, 10))}
+        <polygon className="ra-sweep" points={pts(F(0, -20), F(1, -20), F(1, 4), F(0, 4))}
           fill="url(#rk-sweep)" />
       </g>
 
-      {/* feet, and what the floor gives back */}
+      {/* feet */}
       <line x1={F(0.05, H + 4)[0]} y1={F(0.05, H + 4)[1]} x2={F(0.95, H + 4)[0]} y2={F(0.95, H + 4)[1]}
         stroke="#10151B" strokeWidth="2.6" strokeLinecap="round" opacity=".85" />
-      <g mask="url(#rk-mirror)" opacity=".5" transform={`matrix(1 0 0 -1 0 ${2 * BASE})`}>
-        <polygon points={FACE} fill="url(#rk-front)" />
-        <polygon points={SIDE} fill="url(#rk-side)" />
-      </g>
     </svg>
   );
 }
