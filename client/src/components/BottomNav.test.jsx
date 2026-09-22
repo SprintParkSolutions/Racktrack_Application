@@ -143,6 +143,21 @@ describe('<BottomNav> on a rack', () => {
     expect(labels()).toEqual(['Overview', 'Network', 'Report', 'Drift']);
   });
 
+  /* The rack's own Overview asks one question - analyse the rack, or look a
+     port up - and until it is answered there is no bar under it, from this
+     component or from the page. */
+  test('a rack nobody has chosen a job for draws no bar on its Overview', () => {
+    const { container } = mountAt('/results/RK-7');
+    expect(container.querySelector('[role="tablist"]')).toBeNull();
+    expect(screen.queryByRole('tab')).toBeNull();
+  });
+
+  test('choosing the job brings the bar in', () => {
+    setRackFlow('RK-7', PORT);
+    mountAt('/results/RK-7');
+    expect(labels()).toEqual(['Rack', 'Port', 'Switches', 'Network']);
+  });
+
   test('one rack in the port workflow does not drag another into it', () => {
     setRackFlow('RK-1', PORT);
     mountAt('/results/RK-2/network');
