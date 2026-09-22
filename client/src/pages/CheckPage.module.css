@@ -268,24 +268,3 @@
   color: var(--muted, #5c646d);
 }
 
-/* The one way on. */
-.way {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  min-height: 52px;
-  padding: 0 16px;
-  border: 0;
-  border-radius: 14px;
-  background: var(--bg2, #f2f3f6);
-  color: var(--text, #121212);
-  font-family: var(--font);
-  font-size: var(--fs-item);
-  font-weight: var(--fw-label);
-  text-align: left;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.way:active { opacity: .8; }
-.wayChev { margin-left: auto; color: var(--muted, #8a8f99); font-size: var(--fs-head); }

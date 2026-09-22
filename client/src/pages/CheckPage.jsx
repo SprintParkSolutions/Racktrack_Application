@@ -299,16 +299,11 @@ export default function CheckPage() {
               </section>
             )}
 
-            {rackId && (
-              <button
-                type="button"
-                className={styles.way}
-                onClick={() => navigate(`/results/${encodeURIComponent(rackId)}/drift`)}
-              >
-                Open the rack&apos;s drift check
-                <Icon name="chevron_right" className={styles.wayChev} />
-              </button>
-            )}
+            {/* No way back to the rack's drift check here. This page is
+                reached FROM that screen, so Back already returns to it, and a
+                button that repeats the gesture a person just made is one more
+                thing to read on a page whose job is to say where the check
+                has got to. */}
           </>
         )}
       </div>
