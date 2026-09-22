@@ -343,23 +343,25 @@ export function bannerFor({ role, racks = 0, waiting = 0, triage = 0,
  * change with the role.
  */
 export function waysFor(role) {
-  const ways = role === 'spoc'
-    ? [
-      { key: 'mine', label: 'With you', icon: 'clock', to: '/my-checks' },
-      { key: 'ports', label: 'Port history', icon: 'history', to: '/port-history' },
-    ]
-    : [
-      { key: 'ports', label: 'Port history', icon: 'history', to: '/port-history' },
-      { key: 'switches', label: 'Switches', icon: 'dns', to: '/switch-info' },
-    ];
-  if (role === 'admin') {
-    ways.push({ key: 'org', label: 'Organization', icon: 'apartment', to: '/organizations' });
-    ways.push({ key: 'people', label: 'Your account', icon: 'person_check', to: '/profile' });
-  } else {
-    ways.push({ key: 'help', label: 'How it works', icon: 'book', to: '/help' });
-    ways.push({ key: 'you', label: 'Your account', icon: 'person_check', to: '/profile' });
-  }
-  return ways;
+  /* Four, in one order for everybody: what this person's own work is, the
+     assistant, their racks, their account. The owner set it on 22 Sep 2026 -
+     second place is the assistant, third the scan history, fourth the
+     account - and only the first changes with the role, because only the
+     first is about what a person does here.
+
+     None of them repeats the bottom bar: scanning is its raised control, and
+     the Desk is a row on it for whoever works there. */
+  const first = role === 'spoc'
+    ? { key: 'mine', label: 'Your checks', icon: 'clock', to: '/my-checks' }
+    : role === 'admin'
+      ? { key: 'org', label: 'Organization', icon: 'apartment', to: '/organizations' }
+      : { key: 'switches', label: 'Switches', icon: 'dns', to: '/switch-info' };
+  return [
+    first,
+    { key: 'dot', label: 'Ask DOT', icon: 'chat', to: '/help' },
+    { key: 'racks', label: 'Scan history', icon: 'history', to: '/history' },
+    { key: 'you', label: 'Your account', icon: 'person_check', to: '/profile' },
+  ];
 }
 
 export default function HomePage() {

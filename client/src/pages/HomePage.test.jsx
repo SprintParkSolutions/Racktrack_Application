@@ -322,7 +322,7 @@ describe('<HomePage> on a new account', () => {
     // One thing to do, and the four ways on. Nothing else to press, and no
     // list of racks that do not exist yet.
     expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual([
-      'Scan a rack', 'Port history', 'Switches', 'How it works', 'Your account',
+      'Scan a rack', 'Switches', 'Ask DOT', 'Scan history', 'Your account',
     ]);
   });
 
@@ -445,16 +445,22 @@ describe('<HomePage> beyond the racks', () => {
     }
   });
 
-  test('the ways on repeat nothing the bar or the page already offers', () => {
+  /* Four tiles in one order for everybody, and only the first changes with
+     the role: what this person's own work is, the assistant, their racks,
+     their account. */
+  test('the ways on are four, in order, and only the first is the role', () => {
     expect(waysFor('tech').map((w) => w.to))
-      .toEqual(['/port-history', '/switch-info', '/help', '/profile']);
-    // A SPOC's first way on is their own list, not a switch reading.
+      .toEqual(['/switch-info', '/help', '/history', '/profile']);
     expect(waysFor('spoc').map((w) => w.to))
-      .toEqual(['/my-checks', '/port-history', '/help', '/profile']);
+      .toEqual(['/my-checks', '/help', '/history', '/profile']);
     expect(waysFor('admin').map((w) => w.to))
-      .toEqual(['/port-history', '/switch-info', '/organizations', '/profile']);
-    for (const role of ['tech', 'admin']) {
+      .toEqual(['/organizations', '/help', '/history', '/profile']);
+    // A SPOC's first way on is their own checks, in professional words.
+    expect(waysFor('spoc')[0].label).toBe('Your checks');
+    // And none of them repeats the bar's own raised control.
+    for (const role of ['tech', 'admin', 'spoc']) {
       expect(waysFor(role).map((w) => w.to)).not.toContain('/scan');
+      expect(waysFor(role)).toHaveLength(4);
     }
   });
 
