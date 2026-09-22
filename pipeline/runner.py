@@ -52,6 +52,7 @@ from pipeline.port import draw_classified
 from pipeline.port_pattern import (
     classify_ports_by_pattern,
     classify_ports_with_target_count,
+    confine_to_device,
     detect_patch_panel_ports,
     detect_pdu_ports,
     snap_switch_port_count,
@@ -722,7 +723,9 @@ def main():
         if dev["class_name"] not in PORT_BEARING_CLASSES:
             continue
         try:
-            dev_crop, (ox, oy) = crop_device_with_origin(img, dev["box"])
+            # No padding when reading ports: a padded crop reaches into the
+            # device above or below, and in a rack they are stacked tight.
+            dev_crop, (ox, oy) = crop_device_with_origin(img, dev["box"], pad=0)
 
             if dev["class_name"] in MAIN_PORTS_ONLY:
                 classified = detect_patch_panel_ports(
@@ -738,6 +741,7 @@ def main():
                     conf=ports_conf,
                     status_model=status_model_inst,
                 )
+            classified = confine_to_device(classified, crop_shape=dev_crop.shape[:2])
             for p, clr in (
                 (classified.get("console_ports", []), CLR_CONSOLE),
                 (classified.get("main_ports", []), CLR_MAIN),
@@ -790,7 +794,9 @@ def main():
                 dev["connected_ports"] = []
                 continue
             try:
-                dev_crop, _ = crop_device_with_origin(img, dev["box"])
+                # No padding: the crop is the device, so a neighbour's jacks
+                # cannot be read as this device's ports.
+                dev_crop, _ = crop_device_with_origin(img, dev["box"], pad=0)
                 if dev["class_name"] in MAIN_PORTS_ONLY:
                     classified = detect_patch_panel_ports(
                         dev_crop,
@@ -805,6 +811,10 @@ def main():
                         conf=ports_conf,
                         status_model=status_model_inst,
                     )
+                # And what is left is confined to the bands this device's own
+                # ports form, so a plug hanging in front of a hidden port is
+                # not counted as the port.
+                classified = confine_to_device(classified, crop_shape=dev_crop.shape[:2])
 
                 # Phase B grounding — if OCR can read the model name from
                 # the faceplate, annotate the device with the canonical

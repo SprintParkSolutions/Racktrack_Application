@@ -494,6 +494,103 @@ def classify_ports_by_pattern(
     }
 
 
+def confine_to_device(classified, crop_shape=None, keep_ratio=0.25):
+    """Keep the ports that belong to THIS device, and drop the rest.
+
+    Why this exists
+    ---------------
+    On 22 September 2026 the owner reported that on every device in a rack
+    "the ports are starting on the panel, not on the port area", and the
+    standalone reader (tools/port_check.py) showed why on their own rack: the
+    device box a segmentation model returns is a rack-WIDTH strip, not the
+    device. For the tp-link switch it was 955 pixels wide and took in the
+    cable mass in front of the switch and the neighbouring patch panel to the
+    right. The port model then did its job and marked every RJ45 it could see
+    inside that strip - the plugs hanging in front of the hidden ports, and
+    the panel's own jacks - so port 1 landed halfway along the strip.
+
+    What this does about it
+    -----------------------
+    A device's real ports sit in bands: one row on a 1U switch, two on a
+    patch panel, and the ports of a band share a y within a port's own
+    height. Cable plugs dangling in front, and a neighbour's jacks caught by
+    the edge of the crop, do not join those bands - they scatter.
+
+    So the ports are clustered by their centre y, at the tolerance of one
+    median port height, and a cluster is kept when it holds at least a
+    quarter of what the biggest cluster holds. One stray plug is dropped; a
+    panel's sparser second row is not.
+
+    `crop_shape` (h, w), when given, first drops anything whose centre falls
+    outside the crop at all - the guard for a crop that was padded outwards.
+
+    Returns the same dict shape, with the buckets filtered and re-indexed,
+    and says in `pattern_info.confined` how many it dropped.
+    """
+    if not classified:
+        return classified
+    buckets = {k: list(classified.get(f"{k}_ports", []) or [])
+               for k in ("main", "sfp", "console", "other")}
+    ports = [p for plist in buckets.values() for p in plist]
+    if len(ports) < 2:
+        return classified
+
+    def cy(p):
+        y1, y2 = p["box"][1], p["box"][3]
+        return (y1 + y2) / 2.0
+
+    def cx(p):
+        x1, x2 = p["box"][0], p["box"][2]
+        return (x1 + x2) / 2.0
+
+    dropped = []
+    if crop_shape:
+        h, w = crop_shape[0], crop_shape[1]
+        inside = [p for p in ports if 0 <= cx(p) <= w and 0 <= cy(p) <= h]
+        dropped += [p for p in ports if p not in inside]
+        ports = inside
+        if len(ports) < 2:
+            return classified
+
+    heights = sorted(max(1.0, float(p["box"][3] - p["box"][1])) for p in ports)
+    h_med = heights[len(heights) // 2]
+    tol = max(6.0, h_med * 0.9)
+
+    bands = []
+    for p in sorted(ports, key=cy):
+        y = cy(p)
+        if bands and abs(y - bands[-1]["y"]) <= tol:
+            band = bands[-1]
+            band["ports"].append(p)
+            band["y"] = sum(cy(q) for q in band["ports"]) / len(band["ports"])
+        else:
+            bands.append({"y": y, "ports": [p]})
+
+    biggest = max(len(b["ports"]) for b in bands)
+    floor = max(2, int(round(biggest * keep_ratio)))
+    kept = [p for b in bands if len(b["ports"]) >= floor for p in b["ports"]]
+    dropped += [p for p in ports if p not in kept]
+    if not kept:
+        return classified
+
+    keep = {id(p) for p in kept}
+    out = {}
+    for k, plist in buckets.items():
+        stays = [p for p in plist if id(p) in keep]
+        for i, p in enumerate(stays, start=1):
+            p["index"] = i
+        out[f"{k}_ports"] = stays
+    info = dict(classified.get("pattern_info") or {})
+    info["confined"] = len(dropped)
+    info["bands"] = len([b for b in bands if len(b["ports"]) >= floor])
+    return {
+        **classified,
+        **out,
+        "all_boxes": [p["box"] for plist in out.values() for p in plist],
+        "pattern_info": info,
+    }
+
+
 def _overlaps(box, others, slack=2):
     x1, y1, x2, y2 = box
     for ox1, oy1, ox2, oy2 in others:

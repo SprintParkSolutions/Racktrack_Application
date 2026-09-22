@@ -315,7 +315,19 @@
 
 /* ── A section ──────────────────────────────────────────────────────
    A quiet title, whatever figure belongs beside it, and a list. */
-.sect { display: flex; flex-direction: column; }
+/* Each list in a container of its own, the way the lead card is: the page is
+   cards on a shade rather than rows drawn straight onto the paper. */
+.sect {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px 6px;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow:
+    inset 0 1px 0 #ffffff,
+    0 1px 2px rgba(12, 22, 40, .05),
+    0 14px 28px -22px rgba(12, 22, 40, .40);
+}
 .sectTop {
   display: flex;
   align-items: baseline;
@@ -363,6 +375,7 @@
 
 .rows { list-style: none; margin: 0; padding: 0; }
 .rowItem + .rowItem { border-top: 1px solid var(--hm-line-soft); }
+.sect .rows { margin: 0 -2px; }
 .row {
   width: 100%;
   min-height: 68px;
@@ -481,6 +494,9 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
+  /* No card round these: four marks with their words are already objects,
+     and a container round them would be a box inside a box. */
+  padding: 2px 0;
 }
 .way {
   display: flex;

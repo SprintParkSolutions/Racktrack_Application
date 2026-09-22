@@ -189,6 +189,20 @@ function contextFor(plan) {
       const space = known && known.space_id != null ? estate.getSpace(known.space_id) : null;
       spaceName = space ? space.name : null;
       if (!rackName && known) rackName = known.facility_id || known.name || null;
+      // And the other way a rack is known: a person confirmed which rack this
+      // photograph is, which binds it in rack_identity rather than filing a
+      // row under the scan's own id. Everything the app shows reads that
+      // binding, so an incident and a report must too.
+      if (!rackName) {
+        const bound = require('../rack_identity').confirmedRack(plan.tenantId, plan.rackId);
+        if (bound && bound.rack) {
+          rackName = bound.rack.facility_id || bound.rack.name || null;
+          if (!spaceName && bound.rack.space_id != null) {
+            const boundSpace = estate.getSpace(bound.rack.space_id);
+            spaceName = boundSpace ? boundSpace.name : null;
+          }
+        }
+      }
     }
   } catch { /* the incident still stands without them */ }
   if (!siteName && plan.tenantId != null) siteName = (store.tenantById(plan.tenantId) || {}).name || null;

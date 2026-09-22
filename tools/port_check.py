@@ -80,6 +80,7 @@ except ImportError:  # pragma: no cover - a person running this gets the sentenc
 from pipeline.detection import detect_devices_seg  # noqa: E402
 from pipeline.port_pattern import (  # noqa: E402
     classify_ports_by_pattern,
+    confine_to_device,
     detect_patch_panel_ports,
 )
 from pipeline.selection import crop_device_with_origin  # noqa: E402
@@ -89,9 +90,10 @@ from pipeline.selection import crop_device_with_origin  # noqa: E402
 PORT_BEARING = {"Switch", "Patch Panel", "Firewall", "Gateway", "Router"}
 PANEL_ONLY = {"Patch Panel"}
 
-# Crop padding. This is the number that decides whether a device's crop reaches
-# into its neighbour, so it is a flag here rather than a constant.
-DEFAULT_PAD = 8
+# Crop padding. Zero, as the product now reads ports: padding is what let a
+# device's crop reach into its neighbour. A flag, so it can be put back to
+# see the difference.
+DEFAULT_PAD = 0
 
 COLOUR = {
     "main": (60, 160, 60),        # RJ45 and the rest of the copper
@@ -113,10 +115,18 @@ def load(name):
     sys.exit(f"missing weights: {name} (looked in {ROOT / 'models'} and {HERE / 'models'})")
 
 
-def ports_of(crop, panel, type_model, status_model, conf):
-    """Every port the models find in one device crop, in crop coordinates."""
+def ports_of(crop, panel, type_model, status_model, conf, confine=True):
+    """Every port the models find in one device crop, in crop coordinates.
+
+    `confine` is the product's own rule (pipeline.port_pattern), which keeps
+    the ports that form this device's bands and drops the plugs hanging in
+    front and a neighbour's jacks caught by the edge of the crop. Pass
+    --raw to see what the models said before it.
+    """
     read = detect_patch_panel_ports if panel else classify_ports_by_pattern
     found = read(crop, type_model, conf=conf, status_model=status_model)
+    if confine:
+        found = confine_to_device(found, crop_shape=crop.shape[:2])
     out = []
     for bucket in ("main_ports", "sfp_ports", "console_ports", "other_ports"):
         for p in found.get(bucket, []):
@@ -150,6 +160,8 @@ def main():
     ap.add_argument("--no-detect", action="store_true", help="the image IS one device, do not look for devices")
     ap.add_argument("--clip", action="store_true",
                     help="drop ports whose centre falls outside the device's own box")
+    ap.add_argument("--raw", action="store_true",
+                    help="what the models said, before the product confines it to the device")
     args = ap.parse_args()
 
     img = cv2.imread(args.image)
@@ -207,7 +219,8 @@ def main():
         entry["cropSize"] = {"w": crop.shape[1], "h": crop.shape[0]}
 
         ports, pattern = ports_of(crop, dev["class_name"] in PANEL_ONLY,
-                                  type_model, status_model, args.conf)
+                                  type_model, status_model, args.conf,
+                                  confine=not args.raw)
         # With --clip, a port whose centre lands outside the device's own box
         # is not this device's port. The crop is padded and racks are stacked
         # tight, so a switch's crop routinely contains the panel under it.

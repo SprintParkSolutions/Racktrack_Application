@@ -7161,7 +7161,23 @@ app.get('/api/scan/:rackId/drift-report', (req, res) => {
       // A check filed before the rack was identified still carries the hash of
       // its photograph as a name. The rack is known now, so it is called by the
       // id on its tape.
-      const named = known && (known.facility_id || known.name);
+      //
+      // Two ways it can be known, and the report used only one of them: a
+      // racks_known row filed under this scan's own rack id, which is what a
+      // rack set up in advance has. A rack a person CONFIRMED is bound in
+      // rack_identity instead - that is what every other screen reads through
+      // /api/scan/:rackId/identity - so the report alone kept saying "Rack not
+      // identified yet" about a rack the app had just named. The owner saw it
+      // on 22 Sep 2026.
+      let named = known && (known.facility_id || known.name);
+      if (!named && plan.tenantId != null) {
+        const bound = require('./lib/rack_identity').confirmedRack(plan.tenantId, rackId);
+        named = bound && bound.rack ? (bound.rack.facility_id || bound.rack.name) : null;
+        if (bound && bound.rack && bound.rack.space_id != null && !spaceName) {
+          const boundSpace = estate.getSpace(bound.rack.space_id);
+          spaceName = boundSpace ? boundSpace.name : null;
+        }
+      }
       if (named && (!plan.rackName || /^RK-[0-9A-F]{6,}$/i.test(plan.rackName))) plan = { ...plan, rackName: named };
     } catch (_) { /* the report still stands without them */ }
 
