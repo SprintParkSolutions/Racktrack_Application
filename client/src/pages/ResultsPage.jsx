@@ -21,6 +21,7 @@ import AssetImg from '../components/AssetImg';
 import { useSmartBack } from '../hooks/useSmartBack';
 import { useTour } from '../TourContext.jsx';
 import { useAuth } from '../AuthContext';
+import { useScanSite } from '../hooks/useScanSite.js';
 
 // ── Naming convention ─────────────────────────────────────────
 const CLASS_CODE = {
@@ -92,8 +93,16 @@ function lowestUnit(dev) {
 // owner asked for the site, the Space picker having come off the scan screen.
 // An older scan that carries no site falls back to its room rather than
 // leaving the line empty. Where the phone stood is no part of it.
-export function headerWhereLines(rackSaid, identity) {
-  const where = (identity && identity.siteName) || (identity && identity.spaceName) || null;
+export function headerWhereLines(rackSaid, identity, siteName = null) {
+  // The Site, by three routes to the same answer: the one the app itself
+  // knows this rack stands in (from /api/scan-sites, which the phone already
+  // holds), then the one the identity route names, and only then the room -
+  // which is what the header said until 22 Sep 2026, and what the owner
+  // asked to be replaced by the Site.
+  const where = siteName
+    || (identity && identity.siteName)
+    || (identity && identity.spaceName)
+    || null;
   return [rackSaid && rackSaid.also, where].filter(Boolean);
 }
 
@@ -1700,6 +1709,9 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // RK-AD902EF2 and nothing about the site. Read-only: this asks, it never
   // confirms, and confirming stays where it was, on the drift check.
   const [identity, setIdentity] = useState(null);
+  // The Sites this person may scan for, with the racks of each. Already
+  // fetched and cached by the hook; the header reads the Site's name off it.
+  const { sites: scanSites } = useScanSite();
 
   useEffect(() => {
     let dropped = false;
@@ -1728,7 +1740,23 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
     };
   }, [identity]);
 
-  const whereLines = headerWhereLines(rackSaid, identity);
+  // Which Site this rack stands in, as the app already knows it: the list of
+  // Sites a person may scan for carries every rack of each. Read here so the
+  // header names the Site even against a server that has not been given the
+  // field yet.
+  const siteOfRack = useMemo(() => {
+    if (!rackId) return null;
+    for (const site of scanSites || []) {
+      for (const r of site.racks || []) {
+        if (r && String(r.rackId) === String(rackId)) {
+          return String(site.name || site.siteId || '').trim() || null;
+        }
+      }
+    }
+    return null;
+  }, [scanSites, rackId]);
+
+  const whereLines = headerWhereLines(rackSaid, identity, siteOfRack);
   const [fetchedOcrLabels, setFetchedOcrLabels] = useState(null);
   const ocrLabels = fetchedOcrLabels;
   const [warningDismissed, setWarningDismissed] = useState(false);
