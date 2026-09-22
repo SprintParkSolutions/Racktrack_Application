@@ -22,18 +22,23 @@ import styles from './HomePage.module.css';
  *
  *   the line      the hour, your name, and what you are here. Four words
  *                 before anything else, and the one warm thing on the page.
- *   the rack      your newest rack, as you photographed it, at the size a
- *                 photograph deserves. It is the page's picture and its
- *                 subject at once: what this app holds is a real rack, and
- *                 the white ground is there so it can be seen. Somebody who
- *                 has not scanned yet gets the same block, drawn, saying what
- *                 the first scan does.
- *   one action    one filled control in ink on white, one quiet one beside
+ *   the banner    a rack drawn in geometry, and beside it what this person is
+ *                 here for. The main thing on the page is a design, not the
+ *                 person's own scan - the owner's direction on 22 Sep 2026 -
+ *                 and the photographs stay with the racks they belong to.
+ *   one action    one filled control in ink on white, one quiet one under
  *                 it. Which is which is the role's.
+ *   four figures  how things stand: Sites, racks read, differences waiting,
+ *                 checks with you. A figure of zero is left out, because a
+ *                 zero on a landing screen reads as a score.
+ *   four ways on  the screens that are otherwise two taps inside More. None
+ *                 repeats the bottom bar or a section of this page.
  *   needs you     only when something does: the checks that are with you, by
  *                 incident number and rack.
- *   your racks    a list with the photographs in it, each rack's state told
- *                 by a dot and a word.
+ *   latest checks what has been happening, whoever it was with, rather than
+ *                 only what this person photographed.
+ *   your racks    a short list with the photographs in it, each rack's state
+ *                 told by a dot and a word.
  *
  * Every figure is one the server already answers, and one that has not
  * arrived is left out rather than shown as a zero:
@@ -51,8 +56,9 @@ import styles from './HomePage.module.css';
 
 // How much of each list a landing screen carries. The rest is one tap away:
 // Scan history for the racks, the Desk for the checks.
-const RACKS_SHOWN = 4;
+const RACKS_SHOWN = 3;
 const NEEDS_SHOWN = 3;
+const ACTIVITY_SHOWN = 3;
 // Enough checks to name the newest one of every rack a person is likely to
 // have, without asking for an organization's whole history.
 const PLAN_WINDOW = 100;
@@ -204,6 +210,173 @@ export function actionsFor({ role, waiting = 0, triage = 0, newest = null, rack 
   return { lead: scan, alt: open };
 }
 
+/**
+ * The drawn rack.
+ *
+ * The page led with the person's own photograph for half a day; the owner
+ * asked on 22 Sep 2026 for the main thing to be a design rather than their
+ * scan. So this is the subject drawn instead of photographed: a rack in
+ * elevation, its shelves, the ports on two of them, and one shelf marked as
+ * read. Light greys and a single accent, the same green the rest of the app
+ * uses for a thing that matches. It says nothing that is not true of every
+ * rack, so it never contradicts the account looking at it.
+ *
+ * Geometry, not an image file: it stays sharp at any size, costs no request
+ * and carries no photograph of a customer's equipment.
+ */
+export function RackArt({ className = '' }) {
+  const shelves = [
+    { y: 26, ports: true, read: false },
+    { y: 58, ports: true, read: true },
+    { y: 90, ports: false, read: false },
+    { y: 122, ports: false, read: false },
+  ];
+  return (
+    <svg className={className} viewBox="0 0 132 176" fill="none" role="img"
+      aria-label="A rack, drawn: four shelves, one of them read">
+      {/* The frame, with its rails. */}
+      <rect x="6" y="6" width="120" height="164" rx="14" fill="#FFFFFF" stroke="#DFE2E8" strokeWidth="1.5" />
+      <line x1="18" y1="14" x2="18" y2="162" stroke="#EDEFF3" strokeWidth="1.5" />
+      <line x1="114" y1="14" x2="114" y2="162" stroke="#EDEFF3" strokeWidth="1.5" />
+      {shelves.map((sh) => (
+        <g key={sh.y}>
+          <rect x="24" y={sh.y} width="84" height="24" rx="7"
+            fill={sh.read ? '#E9F3ED' : '#F3F4F7'}
+            stroke={sh.read ? '#BFDDCC' : '#E7E9EE'} strokeWidth="1.2" />
+          {sh.ports && [0, 1, 2, 3, 4, 5].map((i) => (
+            <rect key={i} x={31 + i * 12} y={sh.y + 14} width="7" height="5" rx="1.6"
+              fill={sh.read ? '#8FBFA4' : '#D3D7DE'} />
+          ))}
+          {sh.read && <circle cx="98" cy={sh.y + 8} r="3.4" fill="#0F7B4F" />}
+        </g>
+      ))}
+      {/* The feet, so it stands on something. */}
+      <line x1="34" y1="170" x2="34" y2="176" stroke="#DFE2E8" strokeWidth="2.4" strokeLinecap="round" />
+      <line x1="98" y1="170" x2="98" y2="176" stroke="#DFE2E8" strokeWidth="2.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/**
+ * What the banner says, by role: a heading, a sentence, and one quiet line of
+ * figures under them. Every figure is one the server answered; any that has
+ * not arrived is simply left out, so the line is never a row of zeroes.
+ */
+export function bannerFor({ role, racks = 0, waiting = 0, triage = 0, open = null,
+  loading = false, failed = false }) {
+  const figures = [];
+  if (!loading && racks > 0) figures.push(`${racks} rack${racks === 1 ? '' : 's'} read`);
+  // Zero is not a figure worth a line: "0 differences waiting" reads as a
+  // score. Nothing waiting simply says nothing.
+  if (open != null && open > 0) figures.push(`${open} difference${open === 1 ? '' : 's'} waiting`);
+
+  // The racks could not be read. Say that, rather than "scan your first rack"
+  // at somebody who has a hundred.
+  if (failed) {
+    return {
+      title: 'Your racks could not be loaded just now',
+      words: 'Pull up again in a moment.',
+      figures: [],
+      steps: [],
+    };
+  }
+
+  if (role === 'admin') {
+    return {
+      title: triage > 0
+        ? (triage === 1 ? 'One check has nobody' : `${triage} checks have nobody`)
+        : 'Your estate is covered',
+      words: triage > 0
+        ? 'A check whose Site names no single point of contact waits for an admin to choose one.'
+        : 'Every check has somebody. The console has the racks, the Sites and the people.',
+      figures,
+      steps: [],
+    };
+  }
+  if (role === 'spoc' && waiting > 0) {
+    return {
+      title: waiting === 1 ? 'A check is waiting for you' : `${waiting} checks are waiting for you`,
+      words: 'Read what the rack holds against your record, then approve it, change it or send it back.',
+      figures,
+      steps: [],
+    };
+  }
+  // Nobody has scanned yet. The three things a first scan does are kept, as
+  // three lines under the words rather than a numbered list: the owner does
+  // not want steps numbered anywhere in the app.
+  if (racks === 0 && !loading) {
+    return {
+      title: 'Scan your first rack',
+      words: 'One photo, and RackTrack reads the equipment mounted in the rack.',
+      figures,
+      steps: FIRST_SCAN,
+    };
+  }
+  return {
+    title: 'Ready to scan a rack',
+    words: 'One photo and RackTrack reads the rack, then checks it against your records.',
+    figures,
+    steps: [],
+  };
+}
+
+/**
+ * The estate, in four figures.
+ *
+ * A landing screen that only lists the racks somebody scanned says nothing
+ * about the work: the owner asked on 22 Sep 2026 for more than that. These
+ * are the four numbers that describe an organization's position, each one
+ * already answered by a request the page makes, and each one left out
+ * entirely when its answer has not arrived or is zero. A figure of zero on a
+ * landing screen reads as a score.
+ */
+export function figuresFor({ sites = 0, racks = 0, open = null, waiting = 0, written = 0 }) {
+  const out = [];
+  if (sites > 0) out.push({ key: 'sites', value: sites, label: sites === 1 ? 'Site' : 'Sites' });
+  if (racks > 0) out.push({ key: 'racks', value: racks, label: racks === 1 ? 'Rack read' : 'Racks read' });
+  if (open != null && open > 0) out.push({ key: 'open', value: open, label: 'Differences waiting' });
+  if (waiting > 0) out.push({ key: 'mine', value: waiting, label: waiting === 1 ? 'Check with you' : 'Checks with you' });
+  if (written > 0) out.push({ key: 'written', value: written, label: 'Written to the record' });
+  return out.slice(0, 4);
+}
+
+/**
+ * The four ways on, as a grid rather than a menu.
+ *
+ * None of them repeats something this page or the bottom bar already offers:
+ * scanning is the raised control on the bar and usually the banner's own
+ * button, the racks are a list further down, and the Desk is on the bar. What
+ * is left are the screens that are otherwise two taps inside More, and the
+ * fourth changes with the role, because a console is no use to a technician.
+ */
+export function waysFor(role) {
+  const ways = [
+    { key: 'ports', label: 'Port history', icon: 'history', to: '/port-history' },
+    { key: 'switches', label: 'Switches', icon: 'dns', to: '/switch-info' },
+  ];
+  if (role === 'admin') {
+    ways.push({ key: 'console', label: 'Console', icon: 'space_dashboard', to: '/dashboard' });
+    ways.push({ key: 'org', label: 'Organization', icon: 'apartment', to: '/organizations' });
+  } else {
+    ways.push({ key: 'help', label: 'How it works', icon: 'book', to: '/help' });
+    ways.push({ key: 'you', label: 'Your account', icon: 'person_check', to: '/profile' });
+  }
+  return ways;
+}
+
+/** What happened to a check, in one word, for the activity list. */
+export function happenedTo(plan) {
+  const st = String(plan && plan.status || '');
+  if (st === 'written' || st === 'completed') return 'Written to the record';
+  if (st === 'triage') return 'Waiting for an owner';
+  if (st === 'draft') return 'Not sent yet';
+  if (st === 'rejected') return 'Rejected';
+  if (st === 'rework') return 'Sent back';
+  if (st === 'write_failed') return 'The write did not finish';
+  if (st === 'approved') return 'Approved';
+  return 'With the SPOC';
+}
+
 export default function HomePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -279,9 +452,10 @@ export default function HomePage() {
     };
   }), [scans, places, byRack]);
 
-  // The one picture on the page: the newest rack that still has its
-  // photograph. A list of names is a list of names; this is a rack.
-  const shot = useMemo(() => racks.find((r) => r.image) || null, [racks]);
+  // The newest rack this person has, which is what the quiet control under
+  // the banner opens. The photograph itself belongs to the list below: the
+  // head of the page is a drawing, not somebody's scan.
+  const shot = useMemo(() => racks[0] || null, [racks]);
 
   // The checks that are with this person. `holder` is a username and
   // usernames are unique, so this is the same set the server's holder=me
@@ -309,6 +483,44 @@ export default function HomePage() {
   const role = useMemo(() => roleOf(user, can), [user, can]);
   const greeting = useMemo(() => greetingAt(), []);
 
+  // Checks carried all the way into the customer's record. The page already
+  // holds the list; this is the same rows counted, not another request.
+  const written = useMemo(
+    () => (plans || []).filter((p) => p && DONE_STATUS.has(p.status)).length,
+    [plans],
+  );
+  // The newest checks, whoever they are with: what has been happening, rather
+  // than what this person photographed.
+  const activity = useMemo(() => (plans || []).slice(0, ACTIVITY_SHOWN).map((p) => ({
+    id: p.id,
+    rackId: p.rackId,
+    name: (places.get(String(p.rackId)) || {}).name
+      || (p.rackName && !UNNAMED.test(p.rackName) ? String(p.rackName) : null),
+    site: p.siteName || null,
+    what: happenedTo(p),
+    state: stateOf(p).key,
+    when: relTime(p.receivedAt || p.updatedAt || p.createdAt || null),
+  })), [plans, places]);
+
+  const figures = figuresFor({
+    sites: (sites || []).length,
+    racks: racks.length,
+    open: openCount,
+    waiting: needs.length,
+    written,
+  });
+  const ways = waysFor(role.key);
+
+  const banner = bannerFor({
+    role: role.key,
+    racks: racks.length,
+    waiting: needs.length,
+    triage,
+    open: openCount,
+    loading,
+    failed: scansFailed,
+  });
+
   const { lead, alt } = actionsFor({
     role: role.key,
     waiting: needs.length,
@@ -330,52 +542,26 @@ export default function HomePage() {
           <span className={styles.mark} aria-hidden="true">{initialsOf(user)}</span>
         </header>
 
-        {/* ── The rack: your newest one, as you photographed it ── */}
+        {/* ── The banner: the drawn rack, and what this person is here for.
+               The main thing on the page is a design, not somebody's own
+               photograph - the owner's direction on 22 Sep 2026. The
+               photographs stay where they belong, on the racks themselves. ── */}
         <section className={styles.lead} aria-labelledby="home-lead">
-          {shot ? (
-            <button
-              type="button"
-              className={styles.shot}
-              onClick={() => navigate(`/results/${encodeURIComponent(shot.rackId)}`)}
-            >
-              <AssetImg
-                path={shot.image}
-                alt={shot.name ? `${shot.name}, as it was photographed` : 'The rack, as it was photographed'}
-                className={styles.shotImg}
-              />
-              <span className={styles.shotText}>
-                <span className={styles.shotTop}>
-                  <span className={`${styles.shotName} ${shot.name ? '' : styles.noName}`} id="home-lead">
-                    {shot.name || NO_NAME}
-                  </span>
-                  <span className={`${styles.state} ${styles[shot.state.key]}`}>
-                    <span className={styles.dot} aria-hidden="true" />
-                    {shot.state.label}
-                  </span>
-                </span>
-                <span className={styles.shotMeta}>
-                  {[shot.where, shot.when && `read ${shot.when}`].filter(Boolean).join(' · ')}
-                </span>
-              </span>
-            </button>
-          ) : (
-            <div className={styles.blank}>
-              <span className={styles.blankArt} aria-hidden="true">
-                <Icon name="rack" className={styles.blankGlyph} />
-              </span>
-              <h2 className={styles.blankTitle} id="home-lead">
-                {loading ? 'Loading your racks'
-                  : scansFailed ? 'Your racks could not be loaded just now'
-                    : 'Scan your first rack'}
-              </h2>
-              {!loading && !scansFailed && (
-                <ul className={styles.blankLines}>
-                  {FIRST_SCAN.map((l) => <li key={l}>{l}</li>)}
+          <div className={styles.banner}>
+            <div className={styles.bannerText}>
+              <h2 className={styles.bannerTitle} id="home-lead">{banner.title}</h2>
+              <p className={styles.bannerWords}>{banner.words}</p>
+              {banner.steps.length > 0 && (
+                <ul className={styles.bannerSteps}>
+                  {banner.steps.map((l) => <li key={l}>{l}</li>)}
                 </ul>
               )}
-              {scansFailed && <p className={styles.blankWords}>Pull up again in a moment.</p>}
+              {banner.figures.length > 0 && (
+                <p className={styles.bannerFigures}>{banner.figures.join(' · ')}</p>
+              )}
             </div>
-          )}
+            <RackArt className={styles.bannerArt} />
+          </div>
 
           {/* One filled control, one quiet one. Which is which is the role's. */}
           <div className={styles.act}>
@@ -390,6 +576,29 @@ export default function HomePage() {
             )}
           </div>
         </section>
+
+        {/* ── The estate in four figures, and the four ways on. Between them
+               they answer "how do things stand" and "what can I do", which is
+               what a landing screen is for. ── */}
+        {figures.length > 0 && (
+          <ul className={styles.figures}>
+            {figures.map((f) => (
+              <li key={f.key} className={styles.figure}>
+                <span className={styles.figureValue}>{f.value}</span>
+                <span className={styles.figureLabel}>{f.label}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <nav className={styles.ways} aria-label="Ways on">
+          {ways.map((w) => (
+            <button key={w.key} type="button" className={styles.way} onClick={() => navigate(w.to)}>
+              <span className={styles.wayGlyph} aria-hidden="true"><Icon name={w.icon} /></span>
+              <span className={styles.wayLabel}>{w.label}</span>
+            </button>
+          ))}
+        </nav>
 
         {/* Anything an admin or a SPOC has put on this person: the app's own
             notices, the same ones the Scan screen shows. It draws nothing when
@@ -430,16 +639,46 @@ export default function HomePage() {
           </section>
         )}
 
+        {/* ── What has been happening: the newest checks, whoever they are
+               with. A landing screen that only lists what this person
+               photographed says nothing about the work. ── */}
+        {activity.length > 0 && (
+          <section className={styles.sect} aria-labelledby="home-activity">
+            <div className={styles.sectTop}>
+              <h2 className={styles.sectTitle} id="home-activity">Latest checks</h2>
+            </div>
+            <ul className={styles.rows}>
+              {activity.map((a) => (
+                <li key={a.id} className={styles.rowItem}>
+                  <button
+                    type="button"
+                    className={styles.row}
+                    onClick={() => navigate(`/results/${encodeURIComponent(a.rackId)}/drift`)}
+                  >
+                    <span className={`${styles.pip} ${styles[a.state]}`} aria-hidden="true" />
+                    <span className={styles.rowText}>
+                      <span className={`${styles.rackName} ${a.name ? '' : styles.noName}`}>
+                        {a.name || NO_NAME}
+                      </span>
+                      <span className={styles.rowMeta}>
+                        <span className={styles.metaGives}>{a.what}</span>
+                        {a.when ? <span className={styles.sep} aria-hidden="true" /> : null}
+                        {a.when && <span className={styles.metaKeeps}>{a.when}</span>}
+                      </span>
+                    </span>
+                    <Icon name="chevron_right" className={styles.chev} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {/* ── Your racks, with the photographs in the list ── */}
         {racks.length > 0 && (
           <section className={styles.sect} aria-labelledby="home-racks">
             <div className={styles.sectTop}>
               <h2 className={styles.sectTitle} id="home-racks">Your racks</h2>
-              {openCount != null && (
-                <span className={styles.open}>
-                  {openCount} difference{openCount === 1 ? '' : 's'} waiting
-                </span>
-              )}
               <button type="button" className={styles.seeAll} onClick={() => navigate('/history')}>
                 See all
               </button>

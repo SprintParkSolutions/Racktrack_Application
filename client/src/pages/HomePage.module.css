@@ -8,9 +8,10 @@
  *
  *   air        24px between blocks, 22px at the sides, and nothing boxed
  *              that does not need a box
- *   one image  the person's own newest rack, big, rounded, and the only
- *              coloured thing on the page. No stock illustration: what this
- *              app holds is a photograph of a real rack
+ *   one image  a rack drawn in geometry, light greys and a single green, at
+ *              the head of the page. The owner asked for the main thing to be
+ *              a design rather than the person's own scan, so the photographs
+ *              moved down to the racks they belong to
  *   type       four sizes carry the hierarchy - the name at 30px, the rack
  *              at section size, and the scale for everything else
  *   hairlines  #E8E9ED, one at a time, never two meeting
@@ -115,112 +116,73 @@
   color: var(--hm-ink-2);
 }
 
-/* ── The rack ───────────────────────────────────────────────────────
-   One photograph, whole and unretouched, with its name and state under it.
-   No border and no shadow: the picture is its own edge, and the words below
-   sit on the page rather than inside a box. */
+/* ── The banner ─────────────────────────────────────────────────────
+   The drawn rack and what this person is here for, side by side. A light
+   ground rather than a white one, so the block has an edge without a border
+   and without a shadow, and the artwork sits on something. */
 .lead { display: flex; flex-direction: column; }
 
-.shot {
-  display: block;
-  width: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.shotImg {
-  display: block;
-  width: 100%;
-  height: 46vh;
-  max-height: 340px;
-  min-height: 190px;
-  object-fit: cover;
-  border-radius: 22px;
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 22px 20px;
+  border-radius: 24px;
   background: var(--hm-tray);
 }
-.shotText {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 14px 2px 0;
-}
-.shotTop {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  min-width: 0;
-}
-.shotName {
-  flex: 1 1 auto;
-  min-width: 0;
-  font-family: var(--mono, ui-monospace, monospace);
-  font-size: var(--fs-section);
-  font-weight: var(--fw-title);
-  letter-spacing: -0.01em;
-  color: var(--hm-ink);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.shotMeta {
-  font-family: var(--font);
-  font-size: var(--fs-sub);
-  color: var(--hm-ink-3);
-}
-.shot:active .shotImg { opacity: 0.94; }
-.shot:focus-visible { outline: none; }
-.shot:focus-visible .shotImg { outline: 3px solid var(--hm-ink); outline-offset: 3px; }
-
-/* Nothing scanned yet. The same block, drawn rather than photographed, with
-   what a first scan actually does. */
-.blank {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 34px 22px 30px;
-  border-radius: 22px;
-  background: var(--hm-tray);
-}
-.blankArt {
-  width: 56px; height: 56px;
-  display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 16px;
-  background: #ffffff;
-  color: var(--hm-ink-3);
-}
-.blankGlyph { font-size: 26px; }
-.blankTitle {
+.bannerText { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.bannerTitle {
   margin: 0;
   font-family: var(--font);
   font-size: var(--fs-head);
   font-weight: var(--fw-title);
   line-height: var(--lh-head);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.022em;
   color: var(--hm-ink);
+  text-wrap: balance;
 }
-.blankLines {
-  margin: 0;
+.bannerWords {
+  margin: 7px 0 0;
+  font-family: var(--font);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-body);
+  line-height: var(--lh-body);
+  color: var(--hm-ink-2);
+}
+/* The figures, as a line of words rather than a strip of big numbers. */
+.bannerSteps {
+  margin: 10px 0 0;
   padding: 0;
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 5px;
 }
-.blankLines li {
+.bannerSteps li {
   font-family: var(--font);
-  font-size: var(--fs-body);
-  line-height: var(--lh-body);
+  font-size: var(--fs-sub);
+  line-height: var(--lh-sub);
   color: var(--hm-ink-2);
 }
-.blankWords {
-  margin: 0;
+.bannerFigures {
+  margin: 12px 0 0;
   font-family: var(--font);
-  font-size: var(--fs-body);
-  color: var(--hm-ink-2);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-label);
+  letter-spacing: 0.01em;
+  color: var(--hm-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+/* The drawing keeps its proportions and gives way first on a narrow phone. */
+.bannerArt {
+  flex: 0 1 auto;
+  width: 104px;
+  height: 139px;
+  min-width: 78px;
+}
+@media (max-width: 359px) {
+  .banner { gap: 12px; padding: 20px 16px; }
+  .bannerArt { width: 84px; height: 112px; }
 }
 
 /* ── The action ─────────────────────────────────────────────────────
@@ -439,4 +401,100 @@
 @media (min-width: 720px) {
   .main { padding-left: 32px; padding-right: 32px; gap: 30px; }
   .shotImg { height: 320px; }
+}
+
+/* ── The estate in four figures ─────────────────────────────────────
+   Two across on a phone, four on anything wider. Quiet numbers with their
+   labels in words under them, on the page rather than in boxes: four framed
+   tiles would be four more rectangles competing with the banner. */
+.figures {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--hm-line-soft);
+  border-radius: 18px;
+  overflow: hidden;
+}
+.figure {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 16px 16px 15px;
+  background: #ffffff;
+  min-width: 0;
+}
+.figureValue {
+  font-family: var(--font);
+  font-size: var(--fs-page);
+  font-weight: var(--fw-title);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--hm-ink);
+}
+.figureLabel {
+  font-family: var(--font);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-label);
+  line-height: var(--lh-label);
+  color: var(--hm-ink-3);
+}
+
+/* ── The four ways on ───────────────────────────────────────────────
+   A grid, not a menu: each one is a glyph in a round and a word under it,
+   the shape a person expects from the home screen of anything else on their
+   phone. */
+.ways {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.way {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 4px 12px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  min-width: 0;
+}
+.way:active { background: var(--hm-tray); }
+.way:focus-visible { outline: 2px solid var(--hm-ink); outline-offset: 2px; }
+.wayGlyph {
+  width: 44px; height: 44px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--hm-tray);
+  color: var(--hm-ink);
+  font-size: var(--fs-section);
+}
+.wayLabel {
+  font-family: var(--font);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-label);
+  line-height: 1.25;
+  text-align: center;
+  color: var(--hm-ink-2);
+  overflow-wrap: anywhere;
+}
+
+/* A check in the activity list is known by a dot in its own colour, where a
+   rack is known by its photograph. */
+.pip {
+  flex: 0 0 auto;
+  width: 9px; height: 9px;
+  margin: 0 8px 0 4px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+@media (min-width: 560px) {
+  .figures { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
