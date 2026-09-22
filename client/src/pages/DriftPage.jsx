@@ -372,8 +372,9 @@ export default function DriftPage() {
   });
   const toggleAll = () => setLeft(picked.length === changed.length ? new Set(changed.map((i) => i.uid)) : new Set());
 
-  const load = useCallback(async () => {
-    setBusy('Checking this rack against NetBox');
+  const load = useCallback(async ({ recompare = false } = {}) => {
+    setBusy(recompare ? 'Checking this rack against NetBox again'
+      : 'Checking this rack against NetBox');
     setError('');
     setPickError('');
     setNeedsSource(false);
@@ -388,6 +389,29 @@ export default function DriftPage() {
           const got = asked.ok ? await asked.json() : null;
           if (got && got.rackId === rackId && isSent(got)) { body = got; planId = got.id; }
         } catch { /* compared as usual */ }
+      }
+
+      // The check this rack already has, if it has one.
+      //
+      // Comparing a rack against NetBox is the expensive thing this page does,
+      // and it was done on every single arrival: opening the screen, coming
+      // back from the report, returning from a tab. Each run filed another
+      // draft, so a person who looked four times in ninety seconds left four
+      // identical drafts behind and an admin found a queue of them. The
+      // comparison happens once, when the rack has nothing filed yet; after
+      // that this reads what was filed. "Check again" re-runs it on purpose.
+      if (!body && !recompare) {
+        try {
+          const open = await authFetch(apiUrl(
+            `/api/approvals/plans?rackId=${encodeURIComponent(rackId)}&open=1&limit=1`));
+          const list = open.ok ? await open.json() : null;
+          const first = (list && Array.isArray(list.plans) ? list.plans : [])[0];
+          if (first && first.id != null) {
+            const one = await authFetch(apiUrl(`/api/nb/plans/${encodeURIComponent(first.id)}`));
+            const got = one.ok ? await one.json() : null;
+            if (got && got.rackId === rackId) { body = got; planId = got.id; }
+          }
+        } catch { /* nothing filed, or it could not be read: compare as usual */ }
       }
 
       if (!body) {
@@ -455,6 +479,14 @@ export default function DriftPage() {
   // this is, the comparison is built on that rack, so the line names it and says
   // what found it. Where it has not, the line falls back to whatever the
   // comparison itself resolved, and claims nothing beyond it.
+  // Was anything actually compared? Naming a rack is not the same as reading
+  // it. A scan whose Site is not in the record, or whose rack was matched by
+  // name and never bound, reads nothing back: every box in the photograph is
+  // then proposed as new, no record goes unseen, and the page called that
+  // "9 differences" - on a rack where one device had been added. Nine things
+  // do not differ from a record that was never opened. So the count is only
+  // a count of DIFFERENCES when the comparison read something: a record the
+  // scan did not see, or a box that is anything other than new.
   const compared = matched && matched.confidence !== 'none' ? matched : null;
   const decided = identity && identity.decision === 'matched' && identity.rack ? identity : null;
   const foundBy = decided
@@ -538,7 +570,9 @@ export default function DriftPage() {
       });
       const out = await r.json();
       if (!r.ok) throw new Error(out.error || 'That rack could not be saved');
-      await load();
+      // Which rack this is decides what it is compared with, so this is one of
+      // the two times the comparison is run on purpose.
+      await load({ recompare: true });
     } catch (e) {
       setPickError(e.message || String(e));
       setBusy('');
@@ -698,6 +732,26 @@ export default function DriftPage() {
             <i className={styles.actionGo} aria-hidden="true" />
           </button>
           )
+        )}
+        {/* The comparison runs once, when the rack has nothing filed - see the
+            note in load(). This is how a person runs it again when they have
+            changed something in the rack or in NetBox.
+
+            Not once the check has gone: it is with its SPOC then, and
+            comparing again would file a fresh draft behind their back. */}
+        {plan && !busy && !sent && (
+          <button type="button" className={styles.action} onClick={() => load({ recompare: true })}>
+            <span className={styles.actionGlyph} aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+                strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12a9 9 0 11-3.5-7.1" /><path d="M21 4v5h-5" />
+              </svg>
+            </span>
+            <span className={styles.actionText}>
+              <b>Check again</b>
+              <small>Compare this rack with NetBox now</small>
+            </span>
+          </button>
         )}
       </div>
       {reportable && !sent && (
