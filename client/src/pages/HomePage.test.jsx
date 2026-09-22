@@ -56,7 +56,7 @@ const user = { current: USER };
 vi.mock('../AuthContext.jsx', () => ({ useAuth: () => ({ user: user.current }) }));
 
 import HomePage, {
-  roleOf, actionsFor, bannerFor, waysFor, happenedTo,
+  roleOf, actionsFor, bannerFor, waysFor,
   greetingAt, initialsOf, placeLine, stateOf,
 } from './HomePage.jsx';
 
@@ -168,7 +168,7 @@ describe('<HomePage> with work behind it', () => {
       'One photo and RackTrack reads the rack, then checks it against your records.',
     )).toBeTruthy();
     // And no row of counts on the way in: the owner took those off.
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Latest checks' })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Your racks' })).toBeTruthy());
     expect(screen.queryByText(/racks read/)).toBeNull();
     expect(screen.queryByText(/differences waiting/)).toBeNull();
     expect(screen.queryByText('Sites')).toBeNull();
@@ -348,6 +348,7 @@ describe('<HomePage> by role', () => {
   test('the banner is the role, in words', () => {
     expect(bannerFor({ role: 'admin', triage: 2, racks: 4 }).title).toBe('2 checks have nobody');
     expect(bannerFor({ role: 'admin', triage: 0, racks: 4 }).title).toBe('Your estate is covered');
+    // And no button anywhere in it that opens a console.
     expect(bannerFor({ role: 'spoc', waiting: 1, racks: 4 }).title).toBe('A check is waiting for you');
     expect(bannerFor({ role: 'tech', racks: 4 }).title).toBe('Ready to scan a rack');
     expect(bannerFor({ role: 'tech', racks: 0 }).steps).toHaveLength(3);
@@ -368,26 +369,29 @@ describe('<HomePage> by role', () => {
     expect(screen.getByTestId('where').textContent).toBe('/results/RK-5B81BE87/drift');
   });
 
-  test('an admin is sent to the checks that have nobody', async () => {
+  test('an admin is told what has nobody, and is still sent to scan', async () => {
     answers.current['/api/approvals/me'] = { ok: true, can: { admin: true } };
     mount();
     await waitFor(() => expect(screen.getByText(/^Organization admin/)).toBeTruthy());
-    // One check is in triage in the stub.
-    fireEvent.click(screen.getByRole('button', { name: /Give a check an owner/ }));
-    expect(screen.getByTestId('where').textContent).toBe('/dashboard');
+    // One check is in triage in the stub, and the banner says so in words.
+    expect(screen.getByRole('heading', { name: 'One check has nobody' })).toBeTruthy();
+    // No console button on the way in: the owner took it off.
+    expect(screen.queryByRole('button', { name: /console/i })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Scan a rack/ }));
+    expect(screen.getByTestId('where').textContent).toBe('/scan');
   });
 
-  test('with nothing waiting, each role still gets a true pair of controls', () => {
-    const none = { waiting: 0, triage: 0, rack: 'RK-1' };
-    expect(actionsFor({ role: 'admin', ...none }).lead.text).toBe('Open the console');
-    expect(actionsFor({ role: 'admin', ...none }).alt.text).toBe('Scan a rack');
-    expect(actionsFor({ role: 'spoc', ...none }).lead.text).toBe('Scan a rack');
-    expect(actionsFor({ role: 'tech', ...none }).lead.text).toBe('Scan a rack');
-    expect(actionsFor({ role: 'tech', ...none }).alt.text).toBe('Open this rack');
-    // One of a thing is one, not "1 checks".
+  test('scanning is the control for everybody who is not holding checks', () => {
+    const none = { waiting: 0, rack: 'RK-1' };
+    for (const role of ['admin', 'spoc', 'tech', 'manager']) {
+      expect(actionsFor({ role, ...none }).lead.text).toBe('Scan a rack');
+      expect(actionsFor({ role, ...none }).alt.text).toBe('Open this rack');
+    }
+    // Somebody holding checks is told to read them: that is work only they
+    // can do, and scanning moves beside it.
     expect(actionsFor({ role: 'spoc', waiting: 1, newest: 'RK-1' }).lead.text)
       .toBe('Read the check waiting for you');
-    expect(actionsFor({ role: 'admin', triage: 3 }).lead.text).toBe('Give 3 checks an owner');
+    expect(actionsFor({ role: 'spoc', waiting: 4, newest: 'RK-1' }).alt.text).toBe('Scan a rack');
     // A technician with no rack yet has nothing to open, and no dead control.
     expect(actionsFor({ role: 'tech' }).alt).toBe(null);
   });
@@ -421,7 +425,7 @@ describe('<HomePage> by role', () => {
 describe('<HomePage> beyond the racks', () => {
   test('no row of counts on the way in', async () => {
     mount();
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Latest checks' })).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Your racks' })).toBeTruthy());
     for (const word of ['Sites', 'Site', 'Racks read', 'Rack read', 'Differences waiting']) {
       expect(screen.queryByText(word)).toBeNull();
     }
@@ -431,33 +435,12 @@ describe('<HomePage> beyond the racks', () => {
     expect(waysFor('tech').map((w) => w.to))
       .toEqual(['/port-history', '/switch-info', '/help', '/profile']);
     expect(waysFor('admin').map((w) => w.to))
-      .toEqual(['/port-history', '/switch-info', '/dashboard', '/organizations']);
+      .toEqual(['/port-history', '/switch-info', '/organizations', '/profile']);
     for (const role of ['tech', 'admin']) {
       expect(waysFor(role).map((w) => w.to)).not.toContain('/scan');
     }
   });
 
-  test('the latest checks say what happened, not what was photographed', async () => {
-    mount();
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Latest checks' })).toBeTruthy());
-    const latest = within(screen.getByRole('heading', { name: 'Latest checks' }).closest('section'));
-    expect(latest.getAllByRole('button')).toHaveLength(3);
-    expect(latest.getByText('With the SPOC')).toBeTruthy();
-    expect(latest.getByText('Written to the record')).toBeTruthy();
-    expect(latest.getByText('Approved')).toBeTruthy();
-
-    // A check opens the rack's drift screen, inside the app.
-    fireEvent.click(latest.getByText('Written to the record').closest('button'));
-    expect(screen.getByTestId('where').textContent).toBe('/results/RK-A31AE2E7/drift');
-  });
-
-  test('what happened to a check is one word a person would use', () => {
-    expect(happenedTo({ status: 'written' })).toBe('Written to the record');
-    expect(happenedTo({ status: 'triage' })).toBe('Waiting for an owner');
-    expect(happenedTo({ status: 'draft' })).toBe('Not sent yet');
-    expect(happenedTo({ status: 'write_failed' })).toBe('The write did not finish');
-    expect(happenedTo({ status: 'assigned' })).toBe('With the SPOC');
-  });
 });
 
 describe('<HomePage> words', () => {

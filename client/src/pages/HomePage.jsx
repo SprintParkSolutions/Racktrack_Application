@@ -32,8 +32,6 @@ import styles from './HomePage.module.css';
  *                 repeats the bottom bar or a section of this page.
  *   needs you     only when something does: the checks that are with you, by
  *                 incident number and rack.
- *   latest checks what has been happening, whoever it was with, rather than
- *                 only what this person photographed.
  *   your racks    a short list with the photographs in it, each rack's state
  *                 told by a dot and a word.
  *
@@ -55,7 +53,6 @@ import styles from './HomePage.module.css';
 // Scan history for the racks, the Desk for the checks.
 const RACKS_SHOWN = 3;
 const NEEDS_SHOWN = 3;
-const ACTIVITY_SHOWN = 3;
 // Enough checks to name the newest one of every rack a person is likely to
 // have, without asking for an organization's whole history.
 const PLAN_WINDOW = 100;
@@ -183,18 +180,13 @@ export function placeLine(role, org, site) {
  *
  * Scanning is always one of the two, because it is what the app is for.
  */
-export function actionsFor({ role, waiting = 0, triage = 0, newest = null, rack = null }) {
+export function actionsFor({ role, waiting = 0, newest = null, rack = null }) {
   const scan = { text: 'Scan a rack', to: '/scan' };
   const open = rack ? { text: 'Open this rack', to: `/results/${encodeURIComponent(rack)}` } : null;
-  if (role === 'admin') {
-    if (triage > 0) {
-      return {
-        lead: { text: triage === 1 ? 'Give a check an owner' : `Give ${triage} checks an owner`, to: '/dashboard' },
-        alt: scan,
-      };
-    }
-    return { lead: { text: 'Open the console', to: '/dashboard' }, alt: scan };
-  }
+  // Somebody holding checks is told to read them, because that is what is
+  // waiting on them and it is work nobody else can do. Everybody else is told
+  // to scan: the owner took the console button off the way in on 22 Sep 2026,
+  // and scanning is what this app is for.
   if (role === 'spoc' && waiting > 0) {
     return {
       lead: {
@@ -212,44 +204,71 @@ export function actionsFor({ role, waiting = 0, triage = 0, newest = null, rack 
  *
  * The page led with the person's own photograph for half a day; the owner
  * asked on 22 Sep 2026 for the main thing to be a design rather than their
- * scan. So this is the subject drawn instead of photographed: a rack in
- * elevation, its shelves, the ports on two of them, and one shelf marked as
- * read. Light greys and a single accent, the same green the rest of the app
- * uses for a thing that matches. It says nothing that is not true of every
- * rack, so it never contradicts the account looking at it.
+ * scan, and then for that design to be worth looking at. So it is the app's
+ * own subject, drawn: a rack on a faint blueprint grid, four shelves, the
+ * second of them read - lit ports, a tick, a wash of the green the rest of
+ * the app uses for a match - one cable leaving it, and four viewfinder
+ * corners around the whole thing, which is how a camera frames a rack.
  *
- * Geometry, not an image file: it stays sharp at any size, costs no request
- * and carries no photograph of a customer's equipment.
+ * Geometry, not an image file: sharp at any size, no request, and no
+ * photograph of a customer's equipment. It says nothing that is not true of
+ * every rack, so it never contradicts the account looking at it.
  */
 export function RackArt({ className = '' }) {
   const shelves = [
-    { y: 26, ports: true, read: false },
-    { y: 58, ports: true, read: true },
-    { y: 90, ports: false, read: false },
-    { y: 122, ports: false, read: false },
+    { y: 34, ports: 6, read: false },
+    { y: 62, ports: 6, read: true },
+    { y: 90, ports: 0, read: false },
+    { y: 118, ports: 0, read: false },
   ];
   return (
-    <svg className={className} viewBox="0 0 132 176" fill="none" role="img"
-      aria-label="A rack, drawn: four shelves, one of them read">
-      {/* The frame, with its rails. */}
-      <rect x="6" y="6" width="120" height="164" rx="14" fill="#FFFFFF" stroke="#DFE2E8" strokeWidth="1.5" />
-      <line x1="18" y1="14" x2="18" y2="162" stroke="#EDEFF3" strokeWidth="1.5" />
-      <line x1="114" y1="14" x2="114" y2="162" stroke="#EDEFF3" strokeWidth="1.5" />
+    <svg className={className} viewBox="0 0 156 196" fill="none" role="img"
+      aria-label="A rack, drawn, with one shelf read through a viewfinder">
+      <defs>
+        <pattern id="ra-grid" width="11" height="11" patternUnits="userSpaceOnUse">
+          <path d="M11 0H0V11" stroke="#EDEFF3" strokeWidth="1" fill="none" />
+        </pattern>
+        <radialGradient id="ra-glow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#0F7B4F" stopOpacity="0.14" />
+          <stop offset="100%" stopColor="#0F7B4F" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+
+      <rect x="0" y="0" width="156" height="196" fill="url(#ra-grid)" />
+      <ellipse cx="78" cy="76" rx="74" ry="40" fill="url(#ra-glow)" />
+
+      {/* The rack itself, with its rails and its feet. */}
+      <rect x="26" y="16" width="104" height="156" rx="13" fill="#FFFFFF" stroke="#D9DDE4" strokeWidth="1.6" />
+      <line x1="37" y1="24" x2="37" y2="164" stroke="#EDEFF3" strokeWidth="1.4" />
+      <line x1="119" y1="24" x2="119" y2="164" stroke="#EDEFF3" strokeWidth="1.4" />
       {shelves.map((sh) => (
         <g key={sh.y}>
-          <rect x="24" y={sh.y} width="84" height="24" rx="7"
-            fill={sh.read ? '#E9F3ED' : '#F3F4F7'}
-            stroke={sh.read ? '#BFDDCC' : '#E7E9EE'} strokeWidth="1.2" />
-          {sh.ports && [0, 1, 2, 3, 4, 5].map((i) => (
-            <rect key={i} x={31 + i * 12} y={sh.y + 14} width="7" height="5" rx="1.6"
-              fill={sh.read ? '#8FBFA4' : '#D3D7DE'} />
+          <rect x="42" y={sh.y} width="72" height="22" rx="6"
+            fill={sh.read ? '#E9F3ED' : '#F4F5F8'}
+            stroke={sh.read ? '#BCDBCB' : '#E7E9EE'} strokeWidth="1.2" />
+          {Array.from({ length: sh.ports }, (_, i) => (
+            <rect key={i} x={48 + i * 10} y={sh.y + 13} width="6" height="4.5" rx="1.4"
+              fill={sh.read ? '#5CA47E' : '#D5D9E0'} />
           ))}
-          {sh.read && <circle cx="98" cy={sh.y + 8} r="3.4" fill="#0F7B4F" />}
+          {sh.read && (
+            <path d={`M100 ${sh.y + 10} l2.6 2.8 5-5.6`} stroke="#0F7B4F" strokeWidth="2"
+              strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          )}
         </g>
       ))}
-      {/* The feet, so it stands on something. */}
-      <line x1="34" y1="170" x2="34" y2="176" stroke="#DFE2E8" strokeWidth="2.4" strokeLinecap="round" />
-      <line x1="98" y1="170" x2="98" y2="176" stroke="#DFE2E8" strokeWidth="2.4" strokeLinecap="round" />
+      {/* One cable, leaving the read shelf. A rack is never only boxes. */}
+      <path d="M114 74 C 132 78, 134 104, 122 126" stroke="#CFD4DC" strokeWidth="1.8"
+        strokeLinecap="round" fill="none" />
+      <line x1="46" y1="172" x2="46" y2="180" stroke="#D9DDE4" strokeWidth="2.6" strokeLinecap="round" />
+      <line x1="110" y1="172" x2="110" y2="180" stroke="#D9DDE4" strokeWidth="2.6" strokeLinecap="round" />
+
+      {/* The viewfinder: the one motif that says photograph without printing one. */}
+      <g stroke="#0F7B4F" strokeWidth="2.2" strokeLinecap="round" fill="none">
+        <path d="M10 26 V12 H24" />
+        <path d="M132 12 H146 V26" />
+        <path d="M146 170 V184 H132" />
+        <path d="M24 184 H10 V170" />
+      </g>
     </svg>
   );
 }
@@ -262,7 +281,6 @@ export function RackArt({ className = '' }) {
  */
 export function bannerFor({ role, racks = 0, waiting = 0, triage = 0,
   loading = false, failed = false }) {
-
   // The racks could not be read. Say that, rather than "scan your first rack"
   // at somebody who has a hundred.
   if (failed) {
@@ -272,7 +290,6 @@ export function bannerFor({ role, racks = 0, waiting = 0, triage = 0,
       steps: [],
     };
   }
-
   if (role === 'admin') {
     return {
       title: triage > 0
@@ -280,7 +297,7 @@ export function bannerFor({ role, racks = 0, waiting = 0, triage = 0,
         : 'Your estate is covered',
       words: triage > 0
         ? 'A check whose Site names no single point of contact waits for an admin to choose one.'
-        : 'Every check has somebody. The console has the racks, the Sites and the people.',
+        : 'Every check has somebody. Scan a rack and RackTrack reads it against your records.',
       steps: [],
     };
   }
@@ -312,10 +329,10 @@ export function bannerFor({ role, racks = 0, waiting = 0, triage = 0,
  * The four ways on, as a grid rather than a menu.
  *
  * None of them repeats something this page or the bottom bar already offers:
- * scanning is the raised control on the bar and usually the banner's own
- * button, the racks are a list further down, and the Desk is on the bar. What
- * is left are the screens that are otherwise two taps inside More, and the
- * fourth changes with the role, because a console is no use to a technician.
+ * scanning is the raised control on the bar and the banner's own button, the
+ * racks are a list further down, and the Desk is on the bar. What is left are
+ * the screens that are otherwise two taps inside More, and the last two
+ * change with the role.
  */
 export function waysFor(role) {
   const ways = [
@@ -323,26 +340,13 @@ export function waysFor(role) {
     { key: 'switches', label: 'Switches', icon: 'dns', to: '/switch-info' },
   ];
   if (role === 'admin') {
-    ways.push({ key: 'console', label: 'Console', icon: 'space_dashboard', to: '/dashboard' });
     ways.push({ key: 'org', label: 'Organization', icon: 'apartment', to: '/organizations' });
+    ways.push({ key: 'people', label: 'Your account', icon: 'person_check', to: '/profile' });
   } else {
     ways.push({ key: 'help', label: 'How it works', icon: 'book', to: '/help' });
     ways.push({ key: 'you', label: 'Your account', icon: 'person_check', to: '/profile' });
   }
   return ways;
-}
-
-/** What happened to a check, in one word, for the activity list. */
-export function happenedTo(plan) {
-  const st = String(plan && plan.status || '');
-  if (st === 'written' || st === 'completed') return 'Written to the record';
-  if (st === 'triage') return 'Waiting for an owner';
-  if (st === 'draft') return 'Not sent yet';
-  if (st === 'rejected') return 'Rejected';
-  if (st === 'rework') return 'Sent back';
-  if (st === 'write_failed') return 'The write did not finish';
-  if (st === 'approved') return 'Approved';
-  return 'With the SPOC';
 }
 
 export default function HomePage() {
@@ -451,19 +455,6 @@ export default function HomePage() {
   const role = useMemo(() => roleOf(user, can), [user, can]);
   const greeting = useMemo(() => greetingAt(), []);
 
-  // The newest checks, whoever they are with: what has been happening, rather
-  // than what this person photographed.
-  const activity = useMemo(() => (plans || []).slice(0, ACTIVITY_SHOWN).map((p) => ({
-    id: p.id,
-    rackId: p.rackId,
-    name: (places.get(String(p.rackId)) || {}).name
-      || (p.rackName && !UNNAMED.test(p.rackName) ? String(p.rackName) : null),
-    site: p.siteName || null,
-    what: happenedTo(p),
-    state: stateOf(p).key,
-    when: relTime(p.receivedAt || p.updatedAt || p.createdAt || null),
-  })), [plans, places]);
-
   const ways = waysFor(role.key);
 
   const banner = bannerFor({
@@ -478,7 +469,6 @@ export default function HomePage() {
   const { lead, alt } = actionsFor({
     role: role.key,
     waiting: needs.length,
-    triage,
     newest: needs[0]?.rackId || null,
     rack: shot?.rackId || null,
   });
@@ -577,41 +567,6 @@ export default function HomePage() {
             {needs.length > NEEDS_SHOWN && (
               <p className={styles.rest}>and {needs.length - NEEDS_SHOWN} more with you</p>
             )}
-          </section>
-        )}
-
-        {/* ── What has been happening: the newest checks, whoever they are
-               with. A landing screen that only lists what this person
-               photographed says nothing about the work. ── */}
-        {activity.length > 0 && (
-          <section className={styles.sect} aria-labelledby="home-activity">
-            <div className={styles.sectTop}>
-              <h2 className={styles.sectTitle} id="home-activity">Latest checks</h2>
-            </div>
-            <ul className={styles.rows}>
-              {activity.map((a) => (
-                <li key={a.id} className={styles.rowItem}>
-                  <button
-                    type="button"
-                    className={styles.row}
-                    onClick={() => navigate(`/results/${encodeURIComponent(a.rackId)}/drift`)}
-                  >
-                    <span className={`${styles.pip} ${styles[a.state]}`} aria-hidden="true" />
-                    <span className={styles.rowText}>
-                      <span className={`${styles.rackName} ${a.name ? '' : styles.noName}`}>
-                        {a.name || NO_NAME}
-                      </span>
-                      <span className={styles.rowMeta}>
-                        <span className={styles.metaGives}>{a.what}</span>
-                        {a.when ? <span className={styles.sep} aria-hidden="true" /> : null}
-                        {a.when && <span className={styles.metaKeeps}>{a.when}</span>}
-                      </span>
-                    </span>
-                    <Icon name="chevron_right" className={styles.chev} />
-                  </button>
-                </li>
-              ))}
-            </ul>
           </section>
         )}
 

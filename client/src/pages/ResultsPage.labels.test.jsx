@@ -64,6 +64,12 @@ describe('headerWhereLines', () => {
     expect(lines.join(' ')).not.toMatch(/412|17\.4474|78\.3762/);
   });
 
+  test('the Site the app itself knows wins over whatever the scan carries', () => {
+    const lines = headerWhereLines({ name: 'R1', also: null },
+      { ...OLD_BUILD_SCAN, siteName: 'An older answer' }, 'DC-007 Bengaluru');
+    expect(lines).toEqual(['DC-007 Bengaluru']);
+  });
+
   test('a scan with no Site falls back to its room', () => {
     const lines = headerWhereLines({ name: 'R1', also: 'SP-HYB-RM01-R01-R1', confirmed: true }, OLD_BUILD_SCAN);
     expect(lines).toEqual(['SP-HYB-RM01-R01-R1', 'RM01']);

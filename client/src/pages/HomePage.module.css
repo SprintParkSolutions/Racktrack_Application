@@ -123,12 +123,18 @@
 .lead { display: flex; flex-direction: column; }
 
 .banner {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   padding: 22px 20px;
-  border-radius: 24px;
-  background: var(--hm-tray);
+  border-radius: 26px;
+  overflow: hidden;
+  /* Not a flat grey: a wash that lifts towards the drawing, so the block has
+     depth without a shadow and the artwork has something to sit in. */
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(15, 123, 79, 0.07) 0%, rgba(15, 123, 79, 0) 58%),
+    linear-gradient(180deg, #FAFBFC 0%, #F4F5F8 100%);
 }
 .bannerText { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
 .bannerTitle {
@@ -167,13 +173,13 @@
 /* The drawing keeps its proportions and gives way first on a narrow phone. */
 .bannerArt {
   flex: 0 1 auto;
-  width: 104px;
-  height: 139px;
-  min-width: 78px;
+  width: 118px;
+  height: 148px;
+  min-width: 86px;
 }
 @media (max-width: 359px) {
-  .banner { gap: 12px; padding: 20px 16px; }
-  .bannerArt { width: 84px; height: 112px; }
+  .banner { gap: 10px; padding: 20px 16px; }
+  .bannerArt { width: 92px; height: 116px; }
 }
 
 /* ── The action ─────────────────────────────────────────────────────
@@ -419,13 +425,19 @@
 .way:active { background: var(--hm-tray); }
 .way:focus-visible { outline: 2px solid var(--hm-ink); outline-offset: 2px; }
 .wayGlyph {
-  width: 44px; height: 44px;
+  width: 46px; height: 46px;
   display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 50%;
+  border-radius: 16px;
   background: var(--hm-tray);
-  color: var(--hm-ink);
+  color: var(--hm-ink-2);
   font-size: var(--fs-section);
 }
+/* One tint each, so four marks in a row read as four things rather than one
+   shape repeated. Quiet enough that the page is still white. */
+.way:nth-child(1) .wayGlyph { background: #EEF3FA; color: #2C5D95; }
+.way:nth-child(2) .wayGlyph { background: #EDF4EF; color: #23694A; }
+.way:nth-child(3) .wayGlyph { background: #F6F1EA; color: #86603A; }
+.way:nth-child(4) .wayGlyph { background: #F2F0F7; color: #574C82; }
 .wayLabel {
   font-family: var(--font);
   font-size: var(--fs-label);
