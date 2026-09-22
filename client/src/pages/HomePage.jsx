@@ -28,9 +28,6 @@ import styles from './HomePage.module.css';
  *                 and the photographs stay with the racks they belong to.
  *   one action    one filled control in ink on white, one quiet one under
  *                 it. Which is which is the role's.
- *   four figures  how things stand: Sites, racks read, differences waiting,
- *                 checks with you. A figure of zero is left out, because a
- *                 zero on a landing screen reads as a score.
  *   four ways on  the screens that are otherwise two taps inside More. None
  *                 repeats the bottom bar or a section of this page.
  *   needs you     only when something does: the checks that are with you, by
@@ -258,17 +255,13 @@ export function RackArt({ className = '' }) {
 }
 
 /**
- * What the banner says, by role: a heading, a sentence, and one quiet line of
- * figures under them. Every figure is one the server answered; any that has
- * not arrived is simply left out, so the line is never a row of zeroes.
+ * What the banner says, by role: a heading and a sentence, and on a brand-new
+ * account the three lines saying what a first scan does. No counts - the
+ * owner took the row of figures off the way in on 22 Sep 2026, and every
+ * number this page used to print there is said where it can be acted on.
  */
-export function bannerFor({ role, racks = 0, waiting = 0, triage = 0, open = null,
+export function bannerFor({ role, racks = 0, waiting = 0, triage = 0,
   loading = false, failed = false }) {
-  const figures = [];
-  if (!loading && racks > 0) figures.push(`${racks} rack${racks === 1 ? '' : 's'} read`);
-  // Zero is not a figure worth a line: "0 differences waiting" reads as a
-  // score. Nothing waiting simply says nothing.
-  if (open != null && open > 0) figures.push(`${open} difference${open === 1 ? '' : 's'} waiting`);
 
   // The racks could not be read. Say that, rather than "scan your first rack"
   // at somebody who has a hundred.
@@ -276,7 +269,6 @@ export function bannerFor({ role, racks = 0, waiting = 0, triage = 0, open = nul
     return {
       title: 'Your racks could not be loaded just now',
       words: 'Pull up again in a moment.',
-      figures: [],
       steps: [],
     };
   }
@@ -289,7 +281,6 @@ export function bannerFor({ role, racks = 0, waiting = 0, triage = 0, open = nul
       words: triage > 0
         ? 'A check whose Site names no single point of contact waits for an admin to choose one.'
         : 'Every check has somebody. The console has the racks, the Sites and the people.',
-      figures,
       steps: [],
     };
   }
@@ -297,7 +288,6 @@ export function bannerFor({ role, racks = 0, waiting = 0, triage = 0, open = nul
     return {
       title: waiting === 1 ? 'A check is waiting for you' : `${waiting} checks are waiting for you`,
       words: 'Read what the rack holds against your record, then approve it, change it or send it back.',
-      figures,
       steps: [],
     };
   }
@@ -308,36 +298,14 @@ export function bannerFor({ role, racks = 0, waiting = 0, triage = 0, open = nul
     return {
       title: 'Scan your first rack',
       words: 'One photo, and RackTrack reads the equipment mounted in the rack.',
-      figures,
       steps: FIRST_SCAN,
     };
   }
   return {
     title: 'Ready to scan a rack',
     words: 'One photo and RackTrack reads the rack, then checks it against your records.',
-    figures,
     steps: [],
   };
-}
-
-/**
- * The estate, in four figures.
- *
- * A landing screen that only lists the racks somebody scanned says nothing
- * about the work: the owner asked on 22 Sep 2026 for more than that. These
- * are the four numbers that describe an organization's position, each one
- * already answered by a request the page makes, and each one left out
- * entirely when its answer has not arrived or is zero. A figure of zero on a
- * landing screen reads as a score.
- */
-export function figuresFor({ sites = 0, racks = 0, open = null, waiting = 0, written = 0 }) {
-  const out = [];
-  if (sites > 0) out.push({ key: 'sites', value: sites, label: sites === 1 ? 'Site' : 'Sites' });
-  if (racks > 0) out.push({ key: 'racks', value: racks, label: racks === 1 ? 'Rack read' : 'Racks read' });
-  if (open != null && open > 0) out.push({ key: 'open', value: open, label: 'Differences waiting' });
-  if (waiting > 0) out.push({ key: 'mine', value: waiting, label: waiting === 1 ? 'Check with you' : 'Checks with you' });
-  if (written > 0) out.push({ key: 'written', value: written, label: 'Written to the record' });
-  return out.slice(0, 4);
 }
 
 /**
@@ -483,12 +451,6 @@ export default function HomePage() {
   const role = useMemo(() => roleOf(user, can), [user, can]);
   const greeting = useMemo(() => greetingAt(), []);
 
-  // Checks carried all the way into the customer's record. The page already
-  // holds the list; this is the same rows counted, not another request.
-  const written = useMemo(
-    () => (plans || []).filter((p) => p && DONE_STATUS.has(p.status)).length,
-    [plans],
-  );
   // The newest checks, whoever they are with: what has been happening, rather
   // than what this person photographed.
   const activity = useMemo(() => (plans || []).slice(0, ACTIVITY_SHOWN).map((p) => ({
@@ -502,13 +464,6 @@ export default function HomePage() {
     when: relTime(p.receivedAt || p.updatedAt || p.createdAt || null),
   })), [plans, places]);
 
-  const figures = figuresFor({
-    sites: (sites || []).length,
-    racks: racks.length,
-    open: openCount,
-    waiting: needs.length,
-    written,
-  });
   const ways = waysFor(role.key);
 
   const banner = bannerFor({
@@ -516,7 +471,6 @@ export default function HomePage() {
     racks: racks.length,
     waiting: needs.length,
     triage,
-    open: openCount,
     loading,
     failed: scansFailed,
   });
@@ -556,9 +510,6 @@ export default function HomePage() {
                   {banner.steps.map((l) => <li key={l}>{l}</li>)}
                 </ul>
               )}
-              {banner.figures.length > 0 && (
-                <p className={styles.bannerFigures}>{banner.figures.join(' · ')}</p>
-              )}
             </div>
             <RackArt className={styles.bannerArt} />
           </div>
@@ -577,20 +528,10 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ── The estate in four figures, and the four ways on. Between them
-               they answer "how do things stand" and "what can I do", which is
-               what a landing screen is for. ── */}
-        {figures.length > 0 && (
-          <ul className={styles.figures}>
-            {figures.map((f) => (
-              <li key={f.key} className={styles.figure}>
-                <span className={styles.figureValue}>{f.value}</span>
-                <span className={styles.figureLabel}>{f.label}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-
+        {/* The four ways on. The figures that sat above them - Sites, racks
+            read, differences waiting, checks with you - were taken off on 22
+            Sep 2026: the owner did not want a row of counts on the way in,
+            and every one of them is said where it can be acted on. */}
         <nav className={styles.ways} aria-label="Ways on">
           {ways.map((w) => (
             <button key={w.key} type="button" className={styles.way} onClick={() => navigate(w.to)}>

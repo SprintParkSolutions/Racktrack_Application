@@ -149,7 +149,7 @@
   line-height: var(--lh-body);
   color: var(--hm-ink-2);
 }
-/* The figures, as a line of words rather than a strip of big numbers. */
+/* On a new account, the three things a first scan does, under the words. */
 .bannerSteps {
   margin: 10px 0 0;
   padding: 0;
@@ -163,15 +163,6 @@
   font-size: var(--fs-sub);
   line-height: var(--lh-sub);
   color: var(--hm-ink-2);
-}
-.bannerFigures {
-  margin: 12px 0 0;
-  font-family: var(--font);
-  font-size: var(--fs-label);
-  font-weight: var(--fw-label);
-  letter-spacing: 0.01em;
-  color: var(--hm-ink-3);
-  font-variant-numeric: tabular-nums;
 }
 /* The drawing keeps its proportions and gives way first on a narrow phone. */
 .bannerArt {
@@ -403,46 +394,6 @@
   .shotImg { height: 320px; }
 }
 
-/* ── The estate in four figures ─────────────────────────────────────
-   Two across on a phone, four on anything wider. Quiet numbers with their
-   labels in words under them, on the page rather than in boxes: four framed
-   tiles would be four more rectangles competing with the banner. */
-.figures {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1px;
-  background: var(--hm-line-soft);
-  border-radius: 18px;
-  overflow: hidden;
-}
-.figure {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 16px 16px 15px;
-  background: #ffffff;
-  min-width: 0;
-}
-.figureValue {
-  font-family: var(--font);
-  font-size: var(--fs-page);
-  font-weight: var(--fw-title);
-  line-height: 1.1;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
-  color: var(--hm-ink);
-}
-.figureLabel {
-  font-family: var(--font);
-  font-size: var(--fs-label);
-  font-weight: var(--fw-label);
-  line-height: var(--lh-label);
-  color: var(--hm-ink-3);
-}
-
 /* ── The four ways on ───────────────────────────────────────────────
    A grid, not a menu: each one is a glyph in a round and a word under it,
    the shape a person expects from the home screen of anything else on their
@@ -495,6 +446,3 @@
   background: currentColor;
 }
 
-@media (min-width: 560px) {
-  .figures { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}

@@ -56,7 +56,7 @@ const user = { current: USER };
 vi.mock('../AuthContext.jsx', () => ({ useAuth: () => ({ user: user.current }) }));
 
 import HomePage, {
-  roleOf, actionsFor, bannerFor, figuresFor, waysFor, happenedTo,
+  roleOf, actionsFor, bannerFor, waysFor, happenedTo,
   greetingAt, initialsOf, placeLine, stateOf,
 } from './HomePage.jsx';
 
@@ -167,17 +167,20 @@ describe('<HomePage> with work behind it', () => {
     expect(screen.getByText(
       'One photo and RackTrack reads the rack, then checks it against your records.',
     )).toBeTruthy();
-    // The figures are a line of words under it, not a strip of big numbers.
-    await waitFor(() => expect(screen.getByText('5 racks read · 6 differences waiting')).toBeTruthy());
+    // And no row of counts on the way in: the owner took those off.
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Latest checks' })).toBeTruthy());
+    expect(screen.queryByText(/racks read/)).toBeNull();
+    expect(screen.queryByText(/differences waiting/)).toBeNull();
+    expect(screen.queryByText('Sites')).toBeNull();
     // No photograph is on the banner itself.
     expect(screen.queryByAltText(/as it was photographed/)).toBeNull();
   });
 
   test('every figure is one the server answered, and nothing is asked for twice', async () => {
     mount();
-    await waitFor(() => expect(screen.getByText('5 racks read · 6 differences waiting')).toBeTruthy());
-    // Four checks are held by this person, said beside the section's name
-    // rather than as a strip of big numbers.
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Needs you' })).toBeTruthy());
+    // The one count on the page: how many checks are with this person, beside
+    // the name of the list that holds them.
     const needs = within(screen.getByRole('heading', { name: 'Needs you' }).closest('section'));
     expect(needs.getByText('4')).toBeTruthy();
 
@@ -190,13 +193,12 @@ describe('<HomePage> with work behind it', () => {
     ]);
   });
 
-  test('a figure the server cannot give is left out, not guessed', async () => {
+  test('a dashboard the server refuses costs the page nothing', async () => {
     answers.current['/api/approvals/dashboard'] = 'refused';
     mount();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Your racks' })).toBeTruthy());
     expect(screen.queryByText(/differences waiting/)).toBeNull();
-    // What is known is still said.
-    expect(screen.getByText('5 racks read')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Ready to scan a rack' })).toBeTruthy();
   });
 
   test('the racks are a list with the photographs in it, and they open', async () => {
@@ -349,9 +351,7 @@ describe('<HomePage> by role', () => {
     expect(bannerFor({ role: 'spoc', waiting: 1, racks: 4 }).title).toBe('A check is waiting for you');
     expect(bannerFor({ role: 'tech', racks: 4 }).title).toBe('Ready to scan a rack');
     expect(bannerFor({ role: 'tech', racks: 0 }).steps).toHaveLength(3);
-    expect(bannerFor({ role: 'tech', racks: 0 }).figures).toEqual([]);
-    expect(bannerFor({ role: 'tech', racks: 1, open: 1 }).figures)
-      .toEqual(['1 rack read', '1 difference waiting']);
+    expect(bannerFor({ role: 'tech', racks: 4 }).steps).toEqual([]);
     expect(bannerFor({ role: 'tech', failed: true }).title)
       .toBe('Your racks could not be loaded just now');
     // Nothing has answered yet: no figure, and no claim that there are none.
@@ -419,13 +419,12 @@ describe('<HomePage> by role', () => {
    about the work. These are the parts that answer "how do things stand" and
    "what else can I do". */
 describe('<HomePage> beyond the racks', () => {
-  test('the estate is four figures, and a zero is never one of them', () => {
-    expect(figuresFor({ sites: 1, racks: 5, open: 6, waiting: 4, written: 2 })
-      .map((f) => `${f.value} ${f.label}`))
-      .toEqual(['1 Site', '5 Racks read', '6 Differences waiting', '4 Checks with you']);
-    expect(figuresFor({ sites: 0, racks: 0, open: 0, waiting: 0, written: 0 })).toEqual([]);
-    expect(figuresFor({ sites: 2, racks: 1, open: null, waiting: 0, written: 3 })
-      .map((f) => f.label)).toEqual(['Sites', 'Rack read', 'Written to the record']);
+  test('no row of counts on the way in', async () => {
+    mount();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Latest checks' })).toBeTruthy());
+    for (const word of ['Sites', 'Site', 'Racks read', 'Rack read', 'Differences waiting']) {
+      expect(screen.queryByText(word)).toBeNull();
+    }
   });
 
   test('the ways on repeat nothing the bar or the page already offers', () => {
