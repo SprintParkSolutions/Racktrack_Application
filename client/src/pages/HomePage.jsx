@@ -154,18 +154,18 @@ export function greetingAt(date = new Date()) {
   return 'Good evening';
 }
 
-/** The two letters on the round mark, from whatever name the account has. */
-export function initialsOf(user) {
-  const name = String(user?.username || user?.email || '').trim();
-  if (!name) return '?';
-  const parts = name.split(/[\s._@-]+/).filter(Boolean);
-  const letters = parts.length > 1 ? parts[0][0] + parts[1][0] : name.slice(0, 2);
-  return letters.toUpperCase();
-}
-
-/** What this person is here, and where. One line, read once a day. */
+/**
+ * What this person is here, and where: two facts, one line.
+ *
+ * It carried the organisation's name as well, which on a real account reads
+ * "Single point of contact · NXD-21 - Nexa Data · Hyderabad Central Data
+ * Center" and wraps onto two lines under the name - cramped, and saying the
+ * same place twice. The Site is the one that matters: it is what a check is
+ * routed by and what every rack on this page belongs to. Whoever needs the
+ * organisation's name finds it under their account.
+ */
 export function placeLine(role, org, site) {
-  return [role && role.word, org, site].filter(Boolean).join(' · ');
+  return [role && role.word, site || org].filter(Boolean).join(' · ');
 }
 
 /**
@@ -487,13 +487,14 @@ export default function HomePage() {
     <div className={styles.home}>
       <main className={styles.main}>
         {/* ── The line: the hour, who you are, and what you are here ── */}
+        {/* The hour, the name, and one line saying what this person is here
+            and where. The round mark of their initials sat beside it and read
+            as a control somebody could press - it opened nothing, so it is
+            gone (the owner, 22 Sep 2026), and the words have the width. */}
         <header className={styles.line}>
-          <div className={styles.lineText}>
-            <p className={styles.hour}>{greeting}</p>
-            <h1 className={styles.who}>{user?.username || 'there'}</h1>
-            <p className={styles.place}>{placeLine(role, org, where)}</p>
-          </div>
-          <span className={styles.mark} aria-hidden="true">{initialsOf(user)}</span>
+          <p className={styles.hour}>{greeting}</p>
+          <h1 className={styles.who}>{user?.username || 'there'}</h1>
+          <p className={styles.place}>{placeLine(role, org, where)}</p>
         </header>
 
         {/* ── The banner: the drawn rack, and what this person is here for.

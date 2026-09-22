@@ -57,7 +57,7 @@ vi.mock('../AuthContext.jsx', () => ({ useAuth: () => ({ user: user.current }) }
 
 import HomePage, {
   roleOf, actionsFor, bannerFor, waysFor,
-  greetingAt, initialsOf, placeLine, stateOf,
+  greetingAt, placeLine, stateOf,
 } from './HomePage.jsx';
 
 const DAY = 86400000;
@@ -154,7 +154,9 @@ describe('<HomePage> with work behind it', () => {
     mount();
     expect(screen.getByText(/^Good (morning|afternoon|evening)$/)).toBeTruthy();
     expect(screen.getByRole('heading', { level: 1, name: 'sp.tech' })).toBeTruthy();
-    expect(screen.getByText('Technician · DC-007 · DC-007 Bengaluru')).toBeTruthy();
+    // What they are here and where: two facts, one line. The organisation's
+    // name was the third and wrapped the line onto two.
+    expect(screen.getByText('Technician · DC-007 Bengaluru')).toBeTruthy();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Your racks' })).toBeTruthy());
   });
 
@@ -410,17 +412,16 @@ describe('<HomePage> by role', () => {
     expect(actionsFor({ role: 'spoc', waiting: 4 }).alt).toBe(null);
   });
 
-  test('the greeting is true at the hour it is read, and the mark is the account letters', () => {
+  test('the greeting is true at the hour it is read', () => {
     expect(greetingAt(new Date('2026-09-22T08:00:00'))).toBe('Good morning');
     expect(greetingAt(new Date('2026-09-22T14:00:00'))).toBe('Good afternoon');
     expect(greetingAt(new Date('2026-09-22T20:00:00'))).toBe('Good evening');
-    expect(initialsOf({ username: 'sp.tech' })).toBe('ST');
-    expect(initialsOf({ username: 'owner' })).toBe('OW');
-    expect(initialsOf({})).toBe('?');
   });
 
-  test('the place line leaves out what the account does not have', () => {
+  test('the place line is the role and the Site, and nothing it does not have', () => {
     expect(placeLine({ word: 'Technician' }, null, null)).toBe('Technician');
+    // The Site wins; the organisation stands in only when there is no Site.
+    expect(placeLine({ word: 'Technician' }, 'DC-007', 'Bengaluru')).toBe('Technician · Bengaluru');
     expect(placeLine({ word: 'Technician' }, 'DC-007', null)).toBe('Technician · DC-007');
   });
 
