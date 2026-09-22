@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext.jsx';
 import { useScanSite } from '../hooks/useScanSite.js';
 import { apiUrl, authFetch } from '../utils/api';
+import { openApprovals } from '../utils/approvals';
 import AssignedNotice from '../components/AssignedNotice.jsx';
 import AssetImg from '../components/AssetImg.jsx';
 import Icon from '../components/Icon';
@@ -446,11 +447,17 @@ export default function HomePage() {
     [plans],
   );
 
-  // A check opens inside the app. The Desk is where the people who decide go,
-  // and it is one row at the foot of that page.
+  // Where a check opens depends on who is looking. Somebody who decides works
+  // in the Desk and is sent there; the technician who sent it gets the
+  // check's own page in the app, because the Desk has nothing for them.
   const openCheck = useCallback((planId) => {
+    if (can && (can.admin || can.spoc)) {
+      openApprovals(`/approvals/drifts/${encodeURIComponent(planId)}`)
+        .catch(() => { /* openApprovals falls back to the plain address itself */ });
+      return;
+    }
     navigate(`/checks/${encodeURIComponent(planId)}`);
-  }, [navigate]);
+  }, [navigate, can]);
 
   const loading = scans === null;
   const org = user?.organization?.name || null;

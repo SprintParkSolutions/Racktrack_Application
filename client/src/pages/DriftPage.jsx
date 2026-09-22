@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { BackIcon } from '../components/BackButton.jsx';
 import { apiUrl, authFetch } from '../utils/api';
+import { useApprovalsCan } from '../hooks/useApprovalsCan.js';
 import { useSmartBack } from '../hooks/useSmartBack';
 import ExternalLink from '../components/ExternalLink.jsx';
 import PortsCheck from '../components/PortsCheck.jsx';
@@ -265,6 +266,10 @@ export default function DriftPage() {
   const [nameSaved, setNameSaved] = useState('');
 
   const navigate = useNavigate();
+  // A single point of contact or an admin works in the Desk; everybody else
+  // follows their own check in the app.
+  const can = useApprovalsCan();
+  const deskPerson = Boolean(can && (can.admin || can.spoc));
   // Who may connect a record system: the owner and an organization admin. A
   // technician is told who to ask instead. The role is read from the stored
   // session rather than the auth context, so this page keeps working wherever
@@ -619,11 +624,25 @@ export default function DriftPage() {
           </button>
         )}
         {sent && plan && (
-          /* Inside the app, for everybody. It used to leave for RackTrack
-             Drift Desk, which is a dashboard built for the people who decide -
-             a technician was sent to a queue of other people's work to find
-             out what happened to their own check. The Desk is one quiet row
-             at the foot of that page, for whoever may act there. */
+          /* Where this goes depends on who is pressing it. Somebody who
+             decides - a single point of contact, an admin - works in RackTrack
+             Drift Desk and is sent straight there. The technician who sent the
+             check decides nothing, so the Desk has nothing for them: they get
+             the check's own page in the app. The owner's rule, 22 Sep 2026. */
+          deskPerson ? (
+            <ExternalLink className={styles.action} href={driftCheckUrl(plan.id)}>
+              <span className={styles.actionGlyph} aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+                  strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.5 2" />
+                </svg>
+              </span>
+              <span className={styles.actionText}>
+                <b>Open in Drift Desk</b>
+                <small>Read it, and decide</small>
+              </span>
+            </ExternalLink>
+          ) : (
           <button type="button" className={styles.action} onClick={() => navigate(`/checks/${plan.id}`)}>
             <span className={styles.actionGlyph} aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
@@ -636,6 +655,7 @@ export default function DriftPage() {
               <small>Where it is, and who has it</small>
             </span>
           </button>
+          )
         )}
       </div>
       {reportable && !sent && (

@@ -1,5 +1,6 @@
-/* One check, followed. See CheckPage.jsx for what it says and why.
-   White, one hairline at a time, and nothing on it that decides anything. */
+/* One check, followed - the technician's screen.
+   See CheckPage.jsx for what it says and why. White, one accent, and a rail
+   down the left of the four steps a check goes through. */
 
 .page {
   display: flex;
@@ -13,64 +14,129 @@
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 4px 16px calc(24px + var(--nav-clear, 0px));
+  padding: 0 16px calc(28px + var(--nav-clear, 0px));
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
 }
 
 .waiting, .error {
-  margin: 14px 0 0;
+  margin: 18px 0 0;
   font-family: var(--font);
   font-size: var(--fs-body);
   color: var(--muted, #5c646d);
 }
 .error { color: #c0392b; }
 
-/* Where it is: the first thing, and the largest. */
-.state {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px 0 0;
+/* ── Where it is ─────────────────────────────────────────────────────
+   The answer on a ground of its own, with the road under it. */
+.lead {
+  margin-top: 14px;
+  padding: 18px 16px 8px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #F2F6FB 0%, #F7F9FC 100%);
 }
-.dot {
-  flex: 0 0 auto;
-  width: 10px; height: 10px;
-  margin-top: 7px;
-  border-radius: 50%;
-}
-.dotLive { background: #1F5FAE; }
-.dotDone { background: #0F7B4F; }
-.stateText { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.stateLine {
+.leadDone { background: linear-gradient(180deg, #ECF5F0 0%, #F6FAF8 100%); }
+.leadBad { background: linear-gradient(180deg, #FBF1EC 0%, #FCF8F6 100%); }
+
+.leadLine {
   margin: 0;
   font-family: var(--font);
   font-size: var(--fs-head);
   font-weight: var(--fw-title);
-  line-height: var(--lh-head);
-  letter-spacing: -0.02em;
+  line-height: 1.2;
+  letter-spacing: -0.022em;
   color: var(--text, #121212);
   text-wrap: balance;
 }
-.stateNote {
-  margin: 0;
+.leadNote {
+  margin: 6px 0 0;
   font-family: var(--font);
   font-size: var(--fs-body);
   color: var(--muted, #5c646d);
 }
 
-/* The few facts worth carrying, as pairs rather than sentences. */
+/* The four steps, as a rail: done, here, and not yet. */
+.rail {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+}
+.railStep {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 0 0 16px;
+}
+/* The line between one mark and the next, drawn from the mark down. */
+.railStep::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 21px;
+  bottom: 1px;
+  width: 2px;
+  background: rgba(0, 0, 0, .10);
+}
+.railStep:last-child { padding-bottom: 10px; }
+.railStep:last-child::before { display: none; }
+.stepDone::before { background: #0F7B4F; opacity: .35; }
+
+.railMark {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+  width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--bg, #ffffff);
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .14);
+  color: #ffffff;
+}
+.railMark i {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .18);
+}
+.railMark svg { width: 13px; height: 13px; }
+.stepDone .railMark { background: #0F7B4F; box-shadow: none; }
+.stepNow .railMark { background: #1F5FAE; box-shadow: none; }
+.stepNow .railMark i { background: #ffffff; width: 7px; height: 7px; }
+
+.railText { display: flex; flex-direction: column; gap: 1px; min-width: 0; padding-top: 1px; }
+.railText b {
+  font-family: var(--font);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-label);
+  color: var(--muted, #5c646d);
+}
+.railText small {
+  font-family: var(--font);
+  font-size: var(--fs-label);
+  color: var(--muted, #8a8f99);
+}
+.stepDone .railText b, .stepNow .railText b { color: var(--text, #121212); }
+.stepNow .railText b { font-weight: var(--fw-title); }
+
+/* ── The few facts, two across ───────────────────────────────────── */
 .facts {
-  margin: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px 12px;
-  padding-top: 4px;
-  border-top: 1px solid var(--border, rgba(0,0,0,.09));
+  gap: 1px;
+  background: var(--border, rgba(0,0,0,.08));
+  border-radius: 16px;
+  overflow: hidden;
 }
-.facts > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding-top: 14px; }
-.facts dt {
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 14px 13px;
+  background: var(--bg, #ffffff);
+  min-width: 0;
+}
+.factKey {
   font-family: var(--font);
   font-size: var(--fs-label);
   font-weight: var(--fw-label);
@@ -78,20 +144,48 @@
   text-transform: uppercase;
   color: var(--muted, #8a8f99);
 }
-.facts dd {
-  margin: 0;
+.factVal {
   font-family: var(--font);
-  font-size: var(--fs-item);
-  font-weight: var(--fw-label);
+  font-size: var(--fs-section);
+  font-weight: var(--fw-title);
+  letter-spacing: -0.01em;
   color: var(--text, #121212);
-  overflow-wrap: anywhere;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.mono { font-family: var(--mono, ui-monospace, monospace); }
+.mono { font-family: var(--mono, ui-monospace, monospace); font-size: var(--fs-item); }
+.factSub {
+  font-family: var(--font);
+  font-size: var(--fs-label);
+  color: var(--muted, #8a8f99);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 
-/* What happened, newest first. */
-.log { display: flex; flex-direction: column; }
-.logHead {
-  margin: 0 0 6px;
+/* The note the sender wrote, in their own words. */
+.note {
+  margin: 0;
+  padding: 13px 14px;
+  border-radius: 14px;
+  background: var(--bg2, #f5f6f8);
+  font-family: var(--font);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  color: var(--text, #121212);
+}
+.noteKey {
+  display: block;
+  margin-bottom: 3px;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-label);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--muted, #8a8f99);
+}
+
+/* ── A section ──────────────────────────────────────────────────── */
+.sect { display: flex; flex-direction: column; }
+.sectTop { display: flex; align-items: baseline; gap: 8px; padding-bottom: 6px; }
+.sectTitle {
+  margin: 0;
   font-family: var(--font);
   font-size: var(--fs-label);
   font-weight: var(--fw-title);
@@ -99,12 +193,58 @@
   text-transform: uppercase;
   color: var(--muted, #8a8f99);
 }
-.log ul { list-style: none; margin: 0; padding: 0; }
+.count {
+  font-family: var(--font);
+  font-size: var(--fs-sub);
+  font-weight: var(--fw-title);
+  font-variant-numeric: tabular-nums;
+  color: var(--text, #121212);
+}
+
+/* What was sent: the difference, and what became of it. */
+.items { list-style: none; margin: 0; padding: 0; }
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border, rgba(0,0,0,.07));
+}
+.itemText { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.itemText b {
+  font-family: var(--font);
+  font-size: var(--fs-item);
+  font-weight: var(--fw-label);
+  color: var(--text, #121212);
+}
+.itemText small {
+  font-family: var(--font);
+  font-size: var(--fs-sub);
+  color: var(--muted, #8a8f99);
+}
+.verdict {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg2, #f2f3f6);
+  font-family: var(--font);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-label);
+  color: var(--muted, #5c646d);
+  white-space: nowrap;
+}
+.approved { background: #E9F3ED; color: #0F7B4F; }
+.modified { background: #EEF3FA; color: #1F5FAE; }
+.rejected { background: #FBEEE9; color: #B4400E; }
+
+/* What happened, newest first. */
+.log { list-style: none; margin: 0; padding: 0; }
 .log li {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 10px;
-  padding: 11px 0;
+  gap: 8px;
+  padding: 12px 0;
   border-top: 1px solid var(--border, rgba(0,0,0,.07));
 }
 .logWhat {
@@ -120,27 +260,32 @@
   color: var(--muted, #8a8f99);
   white-space: nowrap;
 }
+.logWhy {
+  flex-basis: 100%;
+  font-family: var(--font);
+  font-size: var(--fs-sub);
+  line-height: 1.45;
+  color: var(--muted, #5c646d);
+}
 
-/* The ways on. Quiet rows, not buttons: nothing here is the point of the page. */
-.ways { display: flex; flex-direction: column; }
+/* The one way on. */
 .way {
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
   min-height: 52px;
-  padding: 0;
+  padding: 0 16px;
   border: 0;
-  border-top: 1px solid var(--border, rgba(0,0,0,.09));
-  background: transparent;
+  border-radius: 14px;
+  background: var(--bg2, #f2f3f6);
   color: var(--text, #121212);
   font-family: var(--font);
   font-size: var(--fs-item);
   font-weight: var(--fw-label);
   text-align: left;
-  text-decoration: none;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-.way:active { opacity: .7; }
-.wayChev { color: var(--muted, #8a8f99); font-size: var(--fs-head); }
+.way:active { opacity: .8; }
+.wayChev { margin-left: auto; color: var(--muted, #8a8f99); font-size: var(--fs-head); }
