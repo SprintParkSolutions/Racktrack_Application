@@ -307,11 +307,12 @@
    below did not, which made a page of real information look like a photo
    viewer with two buttons under it. Picking a device gives the picture more
    room again, because then it is what you are working in. */
-/* The frame takes what the findings and the ways on do not need, up to a little
-   over a third of the screen. Bounded, so it can never go back to being the
-   whole page; greedy under that, so there is never a band of empty white under
-   the buttons either. */
-.results[data-device="none"] .heroWrap { flex: 1 1 auto; min-height: 140px; max-height: 60vh; }
+/* The frame takes exactly what the findings and the ways on do not need.
+   It was capped at 60vh, and with only two buttons under it that cap left a
+   band of empty white at the foot of the screen - which is what the owner saw
+   on 22 Sep 2026. No cap: the picture ends where the controls begin, and the
+   page fills the screen whatever the sheet is carrying. */
+.results[data-device="none"] .heroWrap { flex: 1 1 auto; min-height: 140px; max-height: none; }
 .results[data-device="none"] .sheet    { flex: 0 1 auto; min-height: 0; }
 .results[data-device="sel"]  .heroWrap { flex: 0 1 68vh; min-height: 0; }
 .results[data-device="sel"]  .sheet    { flex: 1 1 auto; min-height: 200px; }
@@ -822,27 +823,36 @@
   color: var(--md-on-surface, #121212);
   opacity: 0.35;
 }
+/* Find Port.
+   It used to wear the app's global `btn btn-primary` as well as this class,
+   and the two fought: index.css paints .btn-primary with a dark gradient
+   under `!important`, this rule painted it white under `!important`, and
+   which won depended on the order the bundler happened to emit. When the
+   gradient won, the dark text this rule sets was dark on dark - testers read
+   an invisible button. It carries no global class now, so nothing else can
+   repaint it: one filled control, its own colours, stated once. */
 .findBtn {
   flex-shrink: 0;
-  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
-  min-height: var(--field-h, 36px);
-  padding: 0 12px !important;
-  border-radius: var(--ctl-radius, 8px) !important;
-  font-size: var(--fs-sub) !important;
-  font-weight: var(--fw-label) !important;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: var(--field-h, 40px);
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--ctl-radius, 8px);
+  background: #121212;
+  color: #ffffff;
+  font-family: var(--font);
+  font-size: var(--fs-sub);
+  font-weight: var(--fw-title);
   white-space: nowrap;
-  background: var(--md-surface-container-lowest, #ffffff) !important;
-  color: var(--md-on-surface, #121212) !important;
-  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  box-shadow: none !important;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity .14s;
 }
-.findBtn:hover {
-  background: var(--md-surface-container, #ffffff) !important;
-  border-color: var(--md-on-surface, #121212) !important;
-}
+.findBtn:hover { opacity: .92; }
+.findBtn:active { opacity: .86; }
+.findBtn:focus-visible { outline: 2px solid #121212; outline-offset: 2px; }
 .findBtn:disabled {
-  opacity: 0.4;
-  box-shadow: none !important;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 

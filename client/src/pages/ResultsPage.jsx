@@ -1715,7 +1715,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   const [pickRackError, setPickRackError] = useState('');
   // The Sites this person may scan for, with the racks of each. Already
   // fetched and cached by the hook; the header reads the Site's name off it.
-  const { sites: scanSites } = useScanSite();
+  const { sites: scanSites, siteId: scanSiteId } = useScanSite();
 
   useEffect(() => {
     let dropped = false;
@@ -1763,17 +1763,25 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // Say which rack this is, by hand. The same route the drift check's own
   // picker uses, so a rack chosen here is the rack every later comparison and
   // every write is keyed on.
-  const confirmRackByHand = useCallback(async (knownRackId) => {
-    if (!rackId || !knownRackId) return;
+  const confirmRackByHand = useCallback(async (first) => {
+    if (!rackId || !first) return;
     setPickRackBusy(true);
     setPickRackError('');
     try {
-      const r = await authFetch(apiUrl(`/api/scan/${encodeURIComponent(rackId)}/identity/confirm`), {
+      const send = (payload) => authFetch(apiUrl(`/api/scan/${encodeURIComponent(rackId)}/identity/confirm`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ knownRackId: Number(knownRackId) }),
+        body: JSON.stringify(payload),
       });
-      const body = await r.json().catch(() => ({}));
+      let r = await send(first);
+      let body = await r.json().catch(() => ({}));
+      // A server that does not hand out the setup row's id leaves the name as
+      // the only handle. Confirming by a name a Site already uses answers 409
+      // and says which row it is, so take that and confirm properly.
+      if (!r.ok && r.status === 409 && body.knownRackId) {
+        r = await send({ knownRackId: Number(body.knownRackId) });
+        body = await r.json().catch(() => ({}));
+      }
       if (!r.ok) {
         setPickRackError(body.error || 'That rack could not be confirmed. Try again.');
         return;
@@ -1791,13 +1799,22 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
   // nothing could say which rack the photograph is. The list the phone already
   // holds, so this costs no request.
   const racksAtSite = useMemo(() => {
-    if (!rackId) return [];
-    for (const site of scanSites || []) {
-      const holdsIt = (site.racks || []).some((r) => r && String(r.rackId) === String(rackId));
-      if (holdsIt) return (site.racks || []).filter((r) => r && r.id != null && r.name);
-    }
-    return [];
-  }, [scanSites, rackId]);
+    const sites = scanSites || [];
+    if (!sites.length) return [];
+    // Three ways to the Site, in the order they can be trusted: the Site whose
+    // setup already holds this rack; the Site this person last scanned for
+    // (which is the Site this scan was taken for); and, when there is only
+    // one Site, that one. A rack photographed a minute ago is in none of the
+    // setup lists yet, which is exactly when this picker is needed.
+    const holder = rackId
+      ? sites.find((s) => (s.racks || []).some((r) => r && String(r.rackId) === String(rackId)))
+      : null;
+    const chosen = scanSiteId
+      ? sites.find((s) => String(s.id) === String(scanSiteId))
+      : null;
+    const site = holder || chosen || (sites.length === 1 ? sites[0] : null);
+    return site ? (site.racks || []).filter((r) => r && r.name) : [];
+  }, [scanSites, scanSiteId, rackId]);
 
   const whereLines = headerWhereLines(rackSaid, identity, siteOfRack);
   const [fetchedOcrLabels, setFetchedOcrLabels] = useState(null);
@@ -4223,7 +4240,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
               />
               <button
                 type="button"
-                className={`btn btn-primary ${styles.findBtn}`}
+                className={styles.findBtn}
                 style={{ '--btn-glow': rc }}
                 disabled={!nextPort || loading}
                 onClick={() => findAnotherPort()}
@@ -5079,14 +5096,16 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
               >
                 <option value="">Choose a rack</option>
                 {racksAtSite.map((r) => (
-                  <option key={r.id} value={r.id}>{r.name}</option>
+                  <option key={r.id ?? r.name} value={r.id ?? `name:${r.name}`}>{r.name}</option>
                 ))}
               </select>
               <button
                 type="button"
                 className={styles.pickRackGo}
                 disabled={!pickingRack || pickRackBusy}
-                onClick={() => confirmRackByHand(pickingRack)}
+                onClick={() => confirmRackByHand(String(pickingRack).startsWith('name:')
+                  ? { name: String(pickingRack).slice(5) }
+                  : { knownRackId: Number(pickingRack) })}
               >
                 {pickRackBusy ? 'Saving' : 'This one'}
               </button>
@@ -5341,7 +5360,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
               <button
                 type="button"
                 data-tour="find-port-btn"
-                className={`btn btn-primary ${styles.findBtn}`}
+                className={styles.findBtn}
                 style={{ '--btn-glow': selColor }}
                 disabled={!portNum || loading}
                 onClick={() => findPort()}
