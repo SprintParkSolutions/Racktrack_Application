@@ -335,10 +335,10 @@ describe('<HomePage> by role', () => {
     expect(roleOf({ role: 'site_manager' }, { spoc: true }).word).toBe('Single point of contact');
   });
 
-  test('a technician is told to scan, and can open their newest rack', async () => {
+  test('a technician is told to scan, and nothing else', async () => {
     mount();
     const go = await screen.findByRole('button', { name: /Scan a rack/ });
-    expect(screen.getByRole('button', { name: 'Open this rack' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Open this rack' })).toBeNull();
     fireEvent.click(go);
     expect(screen.getByTestId('where').textContent).toBe('/scan');
   });
@@ -381,19 +381,16 @@ describe('<HomePage> by role', () => {
     expect(screen.getByTestId('where').textContent).toBe('/scan');
   });
 
-  test('scanning is the control for everybody who is not holding checks', () => {
-    const none = { waiting: 0, rack: 'RK-1' };
+  test('scanning is the one control for everybody who is not holding checks', () => {
     for (const role of ['admin', 'spoc', 'tech', 'manager']) {
-      expect(actionsFor({ role, ...none }).lead.text).toBe('Scan a rack');
-      expect(actionsFor({ role, ...none }).alt.text).toBe('Open this rack');
+      expect(actionsFor({ role, waiting: 0 }).lead.text).toBe('Scan a rack');
+      expect(actionsFor({ role, waiting: 0 }).alt).toBe(null);
     }
     // Somebody holding checks is told to read them: that is work only they
     // can do, and scanning moves beside it.
     expect(actionsFor({ role: 'spoc', waiting: 1, newest: 'RK-1' }).lead.text)
       .toBe('Read the check waiting for you');
     expect(actionsFor({ role: 'spoc', waiting: 4, newest: 'RK-1' }).alt.text).toBe('Scan a rack');
-    // A technician with no rack yet has nothing to open, and no dead control.
-    expect(actionsFor({ role: 'tech' }).alt).toBe(null);
   });
 
   test('the greeting is true at the hour it is read, and the mark is the account letters', () => {

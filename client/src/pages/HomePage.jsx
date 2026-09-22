@@ -26,8 +26,8 @@ import styles from './HomePage.module.css';
  *                 here for. The main thing on the page is a design, not the
  *                 person's own scan - the owner's direction on 22 Sep 2026 -
  *                 and the photographs stay with the racks they belong to.
- *   one action    one filled control in ink on white, one quiet one under
- *                 it. Which is which is the role's.
+ *   one action    one filled control in ink on white: scan a rack, or read
+ *                 the checks that are with you, with scanning beside it.
  *   four ways on  the screens that are otherwise two taps inside More. None
  *                 repeats the bottom bar or a section of this page.
  *   needs you     only when something does: the checks that are with you, by
@@ -180,13 +180,13 @@ export function placeLine(role, org, site) {
  *
  * Scanning is always one of the two, because it is what the app is for.
  */
-export function actionsFor({ role, waiting = 0, newest = null, rack = null }) {
+export function actionsFor({ role, waiting = 0, newest = null }) {
   const scan = { text: 'Scan a rack', to: '/scan' };
-  const open = rack ? { text: 'Open this rack', to: `/results/${encodeURIComponent(rack)}` } : null;
   // Somebody holding checks is told to read them, because that is what is
-  // waiting on them and it is work nobody else can do. Everybody else is told
-  // to scan: the owner took the console button off the way in on 22 Sep 2026,
-  // and scanning is what this app is for.
+  // waiting on them and it is work nobody else can do; scanning moves beside
+  // it. Everybody else gets scanning and nothing else. The console button
+  // came off on 22 Sep 2026, and "Open this rack" with it: the racks are a
+  // list further down the page, each one already a way in.
   if (role === 'spoc' && waiting > 0) {
     return {
       lead: {
@@ -196,24 +196,9 @@ export function actionsFor({ role, waiting = 0, newest = null, rack = null }) {
       alt: scan,
     };
   }
-  return { lead: scan, alt: open };
+  return { lead: scan, alt: null };
 }
 
-/**
- * The drawn rack.
- *
- * The page led with the person's own photograph for half a day; the owner
- * asked on 22 Sep 2026 for the main thing to be a design rather than their
- * scan, and then for that design to be worth looking at. So it is the app's
- * own subject, drawn: a rack on a faint blueprint grid, four shelves, the
- * second of them read - lit ports, a tick, a wash of the green the rest of
- * the app uses for a match - one cable leaving it, and four viewfinder
- * corners around the whole thing, which is how a camera frames a rack.
- *
- * Geometry, not an image file: sharp at any size, no request, and no
- * photograph of a customer's equipment. It says nothing that is not true of
- * every rack, so it never contradicts the account looking at it.
- */
 export function RackArt({ className = '' }) {
   const shelves = [
     { y: 34, ports: 6, read: false },
@@ -424,11 +409,6 @@ export default function HomePage() {
     };
   }), [scans, places, byRack]);
 
-  // The newest rack this person has, which is what the quiet control under
-  // the banner opens. The photograph itself belongs to the list below: the
-  // head of the page is a drawing, not somebody's scan.
-  const shot = useMemo(() => racks[0] || null, [racks]);
-
   // The checks that are with this person. `holder` is a username and
   // usernames are unique, so this is the same set the server's holder=me
   // filter answers, read off a list the page already has.
@@ -470,7 +450,6 @@ export default function HomePage() {
     role: role.key,
     waiting: needs.length,
     newest: needs[0]?.rackId || null,
-    rack: shot?.rackId || null,
   });
 
   return (
