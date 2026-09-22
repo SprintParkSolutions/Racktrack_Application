@@ -65,7 +65,11 @@ import os
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+# Where the pipeline and the weights are. In the repository this file lives in
+# tools/, so both sit one level up; in the zip we hand to somebody outside the
+# team it sits beside them. Both layouts work without an install step.
+HERE = Path(__file__).resolve().parent
+ROOT = HERE if (HERE / "pipeline").is_dir() else HERE.parent
 sys.path.insert(0, str(ROOT))
 
 try:
@@ -100,12 +104,13 @@ COLOUR = {
 
 
 def load(name):
-    """One YOLO model by file name, from ./models."""
+    """One YOLO model by file name, from whichever models/ folder is here."""
     from ultralytics import YOLO
-    path = ROOT / "models" / name
-    if not path.exists():
-        sys.exit(f"missing weights: {path}")
-    return YOLO(str(path))
+    for base in (ROOT, HERE):
+        path = base / "models" / name
+        if path.exists():
+            return YOLO(str(path))
+    sys.exit(f"missing weights: {name} (looked in {ROOT / 'models'} and {HERE / 'models'})")
 
 
 def ports_of(crop, panel, type_model, status_model, conf):
