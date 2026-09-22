@@ -910,7 +910,9 @@ function AnalyzingOverlay({ progress, step }) {
     <div className={styles.overlay}>
       <div className={styles.overlayInner}>
         <p className={styles.ovTitle}>Analyzing rack…</p>
-        <p className={styles.ovStep}>{step}</p>
+        {/* A line only when there is something true to say. An empty one left
+            a gap where a sentence about how long used to be. */}
+        {step ? <p className={styles.ovStep}>{step}</p> : null}
         <div className={styles.ovTrack}>
           <div className={styles.ovFill} style={{width:`${progress}%`}}/>
         </div>
@@ -1022,10 +1024,11 @@ export default function ScanPage() {
   }, [loading, verifying, setTourSuspended]);
   const [verifyReject, setVerifyReject] = useState(null);     // 409 payload - detected / expected diff
 
-  // One line, because the five it replaced were the pipeline's own stage names on
-  // a screen where the person can do nothing but wait. What they need while
-  // waiting is how long, and the progress bar beside it shows how far.
-  const STEPS = ['This can take up to two minutes'];
+  // Nothing said about how long. It used to say "This can take up to two
+  // minutes", which is a promise the reading does not always keep and a number
+  // nobody watching a progress bar needs; the owner asked on 22 Sep 2026 for
+  // it to go. The bar itself says how far along it is.
+  const STEPS = [''];
 
   // On mount, pull the list of active tickets from servicenow_inbox via
   // our Node API. Also re-fetch whenever the user switches their active
