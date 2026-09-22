@@ -50,7 +50,7 @@ const USER = {
 const user = { current: USER };
 vi.mock('../AuthContext.jsx', () => ({ useAuth: () => ({ user: user.current }) }));
 
-import HomePage from './HomePage.jsx';
+import HomePage, { roleOf, leadFor, greetingAt, initialsOf } from './HomePage.jsx';
 
 const DAY = 86400000;
 const ago = (ms) => new Date(Date.now() - ms).toISOString();
@@ -117,6 +117,7 @@ const FULL = {
   '/api/scan-sites': SITES,
   '/api/approvals/plans': PLANS,
   '/api/approvals/dashboard': { ok: true, total: 21, open: 6 },
+  '/api/approvals/me': { ok: true, can: {} },
 };
 
 function Where() { const l = useLocation(); return <p data-testid="where">{l.pathname}</p>; }
@@ -141,10 +142,10 @@ afterEach(cleanup);
 describe('<HomePage> with work behind it', () => {
   test('greets the person, names where they work, and leads with the scan card', async () => {
     mount();
-    expect(screen.getByText('Welcome back')).toBeTruthy();
+    expect(screen.getByText(/^Good (morning|afternoon|evening)$/)).toBeTruthy();
     expect(screen.getByRole('heading', { level: 1, name: 'sp.tech' })).toBeTruthy();
     // The organization and the Site, quietly, under the name.
-    const place = screen.getByText('DC-007', { exact: false });
+    const place = screen.getByText('Technician').closest('p');
     expect(place.textContent).toContain('DC-007');
     expect(place.textContent).toContain('DC-007 Bengaluru');
 
@@ -185,6 +186,7 @@ describe('<HomePage> with work behind it', () => {
       '/api/scans',
       '/api/approvals/plans?limit=100',
       '/api/approvals/dashboard',
+      '/api/approvals/me',
     ]);
   });
 
@@ -308,7 +310,7 @@ describe('<HomePage> on a new account', () => {
       'Whatever does not match your records is shown as a difference.',
     )).toBeTruthy();
 
-    expect(screen.getByText('Welcome back')).toBeTruthy();
+    expect(screen.getByText(/^Good (morning|afternoon|evening)$/)).toBeTruthy();
     expect(screen.getByRole('heading', { level: 2, name: 'Ready to scan a rack' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Start a scan' })).toBeTruthy();
 
@@ -365,5 +367,68 @@ describe('<HomePage> words', () => {
     expect(words).not.toMatch(/RK-[0-9A-F]{6,}/);
     expect(words).not.toMatch(/racktrack_uid|recordId|nb:device:/);
     expect(words).not.toContain('+');
+  });
+});
+
+/* One home, four kinds of person. The card is the part that changes: what it
+   counts, what it says about it, and where its control goes. Nothing else on
+   the page moves, so the app still looks like one product to two people
+   standing next to each other. */
+describe('<HomePage> by role', () => {
+  test('the role is what the server says this account may do, not a guess at a name', () => {
+    expect(roleOf({ role: 'member' }, {}).key).toBe('tech');
+    expect(roleOf({ role: 'member' }, { spoc: true }).key).toBe('spoc');
+    expect(roleOf({ role: 'member' }, { admin: true }).key).toBe('admin');
+    expect(roleOf({ role: 'org_admin' }, null).key).toBe('admin');
+    expect(roleOf({ role: 'owner' }, null).word).toBe('Platform owner');
+    // A SPOC is a SPOC whatever their role, which is the point of the work.
+    expect(roleOf({ role: 'site_manager' }, { spoc: true }).word).toBe('Single point of contact');
+  });
+
+  test('a single point of contact is led to the checks that are with them', async () => {
+    answers.current['/api/approvals/me'] = { ok: true, can: { spoc: true } };
+    mount();
+    await waitFor(() => expect(screen.getByText('Single point of contact')).toBeTruthy());
+    const card = screen.getByRole('heading', { name: 'Checks are waiting for you' }).closest('section');
+    // Four checks are held by sp.tech in the stub.
+    expect(within(card).getByText('Checks with you')).toBeTruthy();
+    expect(within(card).getByText('4')).toBeTruthy();
+    // Scanning is still one tap away, whatever the card leads with.
+    expect(within(card).getByRole('button', { name: 'Start a scan' })).toBeTruthy();
+    // And the control opens the newest check, inside the app.
+    fireEvent.click(within(card).getByRole('button', { name: 'Open the newest' }));
+    expect(screen.getByTestId('where').textContent).toBe('/results/RK-5B81BE87/drift');
+  });
+
+  test('an admin is led to the checks that have nobody', async () => {
+    answers.current['/api/approvals/me'] = { ok: true, can: { admin: true } };
+    mount();
+    await waitFor(() => expect(screen.getByText('Organization admin')).toBeTruthy());
+    const card = screen.getByRole('heading', { name: 'Somebody has to say who these go to' }).closest('section');
+    expect(within(card).getByText('Check with nobody yet')).toBeTruthy();
+    expect(within(card).getByText('1')).toBeTruthy();
+    fireEvent.click(within(card).getByRole('button', { name: 'Open the console' }));
+    expect(screen.getByTestId('where').textContent).toBe('/dashboard');
+  });
+
+  test('with nothing waiting, each role still gets a true card', () => {
+    const none = { scanned: 12, waiting: 0, triage: 0, sites: 2 };
+    expect(leadFor({ role: 'admin', ...none }).title).toBe('Your estate, across 2 sites');
+    expect(leadFor({ role: 'spoc', ...none }).title).toBe('Nothing is with you');
+    expect(leadFor({ role: 'tech', ...none }).title).toBe('Ready to scan a rack');
+    // A figure nobody has answered yet is left out rather than shown as zero.
+    expect(leadFor({ role: 'tech', scanned: null }).figure).toBe(null);
+    // One of a thing is one, not "1 checks".
+    expect(leadFor({ role: 'spoc', scanned: 1, waiting: 1 }).label).toBe('Check with you');
+    expect(leadFor({ role: 'admin', scanned: 1, triage: 2 }).label).toBe('Checks with nobody yet');
+  });
+
+  test('the greeting is true at the hour it is read, and the mark is the account letters', () => {
+    expect(greetingAt(new Date('2026-09-22T08:00:00'))).toBe('Good morning');
+    expect(greetingAt(new Date('2026-09-22T14:00:00'))).toBe('Good afternoon');
+    expect(greetingAt(new Date('2026-09-22T20:00:00'))).toBe('Good evening');
+    expect(initialsOf({ username: 'sp.tech' })).toBe('ST');
+    expect(initialsOf({ username: 'owner' })).toBe('OW');
+    expect(initialsOf({})).toBe('?');
   });
 });

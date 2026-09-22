@@ -62,10 +62,30 @@
 /* ── 1. The greeting ───────────────────────────────────────────────── */
 .greet {
   display: flex;
-  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
   min-width: 0;
   padding-top: 2px;
 }
+.greetText { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+/* The mark: the account's own letters, and the only round thing on the page.
+   It is not a photograph - the app holds none - so it is the letters, quiet. */
+.mark {
+  flex: 0 0 auto;
+  width: 42px; height: 42px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--hm-tray);
+  border: 1px solid var(--hm-tray-line);
+  font-family: var(--font);
+  font-size: var(--fs-sub);
+  font-weight: var(--fw-title);
+  letter-spacing: 0.02em;
+  color: var(--hm-ink-2);
+}
+/* What this person is here, ahead of where they are. It is the first thing
+   that differs between two people opening the same screen. */
+.roleWord { color: var(--hm-ink-2); font-weight: var(--fw-title); }
 
 .welcome {
   margin: 0;
@@ -203,6 +223,28 @@
 .startBtn:hover { background: #F0F1F4; }
 .startBtn:active { transform: scale(0.985); }
 .startBtn:focus-visible { outline: 3px solid #ffffff; outline-offset: 3px; }
+
+/* The second way on, for a card that leads with something else. Quiet on the
+   dark ground: one control is the point of this card, and this is not it. */
+.startAlt {
+  margin-top: 10px;
+  width: 100%;
+  min-height: 44px;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0 20px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 14px;
+  background: transparent;
+  color: #ffffff;
+  font-family: var(--font);
+  font-size: var(--fs-item);
+  font-weight: var(--fw-label);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.startAlt:active { background: rgba(255, 255, 255, 0.08); }
+.startAlt:focus-visible { outline: 3px solid #ffffff; outline-offset: 3px; }
 
 /* ── 3. The pair of drift figures ───────────────────────────────────
    Side by side, because they are the same kind of thing. One on its own is a

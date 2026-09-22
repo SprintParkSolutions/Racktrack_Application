@@ -130,6 +130,115 @@ function newestByRack(plans) {
   return out;
 }
 
+/* ──────────────────────────────────────────────────────────────────────
+   Who is looking at this page.
+
+   The app has one home and four kinds of person opening it, and until 22 Sep
+   2026 they all got the same screen: a dark card saying "Ready to scan a
+   rack". An organization admin does not scan racks, and a single point of
+   contact opening the app to see what is with them had to read past the scan
+   card, two figures and a notice to find it.
+
+   The role is what the server already says it is. /api/approvals/me answers
+   with what this account may do - `spoc` is true for whoever is the contact
+   of a Site, whatever their role, which is the whole point of the SPOC work -
+   and the account's own role covers the rest. Nothing is inferred from a
+   name, and an account the approvals API refuses simply reads as a
+   technician, which is what such an account is.
+   ────────────────────────────────────────────────────────────────────── */
+export function roleOf(user, can) {
+  const role = String(user?.role || '').toLowerCase();
+  if (role === 'owner') return { key: 'admin', word: 'Platform owner' };
+  if (can?.admin || role === 'org_admin') return { key: 'admin', word: 'Organization admin' };
+  if (can?.spoc) return { key: 'spoc', word: 'Single point of contact' };
+  if (role === 'site_manager') return { key: 'manager', word: 'Site manager' };
+  return { key: 'tech', word: 'Technician' };
+}
+
+/* Morning, afternoon, evening. A greeting that is true at the hour it is read
+   costs nothing and is the one place this screen is allowed to be warm. */
+export function greetingAt(date = new Date()) {
+  const h = date.getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+/**
+ * The one dark card, by role. Each is the same four things - a figure, what
+ * it counts, what to do about it, and the control - so the page keeps its
+ * shape while saying a different true thing to each person.
+ *
+ *   admin      the checks nobody holds, because that is the only part of the
+ *              drift workflow that waits on an admin; when none do, the
+ *              estate they are responsible for
+ *   spoc       the checks that are with them, and the way straight into the
+ *              newest one
+ *   otherwise  the job: scan a rack
+ *
+ * A figure that has not arrived is null and is left out; nothing here counts
+ * anything the server did not answer.
+ */
+export function leadFor({ role, scanned, waiting = 0, triage = 0, newest = null, sites = 0 }) {
+  if (role === 'admin') {
+    if (triage > 0) {
+      return {
+        figure: triage,
+        label: `Check${triage === 1 ? '' : 's'} with nobody yet`,
+        title: 'Somebody has to say who these go to',
+        words: 'A check whose Site names no single point of contact waits for an admin to choose one.',
+        action: 'Open the console',
+        to: '/dashboard',
+      };
+    }
+    return {
+      figure: scanned,
+      label: 'Racks read',
+      title: sites > 1 ? `Your estate, across ${sites} sites` : 'Your estate',
+      words: 'Every check has somebody. The console has the racks, the sites and the people.',
+      action: 'Open the console',
+      to: '/dashboard',
+    };
+  }
+  if (role === 'spoc') {
+    if (waiting > 0) {
+      return {
+        figure: waiting,
+        label: `Check${waiting === 1 ? '' : 's'} with you`,
+        title: waiting === 1 ? 'A check is waiting for you' : 'Checks are waiting for you',
+        words: 'Read what the rack holds against your record, then approve, change it or send it back.',
+        action: 'Open the newest',
+        to: newest ? `/results/${encodeURIComponent(newest)}/drift` : '/history',
+      };
+    }
+    return {
+      figure: scanned,
+      label: 'Racks read',
+      title: 'Nothing is with you',
+      words: 'A drift check reaches you as soon as somebody sends one from a rack at your Site.',
+      action: 'Start a scan',
+      to: '/scan',
+    };
+  }
+  return {
+    figure: scanned,
+    label: 'Racks scanned',
+    title: 'Ready to scan a rack',
+    words: 'One photo and RackTrack reads the rack, then checks it against your records.',
+    action: 'Start a scan',
+    to: '/scan',
+  };
+}
+
+/* The two letters on the round mark, from whatever name the account has. */
+export function initialsOf(user) {
+  const name = String(user?.username || user?.email || '').trim();
+  if (!name) return '?';
+  const parts = name.split(/[\s._@-]+/).filter(Boolean);
+  const letters = parts.length > 1 ? parts[0][0] + parts[1][0] : name.slice(0, 2);
+  return letters.toUpperCase();
+}
+
 export default function HomePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -141,6 +250,7 @@ export default function HomePage() {
   const [scansFailed, setScansFailed] = useState(false);
   const [plans, setPlans] = useState(null);
   const [openCount, setOpenCount] = useState(null);
+  const [can, setCan] = useState(null);       // what the server says this account may do
 
   useEffect(() => {
     let cancelled = false;
@@ -163,6 +273,12 @@ export default function HomePage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (!cancelled && Number.isFinite(Number(d?.open))) setOpenCount(Number(d.open)); })
       .catch(() => { /* the figure is left out rather than invented */ });
+    // What this account may do, in the server's own words. Refused means this
+    // person has no part in the approval workflow, which reads as a technician.
+    authFetch(apiUrl('/api/approvals/me'))
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!cancelled && d && d.can) setCan(d.can); })
+      .catch(() => { /* the role falls back to the account's own */ });
     return () => { cancelled = true; };
   }, []);
 
@@ -218,6 +334,14 @@ export default function HomePage() {
       .catch(() => { /* openApprovals falls back to the plain address by itself */ });
   }, []);
 
+  // The checks that have nobody: an admin's only part of the workflow.
+  const triage = useMemo(
+    () => (plans || []).filter((p) => p && p.status === 'triage').length,
+    [plans],
+  );
+  const role = useMemo(() => roleOf(user, can), [user, can]);
+  const greeting = useMemo(() => greetingAt(), []);
+
   const loading = scans === null;
   const nothingYet = !loading && (scans || []).length === 0;
   const org = user?.organization?.name || null;
@@ -226,6 +350,17 @@ export default function HomePage() {
   // The figure the dark card carries. Held back until /api/scans has answered,
   // so the card never shows a 0 it is about to replace.
   const scanned = loading || nothingYet ? null : (scans || []).length;
+
+  // What the dark card says, by role. The newest check with this person is
+  // what its control opens for a SPOC.
+  const lead = leadFor({
+    role: role.key,
+    scanned,
+    waiting: waiting.length,
+    triage,
+    newest: waiting[0]?.rackId || null,
+    sites: (sites || []).length,
+  });
 
   // The two that belong together, because they are the same kind of thing:
   // drift work. Either can be absent - the dashboard is refused outright for
@@ -244,41 +379,52 @@ export default function HomePage() {
   return (
     <div className={styles.home}>
       <main className={styles.main}>
-        {/* ── 1. Who you are ── */}
+        {/* ── 1. Who you are: the hour, your name, what you are here, and
+               where. The mark on the right is the one round thing on the page
+               and gives the line something to sit against. ── */}
         <header className={styles.greet}>
-          <p className={styles.welcome}>Welcome back</p>
-          <h1 className={styles.who}>{user?.username || 'there'}</h1>
-          {(org || where) && (
+          <div className={styles.greetText}>
+            <p className={styles.welcome}>{greeting}</p>
+            <h1 className={styles.who}>{user?.username || 'there'}</h1>
             <p className={styles.place}>
+              <span className={styles.roleWord}>{role.word}</span>
+              {(org || where) ? <span className={styles.dot} aria-hidden="true" /> : null}
               {org}
               {org && where ? <span className={styles.dot} aria-hidden="true" /> : null}
               {where}
             </p>
-          )}
+          </div>
+          <span className={styles.mark} aria-hidden="true">{initialsOf(user)}</span>
         </header>
 
-        {/* ── 2. The one dark object: what this app is for, the figure that
-               matters, and the action. ── */}
+        {/* ── 2. The one dark object, and the only part of the page that
+               changes with who is looking: the figure that matters to this
+               person, what it means, and the one thing to do about it. ── */}
         <section className={styles.start} aria-labelledby="home-start">
-          {scanned != null && (
+          {lead.figure != null && (
             <p className={styles.startFigure}>
-              <span className={styles.startValue}>{scanned}</span>
-              <span className={styles.startLabel}>Racks scanned</span>
+              <span className={styles.startValue}>{lead.figure}</span>
+              <span className={styles.startLabel}>{lead.label}</span>
             </p>
           )}
           <h2
-            className={`${styles.startTitle} ${scanned == null ? styles.startLead : ''}`}
+            className={`${styles.startTitle} ${lead.figure == null ? styles.startLead : ''}`}
             id="home-start"
           >
-            Ready to scan a rack
+            {lead.title}
           </h2>
-          <p className={styles.startWords}>
-            One photo and RackTrack reads the rack, then checks it against your records.
-          </p>
-          <button type="button" className={styles.startBtn} onClick={() => navigate('/scan')}>
-            Start a scan
+          <p className={styles.startWords}>{lead.words}</p>
+          <button type="button" className={styles.startBtn} onClick={() => navigate(lead.to)}>
+            {lead.action}
             <Icon name="arrow_forward" className={styles.startArrow} />
           </button>
+          {/* Whatever the card leads with, scanning stays one tap from home for
+              anybody who may scan - it is what the app is for. */}
+          {lead.to !== '/scan' && (
+            <button type="button" className={styles.startAlt} onClick={() => navigate('/scan')}>
+              Start a scan
+            </button>
+          )}
         </section>
 
         {/* ── 3. The pair of drift figures, under the card that leads them. ── */}
