@@ -22,16 +22,7 @@
 }
 
 /* ── Which rack, when ── */
-.hero { display: flex; flex-direction: column; gap: 1px; padding: 4px 16px 0; }
-.heroMake {
-  font-size: var(--fs-label); letter-spacing: .09em; text-transform: uppercase;
-  color: var(--muted); font-weight: var(--fw-title);
-}
-.heroModel {
-  font-size: 24px; font-weight: var(--fw-title); letter-spacing: -.02em;
-  color: var(--text); line-height: 1.15; overflow-wrap: anywhere;
-}
-.heroSub { font-size: var(--fs-sub); color: var(--muted); margin-top: 3px; }
+/* The rack, its site and when it was read are the page header's now. */
 
 /* At a glance. */
 .glance {
@@ -263,38 +254,46 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.4s; } }
 
-/* ── What this report is for, at the top of it ── */
-.actions {
-  display: flex; gap: 8px;
-  padding: 4px 16px 14px;
+/* ── The row of controls, under the header ──
+   One filled control for the step a person takes next, and two quiet text
+   controls for taking the report away. Nothing here is a card: three bordered
+   boxes of equal weight made a file format look like a decision. */
+.tools {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 16px 12px;
+  border-bottom: 1px solid var(--border, rgba(0,0,0,.09));
 }
-.action {
-  flex: 1 1 0; min-width: 0;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
-  min-height: 60px; padding: 8px 4px;
-  border: 1px solid var(--border, rgba(0,0,0,.14)); border-radius: 12px;
-  background: transparent; color: var(--text);
+.check {
+  flex: 1 1 auto; min-width: 0;
+  min-height: 44px; padding: 0 16px;
+  border: 0; border-radius: 10px;
+  background: #0f7b4f; color: #ffffff;
+  font-family: var(--font); font-size: var(--fs-item); font-weight: var(--fw-title);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.check:disabled { opacity: .4; cursor: default; }
+.check:active { opacity: .9; }
+.quiet {
+  display: flex; align-items: center; gap: 6px;
+  min-height: 44px; padding: 0 10px;
+  border: 0; border-radius: 10px;
+  background: transparent; color: var(--muted);
   font-family: var(--font);
   cursor: pointer; -webkit-tap-highlight-color: transparent;
-  transition: background-color .14s;
 }
-.action span {
-  font-size: var(--fs-label); font-weight: var(--fw-title); letter-spacing: .04em; text-transform: uppercase;
+.quiet span {
+  font-size: var(--fs-sub); font-weight: var(--fw-title);
 }
-.action:disabled { opacity: .4; cursor: default; }
-.action:active { background: var(--bg2, rgba(0,0,0,.04)); }
-.actionOpen { background: #121212; border-color: #121212; color: #ffffff; }
-.menuWrap { position: relative; flex: 1 1 0; min-width: 0; display: flex; }
-.menuWrap .action { flex: 1; }
-.caret {
-  width: 6px; height: 6px; margin-top: 1px;
-  border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
-  transform: rotate(45deg); opacity: .6;
-}
+.quiet svg { width: 16px; height: 16px; }
+.quiet:disabled { opacity: .4; cursor: default; }
+.quietOpen { background: var(--bg2, rgba(0,0,0,.05)); color: var(--text); }
+
+.menuWrap { position: relative; flex: 0 0 auto; display: flex; }
 /* Catches the tap that closes the menu, without a visible layer. */
 .menuScrim { position: fixed; inset: 0; z-index: 40; border: 0; background: transparent; cursor: default; }
 .menu {
-  position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 41;
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 41; min-width: 148px;
   display: flex; flex-direction: column;
   padding: 6px;
   border-radius: 12px;
@@ -327,21 +326,3 @@
 .chevOpen { transform: rotate(180deg); }
 @media (prefers-reduced-motion: reduce) { .chev { transition: none; } }
 .rowHead:focus-visible { outline: 2px solid #1f4e79; outline-offset: 2px; border-radius: 4px; }
-
-/* ── The way on, at the end of the report ── */
-.next {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
-  margin: 22px 16px calc(24px + var(--nav-clear, 0px));
-  padding: 16px;
-  border: 1px solid var(--border, rgba(0,0,0,.12)); border-radius: 12px;
-  background: var(--card, #ffffff);
-}
-.nextLine { margin: 0; font-size: var(--fs-body); color: var(--muted); }
-.nextGo {
-  min-height: 44px; padding: 10px 18px;
-  border: 0; border-radius: 10px;
-  background: #0f7b4f; color: #ffffff;
-  font-family: var(--font); font-size: var(--fs-item); font-weight: var(--fw-title);
-  cursor: pointer; -webkit-tap-highlight-color: transparent;
-}
-.nextGo:active { opacity: .9; }

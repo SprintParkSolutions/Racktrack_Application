@@ -79,13 +79,21 @@ afterEach(cleanup);
 describe('ReportPage', () => {
   /* The report is read and then the rack has to be checked against the record.
      The people testing it did not find the way on, because it was an item
-     inside a menu, so the page closes on the step itself. */
-  test('the report closes on the check, and the button gets there', async () => {
+     inside a menu called Check, so the step is now a control of its own, said
+     in words, and it is the only filled one on the page. */
+  test('the step after the report is a named control, and it gets there', async () => {
     draw();
     const go = await screen.findByRole('button', { name: 'Check against the record' });
-    expect(screen.getByText(/Nothing here has been checked against your record yet/)).toBeTruthy();
     fireEvent.click(go);
     expect(await screen.findByText('the drift check')).toBeTruthy();
+  });
+
+  /* The site, the rack and the time are the header's, and are not said twice. */
+  test('the header carries the rack, its site and when it was read', async () => {
+    reply.doc = { ...doc(), rackName: 'SP-HYB-RM01-R01-R1', siteName: 'Office-Sprintpark' };
+    draw();
+    expect(await screen.findByRole('heading', { name: 'SP-HYB-RM01-R01-R1' })).toBeTruthy();
+    expect(screen.getAllByText(/Office-Sprintpark/)).toHaveLength(1);
   });
 
   test('a match nobody confirmed is named as a proposal', async () => {

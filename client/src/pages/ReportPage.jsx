@@ -370,25 +370,40 @@ export default function ReportPage() {
 
   return (
     <div className={`page page-full ${styles.page}`}>
-      <PageHeader title="Report" back={goBack} action={<ThemeToggle />} />
+      {/* The header is the report's own title block: what kind of document this
+          is, which rack it is about, and where and when it was read. The page
+          used to open with the word "Report" and then say the site, the rack
+          and the time again in a block of its own, which is the same three
+          facts twice. */}
+      <PageHeader
+        eyebrow="Report"
+        title={doc ? rackTitle : 'Report'}
+        sub={doc ? [doc.siteName, doc.scannedAt ? `read ${when(doc.scannedAt)}` : null,
+          doc.changeNote || null].filter(Boolean).join(' · ') : null}
+        back={goBack}
+        action={<ThemeToggle />}
+      />
 
-      {/* What this report is for, at the top of it: three verbs, each with
-          its choices underneath. Four flat buttons (CSV, JSON, Send, NetBox)
-          put file formats and destinations on the same row as if they were
-          the same kind of thing. */}
-      <div className={styles.actions}>
+      {/* One row, not three cards. Checking the rack against the record is what
+          a person does next, so it is the one filled control and it says so in
+          words; downloading and sharing are quiet text controls beside it, each
+          opening its own choices. Three equal bordered cards with carets put a
+          file format, a destination and the next step of the workflow on the
+          same footing, and the step that matters was the middle of them. */}
+      <div className={styles.tools}>
+        <button
+          type="button"
+          className={styles.check}
+          disabled={!doc || scanId === null}
+          onClick={() => navigate(`/results/${encodeURIComponent(rackId)}/drift`)}
+        >
+          Check against the record
+        </button>
         {[
           ['download', 'Download', <IconDownload key="i" />, [
             ['CSV', () => getFile('csv'), fileBusy === 'csv'],
             ['JSON', () => getFile('json'), fileBusy === 'json'],
             ['PDF', openPrinted, fileBusy === 'pdf'],
-          ]],
-          // Nobody writes to NetBox from this app. Whoever is holding the phone
-          // checks whether the rack matches the record and hands the answer
-          // over; deciding and writing happen in RackTrack Approvals, which the
-          // drift check links to once it is sent. So this never says "export".
-          ['export', 'Check', <IconExport key="i" />, [
-            ['Drift vs NetBox', () => navigate(`/results/${encodeURIComponent(rackId)}/drift`), false],
           ]],
           ['share', 'Share', <IconSend key="i" />, [
             ['Teams', () => setSharing('teams'), false],
@@ -399,7 +414,7 @@ export default function ReportPage() {
           <div key={key} className={styles.menuWrap}>
             <button
               type="button"
-              className={`${styles.action} ${menu === key ? styles.actionOpen : ''}`}
+              className={`${styles.quiet} ${menu === key ? styles.quietOpen : ''}`}
               aria-haspopup="menu"
               aria-expanded={menu === key}
               disabled={!doc || (key !== 'share' && scanId === null)}
@@ -407,7 +422,6 @@ export default function ReportPage() {
             >
               {icon}
               <span>{label}</span>
-              <i className={styles.caret} aria-hidden="true" />
             </button>
             {menu === key && (
               <>
@@ -446,14 +460,12 @@ export default function ReportPage() {
 
         {doc && facts && (
           <>
-            {/* Which rack, when. The two facts a person checks first. */}
-            <div className={styles.hero}>
-              <span className={styles.heroMake}>{doc.siteName || 'Rack'}</span>
-              <span className={styles.heroModel}>{rackTitle}</span>
-              <span className={styles.heroSub}>
-                {doc.scannedAt ? `Scanned ${when(doc.scannedAt)}` : 'Scan time not recorded'}
-                {doc.changeNote ? ` · ${doc.changeNote}` : ''}
-              </span>
+            {/* The figures, under a heading like every other part of the page.
+                Devices and Network announce themselves; the numbers above them
+                did not, so the page began in the middle of itself. */}
+            <div className={styles.secHead}>
+              <h2>Summary</h2>
+              <span>what this rack holds</span>
             </div>
 
             {/* At a glance.
@@ -661,25 +673,6 @@ export default function ReportPage() {
                 )}
               </section>
             )}
-
-            {/* What to do once the report has been read, said at the end of it.
-                Reading the report is not the job - checking the rack against
-                the customer's record is - and until 22 Sep 2026 the only way on
-                was an item inside a menu called Check, which the people testing
-                it did not find. The page now closes on the next step, in the
-                words of the thing it does. */}
-            <section className={styles.next}>
-              <p className={styles.nextLine}>
-                This is what the rack holds. Nothing here has been checked against your record yet.
-              </p>
-              <button
-                type="button"
-                className={styles.nextGo}
-                onClick={() => navigate(`/results/${encodeURIComponent(rackId)}/drift`)}
-              >
-                Check against the record
-              </button>
-            </section>
 
           </>
         )}
