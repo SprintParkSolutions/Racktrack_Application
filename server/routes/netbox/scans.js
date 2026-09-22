@@ -1286,7 +1286,16 @@ router.get('/:id/reconcile', gates.technician, (req, res) => {
  * are written onto a box only where that box is confirmed against the photograph
  * on the screen. Everything else is shown and reported, and written nowhere.
  */
-router.post('/:id/reconcile', gates.admin, (req, res) => {
+/* Saying which box in the photograph a switch is, and confirming it.
+ *
+ * A technician's job, done at the rack with the switch in front of them - and
+ * gated to admins, which answered "Insufficient permissions" to the person
+ * who had just read that switch. The owner hit it on 22 Sep 2026 on the
+ * Network screen ("Suggested. Choose it to keep it.") and again on Review.
+ *
+ * Safe to open: scanFor() above has already refused any scan this caller may
+ * not touch, with a 404, so a member reaches only their own racks. */
+router.post('/:id/reconcile', gates.technician, (req, res) => {
   const scan = scanFor(req, res);
   if (!scan) return undefined;
   const base = scan.payload && scan.payload.snapshot;

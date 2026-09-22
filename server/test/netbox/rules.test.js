@@ -288,6 +288,11 @@ test('the drift workflow holds its rules at every route', async (t) => {
   assert.equal(rep.status, 200, `a technician reads the report of their scan: ${rep.status} ${rep.raw}`);
   const view = await call(port, memberTok, 'GET', `/api/nb/scans/${scanId}/reconcile`);
   assert.equal(view.status, 200, `a technician reads the matching view of their scan: ${view.status} ${view.raw}`);
+  // And says which box each switch is. They are the person at the rack with
+  // the switch in front of them; gated to admins this answered "Insufficient
+  // permissions" on the Network screen and on Review.
+  const save = await call(port, memberTok, 'POST', `/api/nb/scans/${scanId}/reconcile`, { matches: {} });
+  assert.ok(save.status < 400, `a technician saves the matches of their scan: ${save.status} ${save.raw}`);
 
   // ---- 2. The technician is refused everything else.
   const refused = [

@@ -102,7 +102,10 @@ describe('ReviewPage', () => {
   test('the evidence stops speaking for a box the operator moved away from', async () => {
     draw();
     await screen.findByText('Core A');
-    fireEvent.click(screen.getByRole('button', { name: 'U11, Switch, 24 ports' }));
+    // The shelf is chosen from the list now: the drawn rack came off on
+    // 22 Sep 2026 and the dropdown is the one way to move a switch.
+    fireEvent.change(screen.getByLabelText('Is this box in the rack', { selector: '#rt-review-match-1' }),
+      { target: { value: 'd2' } });
     expect(screen.getByText('You chose this box yourself. The photo had proposed U12.')).toBeTruthy();
     expect(screen.queryByText('The serial number and the number of ports match.')).toBe(null);
     expect(screen.queryByText('Almost certain')).toBe(null);
@@ -190,13 +193,16 @@ describe('ReviewPage', () => {
     await screen.findByText(/Jane Patel confirmed this on /);
 
     fireEvent.click(screen.getByRole('button', { name: 'Change' }));
-    fireEvent.click(screen.getByRole('button', { name: 'U11, Switch, 24 ports' }));
+    fireEvent.change(screen.getByLabelText('Is this box in the rack', { selector: '#rt-review-match-1' }),
+      { target: { value: 'd2' } });
     expect(screen.getByText('The box has changed. Confirm it again.')).toBeTruthy();
     expect(screen.queryByText(/Jane Patel confirmed this on /)).toBe(null);
     expect(screen.getByText('0 of 1 confirmed')).toBeTruthy();
   });
 
-  test('a confirmed switch cannot be moved by tapping the rack picture', async () => {
+  /* The drawn rack is gone, so the rule lives in the one control that moves a
+     switch: while it is confirmed, the list will not move it. */
+  test('a confirmed switch cannot be moved until Change is pressed', async () => {
     reply.after = {
       ...baseView(),
       suggested: false,
@@ -210,9 +216,8 @@ describe('ReviewPage', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Confirm' })[0]);
     await screen.findByText(/Jane Patel confirmed this on /);
 
-    fireEvent.click(screen.getByRole('button', { name: 'U11, Switch, 24 ports' }));
-    expect(screen.getByText('Core A is confirmed. Press Change on it first.')).toBeTruthy();
     const select = screen.getByLabelText('Is this box in the rack', { selector: '#rt-review-match-1' });
+    expect(select.disabled).toBe(true);
     expect(select.value).toBe('d1');
   });
 
@@ -238,19 +243,20 @@ describe('ReviewPage', () => {
     expect(posts()).toEqual([]);
   });
 
-  test('the rack picture is drawn beside the switches', async () => {
+  /* No second picture of the rack: the list names every shelf, and the
+     photograph on the rack's own screen is the real one. */
+  test('the drawn rack is not on this screen', async () => {
     draw();
     await screen.findByText('Core A');
-    expect(screen.getByText('12U rack')).toBeTruthy();
-    // The first read switch is the one the picture is showing, so its proposed
-    // shelf is the one lifted out.
-    expect(screen.getByRole('button', { name: 'U12, Switch, 24 ports' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.queryByText('12U rack')).toBe(null);
+    expect(screen.queryByRole('button', { name: /^U\d+, / })).toBe(null);
   });
 
-  test('tapping a shelf moves the chosen switch to it', async () => {
+  test('the list moves the chosen switch, and saves nothing until told', async () => {
     draw();
     await screen.findByText('Core A');
-    fireEvent.click(screen.getByRole('button', { name: 'U11, Switch, 24 ports' }));
+    fireEvent.change(screen.getByLabelText('Is this box in the rack', { selector: '#rt-review-match-1' }),
+      { target: { value: 'd2' } });
     const select = screen.getByLabelText('Is this box in the rack', { selector: '#rt-review-match-1' });
     expect(select.value).toBe('d2');
     expect(posts()).toEqual([]);

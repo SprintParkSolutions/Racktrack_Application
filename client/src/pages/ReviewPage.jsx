@@ -3,7 +3,6 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import Icon from '../components/Icon.jsx';
-import RackPicture from '../components/RackPicture.jsx';
 import { apiUrl, authFetch } from '../utils/api';
 import { useSmartBack } from '../hooks/useSmartBack';
 import {
@@ -447,11 +446,6 @@ export default function ReviewPage() {
       return d.position === null || d.position === undefined ? (d.name || '') : `U${d.position}`;
     };
 
-    const chosenSwitch = recon.switches.find((s) => String(s.id) === String(selected)) || null;
-    const highlight = chosenSwitch ? (matches[chosenSwitch.id] || null) : null;
-    const chosenState = chosenSwitch ? stateOf(chosenSwitch) : null;
-    const chosenSettled = Boolean(chosenSwitch && chosenState
-      && (chosenState.c.confirmed || chosenState.c.fromBinding) && !unlocked[chosenSwitch.id]);
 
     // Only a switch that was read and has a box chosen can be confirmed, so
     // only those are counted. Counting the rest gave a total nobody could ever
@@ -480,44 +474,17 @@ export default function ReviewPage() {
             </div>
 
             <div className={styles.joinBody}>
-              {/* The rack, beside the switches it holds. Choose a switch and its
-                  proposed shelf lifts out of the rest; tap a shelf and that
-                  switch moves to it. */}
-              <div className={styles.rackSide}>
-                <RackPicture
-                  devices={recon.devices}
-                  size={(scan && scan.uHeight) || null}
-                  highlight={highlight}
-                  onPick={(uid) => {
-                    // The same gate the dropdown and the Photo button keep. A
-                    // shelf is a full-width target on a phone, and one stray
-                    // tap used to move a confirmed switch with nothing said.
-                    if (!chosenSwitch) {
-                      setPickNote('Choose a switch on the right, then tap the shelf it sits on.');
-                      return;
-                    }
-                    if (!chosenSwitch.read) {
-                      setPickNote(`${chosenSwitch.label} has not been read yet. Read it in the Network step first.`);
-                      return;
-                    }
-                    if (chosenSettled) {
-                      setPickNote(`${chosenSwitch.label} is confirmed. Press Change on it first.`);
-                      return;
-                    }
-                    setMatch(chosenSwitch.id, uid);
-                  }}
-                />
-                <p className={styles.rackHint}>
-                  {!chosenSwitch
-                    ? 'Choose a switch on the right, then tap the shelf it sits on.'
-                    : chosenSettled
-                      ? `${chosenSwitch.label} is confirmed. Press Change on it to move it.`
-                      : `Tap a shelf to say that is where ${chosenSwitch.label} sits.`}
-                </p>
-                {pickNote && <p className={styles.rackWarn}>{pickNote}</p>}
-              </div>
-
+              {/* The drawn rack came off on 22 Sep 2026. It was a second
+                  picture of the same rack beside the list that already names
+                  every shelf, and on a phone it took the half of the screen
+                  the work is done in. The list below is the whole screen now:
+                  each switch, the shelf it is on, and the control that moves
+                  it. Nothing was removed from the job - the shelf is chosen
+                  from the dropdown, or from the photograph itself, which is
+                  the real picture of this rack.
+                  {pickNote} still speaks, under the list. */}
               <div className={styles.listSide}>
+                {pickNote && <p className={styles.rackWarn}>{pickNote}</p>}
                 {recon.devices.length === 0 && (
                   <div className={`${styles.note} ${styles.noteWarn}`}>
                     <b>No boxes in the photo</b>
