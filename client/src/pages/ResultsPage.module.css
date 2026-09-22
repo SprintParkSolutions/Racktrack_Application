@@ -463,8 +463,11 @@
   background: var(--c1);
 }
 .heroBadgeTxt {
-  font-family: var(--mono); font-size: var(--fs-micro); font-weight: var(--fw-title);
-  color: rgba(0,0,0,0.7); letter-spacing: .1em;
+  font-family: var(--mono);
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-title);
+  color: #000000;
+  letter-spacing: .1em;
 }
 /* The rack agrees with the records: the one place on this screen where a
    colour is worth spending, because it is the answer, not a decoration. */
@@ -731,29 +734,54 @@
 }
 
 /* ── Port input card ── */
+/* A card on the sheet. It was a translucent dark pane with a blur and a drop
+   shadow, then overridden white twice - the second time with its own 16px
+   side margin !important, a fifth left edge on a screen that has one. It sits
+   in the sheet's column now, like everything else in it. */
 .portCard {
   flex-shrink: 0;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.09);
-  border-radius: 14px;
-  padding: 12px 14px;
-  display: flex; flex-direction: column; gap: 8px;
-  animation: riseUp .2s ease both;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
-  /* dynamic accent via --accent CSS variable */
-  border-color: color-mix(in srgb, var(--accent, #000000) 35%, rgba(0,0,0,0.1));
+  display: flex; flex-direction: column;
+  gap: var(--ctl-gap, 6px);
+  margin: 0;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--md-outline-variant, #E0E0E0);
+  background: var(--md-surface-container-lowest, #ffffff);
+  box-shadow: none;
 }
-.portCardTop  {
+.portCardTop {
   display: flex; align-items: flex-start; justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
 }
+/* A row inside a card, not a card. The global depth repaint in index.css
+   matches any class CONTAINING "Card", so this <div> was given a card's fill
+   and a card's shadow - a white band behind the title and the port count.
+   The tag-level correction there covers text elements; a <div> can honestly
+   be a surface, so this one says for itself that it is not. Doubled to beat
+   that rule's !important on equal specificity. */
+.portCardTop.portCardTop {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+/* The name of a card, and the line under it. Each was written three times - a
+   dark-theme base, then two light overrides, the second !important throughout - which is how one title ended up at three sizes and two weights depending
+   on which rule won. One rule each now. (The base painted the text with a
+   gradient from #474747 to #474747 and clipped it, to arrive at #474747.) */
 .portCardTitle {
-  font-size: var(--fs-sub); font-weight: var(--fw-title);
-  background: linear-gradient(135deg, #474747, #474747);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-title);
+  line-height: 18px;
+  letter-spacing: 0;
+  color: var(--md-on-surface, #121212);
 }
-.portCardSub   { font-size: var(--fs-label); color: rgba(255,255,255,0.35); margin-top: 2px; }
+.portCardSub {
+  font-size: var(--fs-sub);
+  font-weight: var(--fw-body);
+  line-height: 15px;
+  margin-top: 2px;
+  color: var(--md-on-surface, #121212);
+  opacity: 0.6;
+}
 .portCardLabel {
   flex-shrink: 0;
   font-family: var(--mono);
@@ -763,9 +791,16 @@
   text-align: right;
   max-width: 55%;
   word-break: break-all;
+  color: var(--md-on-surface, #121212);
 }
 
-.portInputRow { display: flex; gap: 8px; align-items: stretch; }
+.portInputRow {
+  display: flex; align-items: stretch;
+  gap: var(--ctl-gap, 6px);
+}
+/* Written three times over - here, and twice more under [data-theme='light'],
+   both !important, both restating a 10px/14px padding and a 10px radius. The
+   later two quietly undid every size set here. One rule. */
 .portInput {
   flex: 1;
   min-width: 0;
@@ -774,10 +809,18 @@
   border-radius: var(--ctl-radius, 8px) !important;
   font-size: var(--fs-mono) !important;
   font-family: var(--mono) !important;
+  background: var(--md-surface-container-lowest, #ffffff) !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  color: var(--md-on-surface, #121212) !important;
 }
 .portInput:focus {
-  border-color: var(--focus-color, rgba(0,0,0,0.6)) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-color, #000000) 15%, transparent), 0 0 24px color-mix(in srgb, var(--focus-color, #000000) 20%, transparent) !important;
+  border-color: var(--md-on-surface, #121212) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+.portInput::placeholder {
+  color: var(--md-on-surface, #121212);
+  opacity: 0.35;
 }
 .findBtn {
   flex-shrink: 0;
@@ -788,13 +831,17 @@
   font-size: var(--fs-sub) !important;
   font-weight: var(--fw-label) !important;
   white-space: nowrap;
-  background: #000000 !important;
-  color: #ffffff !important;
-  border: 1px solid #000000 !important;
-  box-shadow: var(--shadow-soft, 0 4px 12px rgba(0,0,0,0.10)) !important;
+  background: var(--md-surface-container-lowest, #ffffff) !important;
+  color: var(--md-on-surface, #121212) !important;
+  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  box-shadow: none !important;
+}
+.findBtn:hover {
+  background: var(--md-surface-container, #ffffff) !important;
+  border-color: var(--md-on-surface, #121212) !important;
 }
 .findBtn:disabled {
-  opacity: 0.45;
+  opacity: 0.4;
   box-shadow: none !important;
   cursor: not-allowed;
 }
@@ -915,19 +962,27 @@
 
 /* Device label shown just below the hero image - minimal, no container. */
 .heroLabel {
-  display: flex; align-items: baseline; gap: 10px;
-  padding: 4px 18px 12px;
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 10px;
+  padding: 6px 14px 10px;
+  border-bottom: 1px solid var(--md-outline-variant, #EFEFEF);
 }
 .heroLabelVal {
   font-family: var(--mono);
   font-size: var(--fs-section);
   font-weight: var(--fw-title);
-  letter-spacing: 0.02em;
+  letter-spacing: -0.005em;
+  color: var(--md-on-surface, #121212);
 }
 .heroLabelType {
   margin-left: auto;
-  font-size: var(--fs-sub);
-  color: rgba(255,255,255,0.55);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-title);
+  letter-spacing: var(--ls-caps, 0.06em);
+  line-height: 14px;
+  text-transform: uppercase;
+  color: var(--md-on-surface, #121212);
+  opacity: 0.55;
 }
 
 /* Label preview */
@@ -1046,9 +1101,9 @@
    to do, and what read as a zoom to the centre. The frame comes down to the
    shape of the strip instead, and the whole device is shown. */
 .portImgDev {
-  height: 132px;
+  height: 200px;
   min-height: 0;
-  max-height: 30vh;
+  max-height: 34vh;
   background: var(--md-surface-container-lowest, #fafafa);
 }
 /* The whole strip across the screen is forty pixels tall, which is true to the
@@ -4168,7 +4223,6 @@
   background: rgba(255, 255, 255, 0.85);
   border-color: #c6c6c6;
 }
-:global([data-theme='light']) .heroBadgeTxt { color: #000000; }
 :global([data-theme='light']) .heroBadgeSep { background: rgba(0,0,0,0.25); }
 :global([data-theme='light']) .resultBadge {
   background: rgba(255, 255, 255, 0.95);
@@ -4276,60 +4330,6 @@
   border-color: rgba(0,0,0,0.30);
 }
 
-/* Port card - flat white, hairline border, no shadow */
-:global([data-theme='light']) .portCard {
-  background: var(--md-surface-container-lowest);
-  border: 1px solid var(--md-outline-variant);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: none;
-  animation: none;
-}
-:global([data-theme='light']) .portCardTitle {
-  background: none;
-  -webkit-text-fill-color: var(--md-on-surface);
-  background-clip: initial;
-  -webkit-background-clip: initial;
-  color: var(--md-on-surface);
-  font-size: var(--fs-item);
-  font-weight: var(--fw-label);
-  line-height: 20px;
-  letter-spacing: 0;
-}
-:global([data-theme='light']) .portCardSub {
-  color: var(--md-on-surface);
-  opacity: 0.65;
-  font-size: var(--fs-sub);
-  font-weight: var(--fw-body);
-  line-height: 16px;
-  margin-top: 2px;
-}
-:global([data-theme='light']) .portCardLabel {
-  color: var(--md-on-surface);
-}
-
-/* Find button - secondary surface, not the primary black */
-:global([data-theme='light']) .findBtn {
-  background: var(--md-surface-container-high) !important;
-  border: 1px solid var(--md-outline-variant) !important;
-  color: var(--md-on-surface) !important;
-  box-shadow: none !important;
-  padding: 10px 14px !important;
-  border-radius: 10px !important;
-}
-:global([data-theme='light']) .findBtn:hover {
-  background: var(--md-surface-container-highest) !important;
-  border-color: var(--md-on-surface) !important;
-}
-:global([data-theme='light']) .findBtn:disabled {
-  background: var(--md-surface-container-high) !important;
-  border-color: var(--md-outline-variant) !important;
-  color: var(--md-on-surface) !important;
-  opacity: 0.4 !important;
-  box-shadow: none !important;
-}
 
 /* Port grid (small dense tiles - keep dark since they represent device ports) */
 :global([data-theme='light']) .portGrid {
@@ -4337,35 +4337,22 @@
   border: 1px solid #f0f0f0;
 }
 
-/* Port input (mono number entry) - flat outlined */
-:global([data-theme='light']) .portInput {
-  background: var(--md-surface-container-lowest) !important;
-  border: 1px solid var(--md-outline-variant) !important;
-  color: var(--md-on-surface) !important;
-  padding: 10px 14px !important;
-  border-radius: 10px !important;
-  box-shadow: none !important;
-}
-:global([data-theme='light']) .portInput:focus {
-  border-color: var(--md-on-surface) !important;
-  box-shadow: none !important;
-}
 
 /* ── Overview action sheet (light theme) - device picker + RJ45/SFP ── */
 .devicePicker {
-  margin: 0 0 14px;
-  padding: 0 2px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  margin: 0;
+  padding: 0;
+  display: flex; flex-direction: column;
+  gap: 4px;
 }
 .devicePickerLabel {
   font-size: var(--fs-label);
   font-weight: var(--fw-title);
-  letter-spacing: 0.10em;
-  line-height: 16px;
+  letter-spacing: var(--ls-caps, 0.06em);
+  line-height: 14px;
   text-transform: uppercase;
   color: var(--md-on-surface);
+  opacity: 0.55;
 }
 /* ── Device picker - a listbox we draw ourselves ───────────────────────
    The native <select> handed its popup to the OS: system font, no padding,
@@ -4376,13 +4363,13 @@
 
 .devicePickerTrigger {
   width: 100%;
-  display: flex; align-items: center; gap: 10px;
-  min-height: 48px;
-  padding: 10px 12px 10px 14px;
-  border-radius: 10px;
-  background: var(--md-surface-container-lowest);
-  color: var(--md-on-surface);
-  border: 1px solid var(--md-outline-variant);
+  display: flex; align-items: center; gap: 8px;
+  min-height: var(--field-h, 36px);
+  padding: 0 10px;
+  border-radius: var(--ctl-radius, 8px);
+  background: var(--md-surface-container-lowest, #ffffff);
+  color: var(--md-on-surface, #121212);
+  border: 1px solid var(--md-outline-variant, #E0E0E0);
   font-family: var(--font);
   text-align: left;
   cursor: pointer;
@@ -4399,7 +4386,9 @@
   display: flex; align-items: baseline; gap: 8px;
 }
 .devicePickerValueId {
-  font-size: var(--fs-section); font-weight: var(--fw-label); letter-spacing: -.01em;
+  font-size: var(--fs-item);
+  font-weight: var(--fw-label);
+  letter-spacing: -.01em;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .devicePickerValueSub {
@@ -4407,7 +4396,9 @@
   white-space: nowrap;
 }
 .devicePickerPlaceholder {
-  font-size: var(--fs-item); color: var(--md-on-surface); opacity: .5;
+  font-size: var(--fs-item);
+  color: var(--md-on-surface);
+  opacity: .5;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
@@ -4496,13 +4487,16 @@
 .devicePickerClear {
   flex-shrink: 0;
   width: 100%;
-  margin-top: 10px;
-  padding: 12px;
-  border: 1px solid rgba(18, 18, 18, 0.34);
-  border-radius: 10px;
+  min-height: var(--field-h, 36px);
+  margin-top: var(--ctl-gap, 6px);
+  padding: 0 12px;
+  border: 1px solid var(--md-outline-variant, #E0E0E0);
+  border-radius: var(--ctl-radius, 8px);
   background: #ffffff;
   color: var(--md-on-surface);
-  font-family: var(--font); font-size: var(--fs-body); font-weight: var(--fw-label);
+  font-family: var(--font);
+  font-size: var(--fs-sub);
+  font-weight: var(--fw-label);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -4516,10 +4510,9 @@
 
 /* RJ45 / SFP toggle row - outlined buttons, primary border + tint when active */
 .portTypeRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 2px;
+  display: flex; flex-wrap: wrap;
+  gap: var(--ctl-gap, 6px);
+  margin: 0;
 }
 .portTypeBtn {
   flex: 0 1 auto;
@@ -4546,14 +4539,14 @@
 
 /* Empty-state "no switches detected" card */
 .deviceEmpty {
-  margin: 0 0 14px;
-  padding: 14px 16px;
+  margin: 0;
+  padding: 12px;
   border-radius: 10px;
-  border: 1px dashed rgba(18, 18, 18, 0.18);
+  border: 1px dashed var(--md-outline-variant, rgba(18,18,18,0.18));
   background: var(--md-surface-container-lowest);
   color: var(--md-on-surface);
   opacity: 0.7;
-  font-size: var(--fs-body);
+  font-size: var(--fs-sub);
   text-align: center;
 }
 
@@ -4575,7 +4568,6 @@
 }
 
 /* Hero label below image */
-:global([data-theme='light']) .heroLabelType { color: #474747; }
 
 /* Label preview */
 :global([data-theme='light']) .labelPreview {
@@ -4923,18 +4915,6 @@
   color: #000000;
 }
 
-/* Report row chips */
-:global([data-theme='light']) .reportChipQuiet {
-  background: transparent;
-  border-color: transparent;
-  box-shadow: none;
-  color: #5a5a5a;
-}
-:global([data-theme='light']) .reportChipQuiet:hover {
-  background: #ffffff;
-  border-color: #c6c6c6;
-  color: #000000;
-}
 :global([data-theme='light']) .reportChip {
   background: #ffffff;
   border: 1px solid #c6c6c6;
@@ -4944,6 +4924,17 @@
 :global([data-theme='light']) .reportChip:hover {
   background: #ffffff;
   border-color: #474747;
+  color: #000000;
+}
+:global([data-theme='light']) .reportChipQuiet {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: #5a5a5a;
+}
+:global([data-theme='light']) .reportChipQuiet:hover {
+  background: #ffffff;
+  border-color: #c6c6c6;
   color: #000000;
 }
 :global([data-theme='light']) .reportChipView {
@@ -5357,7 +5348,6 @@
 :global([data-theme='light']) .diagRowTotal .diagVal { color: #000000; }
 
 /* Tap prompt color edits (light) */
-:global([data-theme='light']) .heroLabelVal { color: #1c1c1c; }
 
 /* Slack share menu */
 :global([data-theme='light']) .shareBackdrop { background: rgba(0,0,0,0.10); }
@@ -5439,194 +5429,7 @@
   z-index: 2;
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   Overview action-sheet refresh - compact, white, subtle black accents.
-   Kills the per-class accent colour on the selected-device header and
-   tightens the device picker + port card + feedback so the whole panel
-   reads as one cohesive section rather than three boxed-up cards.
-   ══════════════════════════════════════════════════════════════════════ */
 
-/* ── Selected-device header - flat black, no class colour ───── */
-:global([data-theme='light']) .heroLabel {
-  display: flex !important;
-  align-items: baseline !important;
-  justify-content: space-between !important;
-  gap: 12px !important;
-  padding: 8px 16px 12px !important;
-  border-bottom: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  margin-bottom: 14px !important;
-}
-:global([data-theme='light']) .heroLabelVal {
-  font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: var(--fs-section) !important;
-  font-weight: var(--fw-title) !important;
-  letter-spacing: -0.005em !important;
-  color: var(--md-on-surface, #121212) !important;
-  background: none !important;
-  -webkit-text-fill-color: var(--md-on-surface, #121212) !important;
-}
-:global([data-theme='light']) .heroLabelType {
-  margin-left: auto !important;
-  font-family: var(--font, inherit) !important;
-  font-size: var(--fs-label) !important;
-  font-weight: var(--fw-title) !important;
-  letter-spacing: 0.10em !important;
-  line-height: 14px !important;
-  text-transform: uppercase !important;
-  color: var(--md-on-surface, #121212) !important;
-  opacity: 0.55 !important;
-}
-
-/* ── Device picker - flat label + clean select ──────────────── */
-:global([data-theme='light']) .devicePicker {
-  margin: 0 0 14px !important;
-  padding: 0 16px !important;
-  gap: 6px !important;
-}
-:global([data-theme='light']) .devicePickerLabel {
-  font-size: var(--fs-micro) !important;
-  font-weight: var(--fw-title) !important;
-  letter-spacing: 0.10em !important;
-  line-height: 14px !important;
-  text-transform: uppercase !important;
-  color: var(--md-on-surface, #121212) !important;
-  opacity: 0.55 !important;
-}
-:global([data-theme='light']) .devicePickerTrigger {
-  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  background: var(--md-surface-container-lowest, #FFFFFF) !important;
-  color: var(--md-on-surface, #121212) !important;
-}
-
-/* ── Port section - single bordered card holding everything ──── */
-:global([data-theme='light']) .portCard {
-  margin: 0 16px 16px !important;
-  padding: 14px !important;
-  border-radius: 12px !important;
-  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  border-top: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  background: var(--md-surface-container-lowest, #FFFFFF) !important;
-  box-shadow: none !important;
-  gap: 12px !important;
-  animation: none !important;
-}
-:global([data-theme='light']) .portCardTitle {
-  font-size: var(--fs-body) !important;
-  font-weight: var(--fw-title) !important;
-  line-height: 18px !important;
-  color: var(--md-on-surface, #121212) !important;
-  -webkit-text-fill-color: var(--md-on-surface, #121212) !important;
-  background: none !important;
-  letter-spacing: 0 !important;
-}
-:global([data-theme='light']) .portCardSub {
-  font-size: var(--fs-label) !important;
-  font-weight: var(--fw-body) !important;
-  line-height: 14px !important;
-  color: var(--md-on-surface, #121212) !important;
-  opacity: 0.6 !important;
-  margin-top: 2px !important;
-}
-
-/* ── RJ45 / SFP - segmented control inside a grey background ── */
-:global([data-theme='light']) .portTypeRow {
-  display: flex !important;
-  flex-wrap: wrap !important;
-  gap: 8px !important;
-  margin: 0 0 12px !important;
-  padding: 0 !important;
-  background: transparent !important;
-  border: none !important;
-}
-:global([data-theme='light']) .portTypeBtn {
-  flex: 0 1 auto !important;
-  padding: 8px 14px !important;
-  border-radius: 999px !important;
-  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  background: #ffffff !important;
-  color: var(--md-on-surface, #121212) !important;
-  opacity: 1 !important;
-  font-size: var(--fs-body) !important;
-  font-weight: var(--fw-label) !important;
-  line-height: 18px !important;
-  letter-spacing: 0 !important;
-  cursor: pointer !important;
-  margin: 0 !important;
-  box-shadow: none !important;
-  transition: background-color 0.14s, border-color 0.14s, color 0.14s !important;
-}
-:global([data-theme='light']) .portTypeBtn:not(.portTypeBtnOn):hover {
-  background: #ffffff !important;
-  border-color: var(--md-on-surface, #121212) !important;
-  opacity: 1 !important;
-}
-:global([data-theme='light']) .portTypeBtnOn {
-  background: var(--md-primary, #121212) !important;
-  border: 1px solid var(--md-primary, #121212) !important;
-  color: var(--md-on-primary, #FFFFFF) !important;
-  font-weight: var(--fw-title) !important;
-  opacity: 1 !important;
-  box-shadow: none !important;
-}
-
-/* ── Port input + Find Port - both outlined boxes inside the card ── */
-:global([data-theme='light']) .portInputRow {
-  display: flex !important;
-  align-items: stretch !important;
-  gap: 8px !important;
-  border: none !important;
-  padding: 0 !important;
-}
-:global([data-theme='light']) .portInput {
-  flex: 1 !important;
-  padding: 10px 14px !important;
-  border-radius: 10px !important;
-  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  background: var(--md-surface-container-lowest, #FFFFFF) !important;
-  color: var(--md-on-surface, #121212) !important;
-  font-family: var(--mono, ui-monospace, monospace) !important;
-  font-size: var(--fs-section) !important;
-  font-weight: var(--fw-label) !important;
-  box-shadow: none !important;
-  outline: none !important;
-}
-:global([data-theme='light']) .portInput:focus {
-  border-color: var(--md-on-surface, #121212) !important;
-  box-shadow: none !important;
-  outline: none !important;
-}
-:global([data-theme='light']) .portInput::placeholder {
-  color: var(--md-on-surface, #121212) !important;
-  opacity: 0.35 !important;
-}
-:global([data-theme='light']) .findBtn {
-  flex-shrink: 0 !important;
-  padding: 10px 14px !important;
-  border-radius: 10px !important;
-  background: var(--md-surface-container-lowest, #FFFFFF) !important;
-  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  color: var(--md-on-surface, #121212) !important;
-  font-size: var(--fs-body) !important;
-  font-weight: var(--fw-label) !important;
-  box-shadow: none !important;
-  letter-spacing: 0 !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 6px !important;
-}
-:global([data-theme='light']) .findBtn:hover {
-  background: var(--md-surface-container, #ffffff) !important;
-  border-color: var(--md-on-surface, #121212) !important;
-  color: var(--md-on-surface, #121212) !important;
-  text-decoration: none !important;
-}
-:global([data-theme='light']) .findBtn:disabled {
-  background: var(--md-surface-container-lowest, #FFFFFF) !important;
-  border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  color: var(--md-on-surface, #121212) !important;
-  opacity: 0.35 !important;
-  text-decoration: none !important;
-}
 
 /* ── Feedback card - flat inline section with subtle accent ─── */
 :global([data-theme='light']) .fbCard {
@@ -5763,13 +5566,18 @@
 /* Back from the port picker to the two choices. */
 .stepBack {
   align-self: flex-start;
-  margin: 0 0 10px;
-  padding: 8px 12px 8px 8px;
-  border: 0; border-radius: 10px;
+  display: inline-flex; align-items: center;
+  min-height: var(--ctl-h, 30px);
+  margin: 0;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--ctl-radius, 8px);
   background: transparent;
   color: var(--muted, #5c6878);
-  font-size: var(--fs-body); font-weight: var(--fw-label);
-  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  font-size: var(--fs-sub);
+  font-weight: var(--fw-label);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 .stepBack:active { background: rgba(0,0,0,.05); }
 
@@ -5778,15 +5586,27 @@
 
 /* Two buttons, side by side, equal. The photograph is the content; these are
    the only two things to do with it. */
-.stepChoices { display: flex; gap: 10px; margin: 0 0 4px; }
+.stepChoices {
+  display: flex;
+  gap: var(--ctl-gap, 6px);
+  margin: 0;
+}
+/* The page's one question, so these two keep a size of their own - they are
+   not small controls in a row. Everything under them is. */
 .stepChoice {
-  flex: 1 1 0; min-height: 52px;
+  flex: 1 1 0;
+  min-height: 44px;
   display: inline-flex; align-items: center; justify-content: center;
   padding: 8px 12px;
-  border-radius: 14px;
-  font-size: var(--fs-item); font-weight: var(--fw-title); letter-spacing: -.01em; line-height: 1.25;
-  text-align: center; text-wrap: balance;
-  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  border-radius: 10px;
+  font-size: var(--fs-item);
+  font-weight: var(--fw-title);
+  letter-spacing: -.01em;
+  line-height: 1.25;
+  text-align: center;
+  text-wrap: balance;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
   transition: transform .1s ease;
 }
 .stepChoice:active { transform: scale(.985); }

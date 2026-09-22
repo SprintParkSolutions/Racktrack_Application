@@ -214,8 +214,9 @@
 
      A control that is the page's main action (Analyze, Sign in) is not one
      of these - it keeps its own size. */
-  --ctl-h: 30px;
-  --ctl-px: 11px;     /* the side padding that goes with it */
+  --ctl-h: 30px;      /* a chip, a Yes/No, a short input beside a button */
+  --field-h: 36px;    /* a field you tap to open: a picker, a search box */
+  --ctl-px: 11px;     /* the side padding that goes with --ctl-h */
   --ctl-gap: 6px;     /* between two controls, and between two rows of them */
   --ctl-radius: 8px;
 
@@ -840,6 +841,29 @@ body {
   filter: none !important;
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
+}
+
+/* …but a raised surface is a container, and this selector matches any class
+   that merely CONTAINS the word. CSS Modules keep the source name in the
+   hashed class, so <p class="portCardTitle"> and <span class="portCardLabel">
+   were both painted with a card's fill and a card's drop shadow - a white
+   rectangle and a shadow behind a line of text, on every card in the app
+   whose children are named after it. Text is never a raised surface. Note
+   the depth list above is card / panel / tile / surface / glass only: badges,
+   chips and pills are not in it, so nothing that wants a fill loses one. */
+p[class*="card"],      p[class*="Card"],
+p[class*="panel"],     p[class*="Panel"],
+p[class*="tile"],      p[class*="Tile"],
+p[class*="surface"],   p[class*="Surface"],
+span[class*="card"],   span[class*="Card"],
+span[class*="panel"],  span[class*="Panel"],
+span[class*="tile"],   span[class*="Tile"],
+span[class*="surface"],span[class*="Surface"],
+h1[class*="Card"], h2[class*="Card"], h3[class*="Card"], h4[class*="Card"],
+h5[class*="Card"], h6[class*="Card"],
+label[class*="Card"], small[class*="Card"], strong[class*="Card"], em[class*="Card"] {
+  background-color: transparent !important;
+  box-shadow: none !important;
 }
 
 /* Overlays: real elevation so they visibly float above the page. */
