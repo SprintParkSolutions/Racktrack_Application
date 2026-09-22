@@ -184,20 +184,21 @@ describe('<HomePage> with work behind it', () => {
     const needs = within(screen.getByRole('heading', { name: 'Needs you' }).closest('section'));
     expect(needs.getByText('4')).toBeTruthy();
 
+    // The dashboard is not asked for at all now: the figure it fed came off
+    // the page with the rest of the counts.
     expect(asked.paths).toEqual([
       '/api/scan-sites',
       '/api/scans',
       '/api/approvals/plans?limit=100',
-      '/api/approvals/dashboard',
       '/api/approvals/me',
     ]);
   });
 
-  test('a dashboard the server refuses costs the page nothing', async () => {
-    answers.current['/api/approvals/dashboard'] = 'refused';
+  test('a plan list the server refuses costs the page nothing', async () => {
+    answers.current['/api/approvals/plans'] = 'refused';
     mount();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Your racks' })).toBeTruthy());
-    expect(screen.queryByText(/differences waiting/)).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Needs you' })).toBeNull();
     expect(screen.getByRole('heading', { name: 'Ready to scan a rack' })).toBeTruthy();
   });
 

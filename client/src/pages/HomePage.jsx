@@ -41,7 +41,6 @@ import styles from './HomePage.module.css';
  *   racks and their photographs   GET /api/scans
  *   a rack's name and its Site    GET /api/scan-sites
  *   the checks and their state    GET /api/approvals/plans
- *   differences still open        GET /api/approvals/dashboard
  *   what this account may do      GET /api/approvals/me
  *
  * Class names avoid card / tile / panel / hero / chip / surface / badge /
@@ -344,7 +343,6 @@ export default function HomePage() {
   const [scans, setScans] = useState(null);      // null until it has answered
   const [scansFailed, setScansFailed] = useState(false);
   const [plans, setPlans] = useState(null);
-  const [openCount, setOpenCount] = useState(null);
   const [can, setCan] = useState(null);          // what the server says this account may do
 
   useEffect(() => {
@@ -364,10 +362,6 @@ export default function HomePage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (!cancelled) setPlans(Array.isArray(d?.plans) ? d.plans : []); })
       .catch(() => { if (!cancelled) setPlans([]); });
-    authFetch(apiUrl('/api/approvals/dashboard'))
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (!cancelled && Number.isFinite(Number(d?.open))) setOpenCount(Number(d.open)); })
-      .catch(() => { /* the figure is left out rather than invented */ });
     // What this account may do, in the server's own words.
     authFetch(apiUrl('/api/approvals/me'))
       .then((r) => (r.ok ? r.json() : null))
