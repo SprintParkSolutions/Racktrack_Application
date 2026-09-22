@@ -323,9 +323,12 @@ describe('<HomePage> on a new account', () => {
 
     // One thing to do, and the four ways on. Nothing else to press, and no
     // list of racks that do not exist yet.
+    // The first is the profile button in the top corner, which carries a
+    // glyph and its label rather than words.
     expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual([
-      'Scan a rack', 'Switches', 'Ask DOT', 'Scan history', 'Your account',
+      '', 'Scan a rack', 'Switches', 'Ask DOT', 'Scan history', 'Your account',
     ]);
+    expect(screen.getByRole('button', { name: 'Your profile' })).toBeTruthy();
   });
 
   test('a scan list that could not be loaded says so rather than claiming none', async () => {
