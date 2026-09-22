@@ -363,7 +363,7 @@
   border-radius: 13px;
   background: var(--hm-tray);
   color: var(--hm-ink-4);
-  font-size: 22px;
+  font-size: var(--fs-page);
 }
 
 .rowText { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
@@ -425,7 +425,7 @@
 .unmatched { color: #B4690E; }
 .unchecked { color: var(--hm-ink-4); }
 
-.chev { flex: none; color: var(--hm-ink-4); font-size: 20px; }
+.chev { flex: none; color: var(--hm-ink-4); font-size: var(--fs-head); }
 
 .rest {
   margin: 10px 0 0;
