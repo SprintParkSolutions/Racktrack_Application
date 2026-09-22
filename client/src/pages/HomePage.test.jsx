@@ -2,19 +2,20 @@ import { describe, test, expect, afterEach, beforeEach, vi } from 'vitest';
 import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 
-/* Home - the app's landing screen.
+/* Home - the app's landing screen, rebuilt on 22 September 2026.
  *
- * Three things are checked, because three things are load-bearing:
- *   the full state   every figure and every row comes from a request the
- *                    server already answers, and a rack's state is told in the
- *                    words the rest of the app uses
- *   the empty state  a new account gets the greeting, the card, what is
- *                    missing and what a first scan does - never a grid of
- *                    zeroes
- *   the button       the one thing this page is for reaches /scan
+ * What is load-bearing, and so is tested here:
+ *   the picture     the page leads with the person's own newest rack, and a
+ *                   rack with no photograph never leaves a broken frame
+ *   the role        the filled control says a different true thing to a
+ *                   technician, a single point of contact and an admin
+ *   the figures     every one comes from a request the server already
+ *                   answers, and one that has not arrived is left out
+ *   the empty state a new account gets the same block, drawn, and what the
+ *                   first scan does - never a grid of zeroes
  *
- * Every request is stubbed by path, so a page that starts asking for something
- * new fails here rather than quietly showing a made-up number.
+ * Every request is stubbed by path, so a page that starts asking for
+ * something new fails here rather than quietly showing a made-up number.
  */
 
 const { answers, asked, opened } = vi.hoisted(() => ({
@@ -25,6 +26,10 @@ const { answers, asked, opened } = vi.hoisted(() => ({
 
 vi.mock('../utils/api', () => ({
   apiUrl: (p) => p,
+  // What AssetImg needs to put a photograph on the screen. The token dance is
+  // its own business and is tested with it, not here.
+  ensureFreshAssetToken: async () => 'tok',
+  assetTokenGeneration: () => 1,
   authFetch: vi.fn(async (url) => {
     asked.paths.push(url);
     const key = Object.keys(answers.current).find((k) => String(url).startsWith(k));
@@ -50,18 +55,20 @@ const USER = {
 const user = { current: USER };
 vi.mock('../AuthContext.jsx', () => ({ useAuth: () => ({ user: user.current }) }));
 
-import HomePage, { roleOf, leadFor, greetingAt, initialsOf } from './HomePage.jsx';
+import HomePage, { roleOf, actionsFor, greetingAt, initialsOf, placeLine, stateOf } from './HomePage.jsx';
 
 const DAY = 86400000;
 const ago = (ms) => new Date(Date.now() - ms).toISOString();
 
 const SCANS = {
   scans: [
-    { rackId: 'RK-5B81BE87', timestamp: ago(2 * 3600000) },
-    { rackId: 'RK-A31AE2E7', timestamp: ago(3 * DAY) },
-    { rackId: 'RK-0000AAAA', timestamp: ago(9 * DAY) },
-    { rackId: 'RK-0000BBBB', timestamp: ago(40 * DAY) },
-    { rackId: 'RK-0000CCCC', timestamp: ago(90 * DAY) },
+    { rackId: 'RK-5B81BE87', timestamp: ago(2 * 3600000), image: '/outputs/RK-5B81BE87/original_image.jpg' },
+    { rackId: 'RK-A31AE2E7', timestamp: ago(3 * DAY), image: '/outputs/RK-A31AE2E7/original_image.jpg' },
+    // A rack read before the app kept the original photograph: no picture,
+    // and the row must still draw.
+    { rackId: 'RK-0000AAAA', timestamp: ago(9 * DAY), image: null },
+    { rackId: 'RK-0000BBBB', timestamp: ago(40 * DAY), image: null },
+    { rackId: 'RK-0000CCCC', timestamp: ago(90 * DAY), image: null },
   ],
 };
 
@@ -102,7 +109,7 @@ const PLANS = {
       status: 'draft', summary: { decidable: 7 } }),
     // An older check of a rack already listed: the newest one wins, not this.
     plan({ id: 12, rackId: 'RK-5B81BE87', status: 'completed', summary: { decidable: 1 } }),
-    // A second one with this person, so the "and n more" line has something.
+    // More with this person, so the "and n more" line has something.
     plan({ id: 11, rackId: 'RK-0000CCCC', rackName: null, status: 'in_progress',
       summary: { decidable: 1 }, holder: 'sp.tech', incidentNumber: 'INC0012346' }),
     plan({ id: 10, rackId: 'RK-0000CCCC', rackName: null, status: 'triage',
@@ -140,47 +147,37 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('<HomePage> with work behind it', () => {
-  test('greets the person, names where they work, and leads with the scan card', async () => {
+  test('the line says the hour, the name, and what this person is here', async () => {
     mount();
     expect(screen.getByText(/^Good (morning|afternoon|evening)$/)).toBeTruthy();
     expect(screen.getByRole('heading', { level: 1, name: 'sp.tech' })).toBeTruthy();
-    // The organization and the Site, quietly, under the name.
-    const place = screen.getByText('Technician').closest('p');
-    expect(place.textContent).toContain('DC-007');
-    expect(place.textContent).toContain('DC-007 Bengaluru');
-
-    expect(screen.getByRole('heading', { level: 2, name: 'Ready to scan a rack' })).toBeTruthy();
-    expect(screen.getByText(
-      'One photo and RackTrack reads the rack, then checks it against your records.',
-    )).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Start a scan' })).toBeTruthy();
-    // The greeting and the card are painted before anything has answered; let
-    // the requests land so the run is not noisy about state arriving later.
-    await waitFor(() => expect(screen.getByText('Racks scanned')).toBeTruthy());
+    expect(screen.getByText('Technician · DC-007 · DC-007 Bengaluru')).toBeTruthy();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Your racks' })).toBeTruthy());
   });
 
-  test('every figure is one the server answered', async () => {
+  test('the page leads with the newest rack that has a photograph', async () => {
     mount();
-    // Five scans, six open checks from the dashboard, and three distinct
-    // incident numbers on the checks that are with this person.
-    await waitFor(() => expect(screen.getByText('Racks scanned')).toBeTruthy());
-    await waitFor(() => expect(screen.getByText('Differences waiting')).toBeTruthy());
+    const shot = await screen.findByAltText('SP-HYB-RM01-R01-R1, as it was photographed');
+    expect(shot.getAttribute('src')).toBe('/outputs/RK-5B81BE87/original_image.jpg');
+    // Its name, where it is and when it was read sit under the picture, and
+    // its state is told by a word.
+    const lead = shot.closest('button');
+    expect(within(lead).getByText('SP-HYB-RM01-R01-R1')).toBeTruthy();
+    expect(within(lead).getByText('DC-007 Bengaluru · read 2h ago')).toBeTruthy();
+    expect(within(lead).getByText('With the SPOC')).toBeTruthy();
+    // And the picture opens that rack.
+    fireEvent.click(lead);
+    expect(screen.getByTestId('where').textContent).toBe('/results/RK-5B81BE87');
+  });
 
-    // The figure that matters is carried inside the dark card, with the one
-    // action. The other two are a pair underneath it, not in it.
-    const card = screen.getByRole('heading', { name: 'Ready to scan a rack' }).closest('section');
-    expect(within(card).getByText('Racks scanned')).toBeTruthy();
-    expect(within(card).getByText('5')).toBeTruthy();
-    expect(within(card).getByRole('button', { name: 'Start a scan' })).toBeTruthy();
-    expect(within(card).queryByText('Differences waiting')).toBeNull();
-    expect(within(card).queryByText('Incidents with you')).toBeNull();
+  test('every figure is one the server answered, and nothing is asked for twice', async () => {
+    mount();
+    await waitFor(() => expect(screen.getByText('6 differences waiting')).toBeTruthy());
+    // Four checks are held by this person, said beside the section's name
+    // rather than as a strip of big numbers.
+    const needs = within(screen.getByRole('heading', { name: 'Needs you' }).closest('section'));
+    expect(needs.getByText('4')).toBeTruthy();
 
-    const figure = (label) => screen.getByText(label).parentElement.firstChild.textContent;
-    expect(figure('Racks scanned')).toBe('5');
-    expect(figure('Differences waiting')).toBe('6');
-    expect(figure('Incidents with you')).toBe('3');
-
-    // No route was invented and nothing was asked for twice.
     expect(asked.paths).toEqual([
       '/api/scan-sites',
       '/api/scans',
@@ -193,18 +190,17 @@ describe('<HomePage> with work behind it', () => {
   test('a figure the server cannot give is left out, not guessed', async () => {
     answers.current['/api/approvals/dashboard'] = 'refused';
     mount();
-    await waitFor(() => expect(screen.getByText('Racks scanned')).toBeTruthy());
-    expect(screen.queryByText('Differences waiting')).toBeNull();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Your racks' })).toBeTruthy());
+    expect(screen.queryByText(/differences waiting/)).toBeNull();
   });
 
-  test('the recent racks read by name, place and state, and open the rack', async () => {
+  test('the racks are a list with the photographs in it, and they open', async () => {
     mount();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Your racks' })).toBeTruthy());
     const racks = within(screen.getByRole('heading', { name: 'Your racks' }).closest('section'));
 
     // Four rows, the newest first, each named from /api/scan-sites.
     expect(racks.getAllByRole('button').filter((b) => b.textContent !== 'See all')).toHaveLength(4);
-    expect(racks.getByText('SP-HYB-RM01-R01-R1')).toBeTruthy();
     expect(racks.getByText('SP-HYB-RM01-R01-R2')).toBeTruthy();
     expect(racks.getByText('SP-HYB-RM01-R02-R1')).toBeTruthy();
     // A rack named after its own hash has no name a person can read, and the
@@ -214,24 +210,13 @@ describe('<HomePage> with work behind it', () => {
     // The fifth scan is not on a landing screen; See all is.
     expect(screen.queryByText('RK-0000CCCC')).toBeNull();
 
-    // The site and how long ago it was read.
-    const meta = racks.getByText('SP-HYB-RM01-R01-R1').parentElement.lastChild.textContent;
-    expect(meta).toContain('DC-007 Bengaluru');
-    expect(meta).toContain('2h ago');
-
     // The states, in the words the rest of the app uses.
-    expect(racks.getByText('With the SPOC')).toBeTruthy();
     expect(racks.getByText('Written')).toBeTruthy();
     expect(racks.getByText('Matches your records')).toBeTruthy();
     expect(racks.getByText('Unmatched')).toBeTruthy();
-    // Told by a dot and a word rather than a boxed label, and the dot is
-    // never read out.
-    const dot = racks.getByText('With the SPOC').firstElementChild;
-    expect(dot.tagName).toBe('SPAN');
-    expect(dot.getAttribute('aria-hidden')).toBe('true');
 
-    fireEvent.click(racks.getByText('SP-HYB-RM01-R01-R1').closest('button'));
-    expect(screen.getByTestId('where').textContent).toBe('/results/RK-5B81BE87');
+    fireEvent.click(racks.getByText('SP-HYB-RM01-R01-R2').closest('button'));
+    expect(screen.getByTestId('where').textContent).toBe('/results/RK-A31AE2E7');
   });
 
   test('See all goes to the archive', async () => {
@@ -241,13 +226,9 @@ describe('<HomePage> with work behind it', () => {
     expect(screen.getByTestId('where').textContent).toBe('/history');
   });
 
-  test('what is with this person names the incident and the rack, and opens the check', async () => {
+  test('what needs this person names the incident and the rack, and opens the check', async () => {
     mount();
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Waiting on you' })).toBeTruthy());
-    // Four are held by this person, and the section says so beside its
-    // heading before it names the three it has room for.
-    const held = within(screen.getByRole('heading', { name: 'Waiting on you' }).closest('section'));
-    expect(held.getByText('4')).toBeTruthy();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Needs you' })).toBeTruthy());
     expect(screen.getByText('INC0012345')).toBeTruthy();
     expect(screen.getByText('INC0012346')).toBeTruthy();
     expect(screen.getByText('INC0012347')).toBeTruthy();
@@ -258,7 +239,7 @@ describe('<HomePage> with work behind it', () => {
     expect(opened.calls).toEqual(['/approvals/drifts/140']);
   });
 
-  test('a rack with no name says so in the waiting list too, never its hash', async () => {
+  test('a rack with no name says so in the needs list too, never its hash', async () => {
     mount();
     await waitFor(() => expect(screen.getByText('INC0012346')).toBeTruthy());
     const row = screen.getByText('INC0012346').parentElement;
@@ -266,23 +247,23 @@ describe('<HomePage> with work behind it', () => {
     expect(screen.queryByText(/RK-0000CCCC/)).toBeNull();
   });
 
-  test('nothing is waiting when nothing is held, and the section is gone', async () => {
+  test('nothing needs this person when nothing is held, and the section is gone', async () => {
     answers.current['/api/approvals/plans'] = {
       ok: true,
       plans: PLANS.plans.map((p) => ({ ...p, holder: null })),
     };
     mount();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Your racks' })).toBeTruthy());
-    expect(screen.queryByRole('heading', { name: 'Waiting on you' })).toBeNull();
-    expect(screen.queryByText('Incidents with you')).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Needs you' })).toBeNull();
   });
 
   test('a rack with no check of its own says it has not been checked', async () => {
     answers.current['/api/approvals/plans'] = { ok: true, plans: [] };
     mount();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Your racks' })).toBeTruthy());
-    expect(screen.getAllByText('Not checked')).toHaveLength(4);
-    expect(screen.queryByRole('heading', { name: 'Waiting on you' })).toBeNull();
+    // Four rows in the list, and the one above them in the picture.
+    expect(screen.getAllByText('Not checked')).toHaveLength(5);
+    expect(screen.queryByRole('heading', { name: 'Needs you' })).toBeNull();
   });
 });
 
@@ -296,14 +277,12 @@ describe('<HomePage> on a new account', () => {
     };
   });
 
-  test('the greeting, the card, and what a first scan does - never a grid of zeroes', async () => {
+  test('the same block, drawn, and what a first scan does - never a grid of zeroes', async () => {
     mount();
     await waitFor(() => expect(
-      screen.getByText('Your racks will appear here after the first scan.'),
+      screen.getByRole('heading', { name: 'Scan your first rack' }),
     ).toBeTruthy());
 
-    // What is missing, said plainly, and the three things a first scan does.
-    expect(screen.getByText('No racks yet')).toBeTruthy();
     expect(screen.getByText('Take one photo of the rack.')).toBeTruthy();
     expect(screen.getByText('RackTrack reads the equipment mounted in it.')).toBeTruthy();
     expect(screen.getByText(
@@ -311,18 +290,15 @@ describe('<HomePage> on a new account', () => {
     )).toBeTruthy();
 
     expect(screen.getByText(/^Good (morning|afternoon|evening)$/)).toBeTruthy();
-    expect(screen.getByRole('heading', { level: 2, name: 'Ready to scan a rack' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Start a scan' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Scan a rack/ })).toBeTruthy();
 
-    // No figures, no sections, no zeroes.
-    expect(screen.queryByText('Racks scanned')).toBeNull();
-    expect(screen.queryByText('Differences waiting')).toBeNull();
-    expect(screen.queryByText('Incidents with you')).toBeNull();
+    // No sections and no zeroes.
     expect(screen.queryByRole('heading', { name: 'Your racks' })).toBeNull();
-    expect(screen.queryByRole('heading', { name: 'Waiting on you' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Needs you' })).toBeNull();
     expect(screen.queryByText('0')).toBeNull();
+    expect(screen.queryByText(/differences waiting/)).toBeNull();
 
-    // And the way on is still there.
+    // One way on, and nothing else to press.
     expect(screen.getAllByRole('button')).toHaveLength(1);
   });
 
@@ -330,31 +306,86 @@ describe('<HomePage> on a new account', () => {
     answers.current['/api/scans'] = 'refused';
     mount();
     await waitFor(() => expect(
-      screen.getByText('Your racks could not be loaded just now'),
+      screen.getByRole('heading', { name: 'Your racks could not be loaded just now' }),
     ).toBeTruthy());
     expect(screen.getByText('Pull up again in a moment.')).toBeTruthy();
-    expect(screen.queryByText('Racks scanned')).toBeNull();
-    // A failure is not the place to teach somebody what a scan does.
     expect(screen.queryByText('Take one photo of the rack.')).toBeNull();
-    expect(screen.queryByText('No racks yet')).toBeNull();
   });
 });
 
-describe('<HomePage> and the scan', () => {
-  test('the card button reaches /scan', () => {
+describe('<HomePage> by role', () => {
+  test('the role is what the server says this account may do, not a guess at a name', () => {
+    expect(roleOf({ role: 'member' }, {}).key).toBe('tech');
+    expect(roleOf({ role: 'member' }, { spoc: true }).key).toBe('spoc');
+    expect(roleOf({ role: 'member' }, { admin: true }).key).toBe('admin');
+    expect(roleOf({ role: 'org_admin' }, null).key).toBe('admin');
+    expect(roleOf({ role: 'owner' }, null).word).toBe('Platform owner');
+    // A SPOC is a SPOC whatever their role, which is the point of the work.
+    expect(roleOf({ role: 'site_manager' }, { spoc: true }).word).toBe('Single point of contact');
+  });
+
+  test('a technician is told to scan, and can open the rack in the picture', async () => {
     mount();
-    fireEvent.click(screen.getByRole('button', { name: 'Start a scan' }));
+    const go = await screen.findByRole('button', { name: /Scan a rack/ });
+    expect(screen.getByRole('button', { name: 'Open this rack' })).toBeTruthy();
+    fireEvent.click(go);
     expect(screen.getByTestId('where').textContent).toBe('/scan');
   });
 
-  test('it reaches /scan from the empty state too', async () => {
-    answers.current['/api/scans'] = { scans: [] };
+  test('a single point of contact is sent to the checks that are with them', async () => {
+    answers.current['/api/approvals/me'] = { ok: true, can: { spoc: true } };
     mount();
-    await waitFor(() => expect(
-      screen.getByText('Your racks will appear here after the first scan.'),
-    ).toBeTruthy());
-    fireEvent.click(screen.getByRole('button', { name: 'Start a scan' }));
-    expect(screen.getByTestId('where').textContent).toBe('/scan');
+    await waitFor(() => expect(screen.getByText(/^Single point of contact/)).toBeTruthy());
+    // Four checks are held by sp.tech in the stub, and scanning stays beside it.
+    expect(screen.getByRole('button', { name: 'Scan a rack' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Read 4 checks waiting for you/ }));
+    expect(screen.getByTestId('where').textContent).toBe('/results/RK-5B81BE87/drift');
+  });
+
+  test('an admin is sent to the checks that have nobody', async () => {
+    answers.current['/api/approvals/me'] = { ok: true, can: { admin: true } };
+    mount();
+    await waitFor(() => expect(screen.getByText(/^Organization admin/)).toBeTruthy());
+    // One check is in triage in the stub.
+    fireEvent.click(screen.getByRole('button', { name: /Give a check an owner/ }));
+    expect(screen.getByTestId('where').textContent).toBe('/dashboard');
+  });
+
+  test('with nothing waiting, each role still gets a true pair of controls', () => {
+    const none = { waiting: 0, triage: 0, rack: 'RK-1' };
+    expect(actionsFor({ role: 'admin', ...none }).lead.text).toBe('Open the console');
+    expect(actionsFor({ role: 'admin', ...none }).alt.text).toBe('Scan a rack');
+    expect(actionsFor({ role: 'spoc', ...none }).lead.text).toBe('Scan a rack');
+    expect(actionsFor({ role: 'tech', ...none }).lead.text).toBe('Scan a rack');
+    expect(actionsFor({ role: 'tech', ...none }).alt.text).toBe('Open this rack');
+    // One of a thing is one, not "1 checks".
+    expect(actionsFor({ role: 'spoc', waiting: 1, newest: 'RK-1' }).lead.text)
+      .toBe('Read the check waiting for you');
+    expect(actionsFor({ role: 'admin', triage: 3 }).lead.text).toBe('Give 3 checks an owner');
+    // A technician with no rack yet has nothing to open, and no dead control.
+    expect(actionsFor({ role: 'tech' }).alt).toBe(null);
+  });
+
+  test('the greeting is true at the hour it is read, and the mark is the account letters', () => {
+    expect(greetingAt(new Date('2026-09-22T08:00:00'))).toBe('Good morning');
+    expect(greetingAt(new Date('2026-09-22T14:00:00'))).toBe('Good afternoon');
+    expect(greetingAt(new Date('2026-09-22T20:00:00'))).toBe('Good evening');
+    expect(initialsOf({ username: 'sp.tech' })).toBe('ST');
+    expect(initialsOf({ username: 'owner' })).toBe('OW');
+    expect(initialsOf({})).toBe('?');
+  });
+
+  test('the place line leaves out what the account does not have', () => {
+    expect(placeLine({ word: 'Technician' }, null, null)).toBe('Technician');
+    expect(placeLine({ word: 'Technician' }, 'DC-007', null)).toBe('Technician · DC-007');
+  });
+
+  test('a rack state is the words the rest of the app uses', () => {
+    expect(stateOf(null).label).toBe('Not checked');
+    expect(stateOf({ status: 'written' }).label).toBe('Written');
+    expect(stateOf({ status: 'assigned', summary: { decidable: 0 } }).label).toBe('Matches your records');
+    expect(stateOf({ status: 'draft', summary: { decidable: 2 } }).label).toBe('Unmatched');
+    expect(stateOf({ status: 'assigned', summary: { decidable: 2 } }).label).toBe('With the SPOC');
   });
 });
 
@@ -367,68 +398,5 @@ describe('<HomePage> words', () => {
     expect(words).not.toMatch(/RK-[0-9A-F]{6,}/);
     expect(words).not.toMatch(/racktrack_uid|recordId|nb:device:/);
     expect(words).not.toContain('+');
-  });
-});
-
-/* One home, four kinds of person. The card is the part that changes: what it
-   counts, what it says about it, and where its control goes. Nothing else on
-   the page moves, so the app still looks like one product to two people
-   standing next to each other. */
-describe('<HomePage> by role', () => {
-  test('the role is what the server says this account may do, not a guess at a name', () => {
-    expect(roleOf({ role: 'member' }, {}).key).toBe('tech');
-    expect(roleOf({ role: 'member' }, { spoc: true }).key).toBe('spoc');
-    expect(roleOf({ role: 'member' }, { admin: true }).key).toBe('admin');
-    expect(roleOf({ role: 'org_admin' }, null).key).toBe('admin');
-    expect(roleOf({ role: 'owner' }, null).word).toBe('Platform owner');
-    // A SPOC is a SPOC whatever their role, which is the point of the work.
-    expect(roleOf({ role: 'site_manager' }, { spoc: true }).word).toBe('Single point of contact');
-  });
-
-  test('a single point of contact is led to the checks that are with them', async () => {
-    answers.current['/api/approvals/me'] = { ok: true, can: { spoc: true } };
-    mount();
-    await waitFor(() => expect(screen.getByText('Single point of contact')).toBeTruthy());
-    const card = screen.getByRole('heading', { name: 'Checks are waiting for you' }).closest('section');
-    // Four checks are held by sp.tech in the stub.
-    expect(within(card).getByText('Checks with you')).toBeTruthy();
-    expect(within(card).getByText('4')).toBeTruthy();
-    // Scanning is still one tap away, whatever the card leads with.
-    expect(within(card).getByRole('button', { name: 'Start a scan' })).toBeTruthy();
-    // And the control opens the newest check, inside the app.
-    fireEvent.click(within(card).getByRole('button', { name: 'Open the newest' }));
-    expect(screen.getByTestId('where').textContent).toBe('/results/RK-5B81BE87/drift');
-  });
-
-  test('an admin is led to the checks that have nobody', async () => {
-    answers.current['/api/approvals/me'] = { ok: true, can: { admin: true } };
-    mount();
-    await waitFor(() => expect(screen.getByText('Organization admin')).toBeTruthy());
-    const card = screen.getByRole('heading', { name: 'Somebody has to say who these go to' }).closest('section');
-    expect(within(card).getByText('Check with nobody yet')).toBeTruthy();
-    expect(within(card).getByText('1')).toBeTruthy();
-    fireEvent.click(within(card).getByRole('button', { name: 'Open the console' }));
-    expect(screen.getByTestId('where').textContent).toBe('/dashboard');
-  });
-
-  test('with nothing waiting, each role still gets a true card', () => {
-    const none = { scanned: 12, waiting: 0, triage: 0, sites: 2 };
-    expect(leadFor({ role: 'admin', ...none }).title).toBe('Your estate, across 2 sites');
-    expect(leadFor({ role: 'spoc', ...none }).title).toBe('Nothing is with you');
-    expect(leadFor({ role: 'tech', ...none }).title).toBe('Ready to scan a rack');
-    // A figure nobody has answered yet is left out rather than shown as zero.
-    expect(leadFor({ role: 'tech', scanned: null }).figure).toBe(null);
-    // One of a thing is one, not "1 checks".
-    expect(leadFor({ role: 'spoc', scanned: 1, waiting: 1 }).label).toBe('Check with you');
-    expect(leadFor({ role: 'admin', scanned: 1, triage: 2 }).label).toBe('Checks with nobody yet');
-  });
-
-  test('the greeting is true at the hour it is read, and the mark is the account letters', () => {
-    expect(greetingAt(new Date('2026-09-22T08:00:00'))).toBe('Good morning');
-    expect(greetingAt(new Date('2026-09-22T14:00:00'))).toBe('Good afternoon');
-    expect(greetingAt(new Date('2026-09-22T20:00:00'))).toBe('Good evening');
-    expect(initialsOf({ username: 'sp.tech' })).toBe('ST');
-    expect(initialsOf({ username: 'owner' })).toBe('OW');
-    expect(initialsOf({})).toBe('?');
   });
 });

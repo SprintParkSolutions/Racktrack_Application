@@ -147,7 +147,6 @@ describe('<AssignedNotice>', () => {
       ['completed', 'written', 'RackTrack: your check on rack R1 is written', 'Written to NetBox', 'Your check on rack R1 is written'],
       ['write_failed', 'write_failed', 'RackTrack: the write for rack R1 did not finish', 'A write did not finish', 'The write for rack R1 did not finish'],
       ['reassign_needed', 'needs_admin', 'RackTrack: a drift check on rack R1 needs an admin', 'Needs an admin', 'A drift check on rack R1 needs an admin'],
-      ['incident_failed', 'incident', 'RackTrack: the ServiceNow incident for rack R1 needs a look', 'ServiceNow needs a look', 'The ServiceNow incident for rack R1 needs a look'],
       ['reassigned', 'reassigned', 'RackTrack: rack R1 has gone to somebody else', 'Given to somebody else', 'Rack R1 has gone to somebody else'],
     ];
     for (const [event, kind, subject, label, title] of cases) {
@@ -159,6 +158,19 @@ describe('<AssignedNotice>', () => {
       expect(screen.getByRole('button', { name: 'Dismiss' })).toBeTruthy();
       cleanup();
     }
+  });
+
+
+  /* A ServiceNow incident that could not be raised is an operator's problem,
+     and the person this banner interrupts is a technician at a rack. It goes
+     to the Desk and to the email, and not to the phone. */
+  test('a ServiceNow incident that needs a look is not put on the phone', async () => {
+    reply.rows = [told('incident_failed', 'incident',
+      'RackTrack: the ServiceNow incident for rack R1 needs a look')];
+    const { container } = mount();
+    await waitFor(() => expect(container.textContent).not.toContain('ServiceNow'));
+    expect(screen.queryByText('ServiceNow needs a look')).toBeNull();
+    expect(container.textContent).toBe('');
   });
 
   test('a row written before notices carried data is shown only when it is an assignment', async () => {

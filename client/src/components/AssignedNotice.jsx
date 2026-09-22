@@ -39,6 +39,13 @@ const inWords = (text) => String(text || '').replace(HASH_RE, 'a rack that has n
 // Of the rows without `data` only `assigned` is shown: the others were addressed
 // under the old rule (the sender, the holder and every admin alike), no phone
 // ever showed them, and "Your check was approved" is wrong for most of them.
+// A ServiceNow incident that could not be raised is deliberately not here.
+// It is an operator's problem - a credential, a closed instance, a field the
+// instance insists on - and the person it used to interrupt was a technician
+// standing at a rack with a phone, who can do nothing about it. The owner
+// asked on 22 Sep 2026 for it to come off the Scan screen. The notice itself
+// is unchanged: it still reaches the Desk, where somebody can act on it, and
+// the email still goes.
 const KIND_OF_EVENT = {
   assigned: 'assigned',
   approved: 'approved',
@@ -46,9 +53,10 @@ const KIND_OF_EVENT = {
   completed: 'written',
   write_failed: 'write_failed',
   reassign_needed: 'needs_admin',
-  incident_failed: 'incident',
   reassigned: 'reassigned',
 };
+/** Kinds this banner never shows, whatever the notice's own `data` says. */
+const NOT_ON_THE_PHONE = new Set(['incident']);
 const LABEL = {
   assigned: 'Assigned to you',
   approved: 'Your check was approved',
@@ -74,7 +82,8 @@ function dataOf(row) {
 }
 const kindOf = (row) => {
   const kind = (dataOf(row) || {}).kind;
-  return LABEL[kind] ? kind : KIND_OF_EVENT[row.event];
+  const named = LABEL[kind] ? kind : KIND_OF_EVENT[row.event];
+  return NOT_ON_THE_PHONE.has(named) ? undefined : named;
 };
 const newestFirst = (a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')) || (Number(b.id) || 0) - (Number(a.id) || 0);
 
@@ -130,7 +139,7 @@ export default function AssignedNotice() {
       if (!r.ok) return;
       const j = await r.json();
       setRows((j.notifications || [])
-        .filter((n) => KIND_OF_EVENT[n.event] && !n.readAt && (n.event === 'assigned' || dataOf(n)))
+        .filter((n) => kindOf(n) && !n.readAt && (n.event === 'assigned' || dataOf(n)))
         .sort(newestFirst));
     } catch { /* no notice is not an error worth showing */ }
   }, []);
