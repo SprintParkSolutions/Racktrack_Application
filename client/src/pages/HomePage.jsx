@@ -384,36 +384,36 @@ export function bannerFor({ role, racks = 0, waiting = 0, triage = 0,
         steps: [],
       };
     }
-    if (racks === 0 && !loading) {
-      return {
-        title: 'Nothing has been photographed yet',
-        words: 'When somebody photographs a rack at one of your sites, the check goes to that '
-          + "site's contact and appears here.",
-        steps: [],
-      };
-    }
-    /* The estate itself, not a verdict on it. "Nothing is waiting on you" put
-       an empty state on the biggest card in the app for the person who opens
-       RackTrack to see their organisation (the owner, 23 September 2026). So
-       it is named, counted, and says where the work is. */
+    /* An introduction to the product, not a verdict on their estate.
+       "Nothing is waiting on you" put an empty state on the biggest card in
+       the app, and a count of sites read as a report; the owner asked on
+       23 September 2026 for something that says what RackTrack is. So the card
+       says what the product does, in one sentence, with their own estate named
+       at the end of it - and the two headlines that matter more still take the
+       card: a check with nobody, and an estate nobody has photographed. */
     const count = (n, one, many) => `${n} ${n === 1 ? one : many}`;
     const held = [
       sites > 0 ? count(sites, 'site', 'sites') : null,
       racks > 0 ? count(racks, 'rack read', 'racks read') : null,
     ].filter(Boolean).join(', ');
-    const where = open > 0
-      ? (open === 1
-        ? 'One check is with the contact for its site, and what they decide is in RackTrack Control.'
-        : `${open} checks are with the contacts for their sites, `
-          + 'and what they decide is in RackTrack Control.')
-      : 'Every check has gone to the contact for its site, and what they decide is in '
-        + 'RackTrack Control.';
+    if (racks === 0 && !loading) {
+      return {
+        title: 'One photograph, and the rack is read',
+        words: 'RackTrack reads every box in a cabinet from a single photograph and checks it '
+          + 'against your records. Nobody has photographed a rack yet - when somebody does, the '
+          + "check goes to that site's contact and appears here.",
+        steps: [],
+      };
+    }
     return {
-      title: org || 'Your organization',
-      words: held ? `${held}. ${where}` : where,
+      title: 'One photograph, and the rack is read',
+      words: 'Every box in a cabinet, checked against your records. What differs goes to the '
+        + 'contact for that site, and what they approve is written back to NetBox'
+        + (held ? `. ${held}.` : '.'),
       steps: [],
     };
   }
+
   if (role === 'spoc' && waiting > 0) {
     return {
       title: waiting === 1 ? 'A check is waiting for you' : `${waiting} checks are waiting for you`,
