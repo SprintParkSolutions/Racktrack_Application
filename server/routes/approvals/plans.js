@@ -197,9 +197,26 @@ router.get('/:planId/people', ADMIN_GATE, wrap(async (req, res) => {
  * done, and hands it over. RackTrack raises it in the organization's own
  * ticketing tool, records it on the check, and tells the person.
  */
-router.post('/:planId/raise', ADMIN_GATE, wrap(async (req, res) => {
+router.post('/:planId/raise', wrap(async (req, res) => {
   const plan = store.getPlan(idOf(req), { heavy: false });
   if (!plan) return res.status(404).json({ code: 'not_found', error: 'No such check.' });
+  /* An admin may raise one on any check of their organization. So may the
+     single point of contact OF THIS SITE: they are the person reading the
+     check, and asking somebody to go and look at the rack is the move they
+     need most (the owner, 23 September 2026 - "there is no raise an incident
+     option for admin or spoc"). Nobody else, and never on another site's
+     check: the site is checked here, not just the fact of being a SPOC
+     somewhere. */
+  const me = service.actorOf(req.user) || {};
+  const isAdmin = ['owner', 'org_admin'].includes(String(me.role || ''));
+  const spocHere = plan.tenantId != null
+    && store.sitesWhereSpoc(me.id, me.email, me.orgId ?? null).map(Number).includes(Number(plan.tenantId));
+  if (!isAdmin && !spocHere) {
+    return res.status(403).json({
+      code: 'forbidden',
+      error: 'Raising a ticket is for an organization admin, or the single point of contact of this site.',
+    });
+  }
   const body = bodyOf(req);
   const summary = String(body.summary || '').trim();
   if (!summary) return res.status(400).json({ code: 'bad_request', error: 'Say what you want done.' });
