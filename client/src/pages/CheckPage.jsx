@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useSmartBack } from '../hooks/useSmartBack';
 import PageHeader from '../components/PageHeader.jsx';
 import Icon from '../components/Icon';
 import { apiUrl, authFetch } from '../utils/api';
@@ -119,6 +120,7 @@ const isHousekeeping = (i) => i && i.action === 'rebind' && !i.fromUid;
 export default function CheckPage() {
   const { planId } = useParams();
   const navigate = useNavigate();
+  const goBack = useSmartBack('/my-checks');
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
 
@@ -183,7 +185,14 @@ export default function CheckPage() {
         eyebrow="Your check"
         title={rackName || 'Drift check'}
         sub={plan?.siteName || null}
-        back={() => (rackId ? navigate(`/results/${encodeURIComponent(rackId)}/drift`) : navigate(-1))}
+        /* Back goes back.
+           It used to jump to the rack's drift check instead, whose own Back
+           comes here - so a single point of contact who opened one of their
+           checks and pressed Back went round in a circle between the two
+           screens (the owner, 23 September 2026). With nowhere to go back to -
+           a cold start on a link from an email - it lands on the list of
+           checks this page belongs to. */
+        back={goBack}
       />
 
       <div className={styles.scroll}>

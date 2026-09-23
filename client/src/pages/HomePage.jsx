@@ -9,6 +9,7 @@ import { openApprovals } from '../utils/approvals';
 import AssignedNotice from '../components/AssignedNotice.jsx';
 import AssetImg from '../components/AssetImg.jsx';
 import EstateMap from '../components/EstateMap.jsx';
+import NoticesSheet, { useNotices } from '../components/NoticesSheet.jsx';
 import Icon from '../components/Icon';
 import styles from './HomePage.module.css';
 
@@ -472,6 +473,11 @@ export default function HomePage() {
   const [can, setCan] = useState(null);          // what the server says this account may do
   // Which Site's floor is drawn. Empty means the first one the server named.
   const [floorSite, setFloorSite] = useState('');
+  /* What has arrived for this person, and whether they are looking at it.
+     The owner asked on 23 September 2026 for a bell beside the account mark
+     and for the notices to be there rather than on a screen of their own. */
+  const notices = useNotices();
+  const [noticesOpen, setNoticesOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -640,7 +646,7 @@ export default function HomePage() {
   const org = user?.organization?.name || null;
   const where = user?.tenant?.name || null;
   const held = useMemo(() => roleOf(user, can), [user, can]);
-  const { view, views, shift } = useAppView(held.key);
+  const { view, views, shift } = useAppView(held.key, user && user.id);
   /* What this person is here TODAY. An admin or a SPOC who has shifted the
      toggle to Employee gets the employee's page - the camera, their racks,
      their own checks - because that is what they said they are doing. The
@@ -707,6 +713,23 @@ export default function HomePage() {
             <h1 className={styles.who}>{user?.username || 'there'}</h1>
             <p className={styles.place}>{placeLine(role, org, where)}</p>
           </div>
+          {/* The bell, then the account. Both in the corner a phone keeps
+              for them, and the bell carries how many are waiting. */}
+          <button
+            type="button"
+            className={styles.profile}
+            onClick={() => setNoticesOpen(true)}
+            aria-label={notices.unread
+              ? `Notifications, ${notices.unread} unread`
+              : 'Notifications'}
+          >
+            <Icon name="bell" />
+            {notices.unread > 0 && (
+              <span className={styles.waiting} aria-hidden="true">
+                {notices.unread > 9 ? '9' : notices.unread}
+              </span>
+            )}
+          </button>
           <button
             type="button"
             className={styles.profile}
@@ -892,6 +915,15 @@ export default function HomePage() {
         )}
 
       </main>
+
+      {/* What has arrived, over the page rather than on one of its own. */}
+      {noticesOpen && (
+        <NoticesSheet
+          notices={notices}
+          onClose={() => setNoticesOpen(false)}
+          onOpenCheck={openCheck}
+        />
+      )}
     </div>
   );
 }

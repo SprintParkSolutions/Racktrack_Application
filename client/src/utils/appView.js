@@ -21,7 +21,15 @@
  * they are allowed to do is the role, and that is the server's answer.
  */
 
+/* One key per account, not one per device.
+ *
+ * It was `rt.view` for everybody, so an admin who shifted to Employee on a
+ * phone left the next person signed in on that phone in the employee's app -
+ * which is how a single point of contact came to have Two racks on their bar
+ * (the owner, 23 September 2026). The choice is about what one person is
+ * doing today, so it is kept against that person. */
 const KEY = 'rt.view';
+const keyFor = (who) => (who == null || who === '' ? KEY : `${KEY}:${who}`);
 
 /** The views this role may look through, the role's own view first. */
 export function viewsFor(role) {
@@ -33,17 +41,17 @@ export function viewsFor(role) {
 /** What each view is called on the toggle. */
 export const VIEW_LABEL = { admin: 'Admin', spoc: 'SPOC', employee: 'Employee' };
 
-/** The view in force for this role: the stored one if it is still allowed. */
-export function viewFor(role) {
+/** The view in force for this role and this person: their own stored choice. */
+export function viewFor(role, who = null) {
   const allowed = viewsFor(role);
   let stored = null;
-  try { stored = localStorage.getItem(KEY); } catch { /* private window */ }
+  try { stored = localStorage.getItem(keyFor(who)); } catch { /* private window */ }
   return allowed.includes(stored) ? stored : allowed[0];
 }
 
-/** Remember the view this person shifted to. */
-export function setView(view) {
-  try { localStorage.setItem(KEY, view); } catch { /* private window */ }
+/** Remember the view this person shifted to, against this person. */
+export function setView(view, who = null) {
+  try { localStorage.setItem(keyFor(who), view); } catch { /* private window */ }
   // Same-tab listeners: the storage event only fires in other tabs.
   window.dispatchEvent(new CustomEvent('rt-view', { detail: view }));
 }

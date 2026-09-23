@@ -337,7 +337,7 @@ function SocialDeepLinkHandler() {
 function EmployeeOnly({ children }) {
   const { user } = useAuth();
   const can = useApprovalsCan();
-  const { view } = useAppView(roleOfUser(user, can));
+  const { view } = useAppView(roleOfUser(user, can), user && user.id);
   // While the answer is still coming the view reads as the role's own, which
   // for a technician is Employee - so nobody is bounced off their own camera
   // on a slow network.

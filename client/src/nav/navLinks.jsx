@@ -105,7 +105,7 @@ export function usePrimaryNav() {
      of that appears: an admin's app is the organisation, the Desk and their
      data sources, which is what the owner asked for on 23 September 2026 -
      "keep it admin level, not employee or technician level".  */
-  const { view } = useAppView(roleOfUser(user, can));
+  const { view } = useAppView(roleOfUser(user, can), user && user.id);
   const asEmployee = view === 'employee';
   const isSpoc = Boolean(can && can.spoc) && !asEmployee;
   const runsTheEstate = (isAdmin || Boolean(can && can.spoc)) && !asEmployee;

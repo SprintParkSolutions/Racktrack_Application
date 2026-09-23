@@ -31,7 +31,7 @@ export function roleOfUser(user, can) {
  * Every consumer re-renders when the view moves, in this tab through the
  * 'rt-view' event and in another tab through 'storage'.
  */
-export function useAppView(role = 'tech') {
+export function useAppView(role = 'tech', who = null) {
   /* The view is WORKED OUT WHILE RENDERING, not kept in state and corrected
      by an effect. Until the server answers, every account reads as a
      technician, whose only view is Employee; an effect that fixed that
@@ -55,10 +55,10 @@ export function useAppView(role = 'tech') {
 
   const shift = useCallback((next) => {
     if (!viewsFor(role).includes(next)) return;
-    writeView(next);       // dispatches 'rt-view', which bumps every listener
+    writeView(next, who);  // dispatches 'rt-view', which bumps every listener
     bump();
-  }, [role, bump]);
+  }, [role, who, bump]);
 
-  return { view: viewFor(role), views: viewsFor(role), role, shift };
+  return { view: viewFor(role, who), views: viewsFor(role), role, shift };
 }
 

@@ -95,7 +95,7 @@ export default function BottomNav() {
      contact is not asked to photograph a rack; if they mean to, they shift
      the toggle on Home and the button comes back (the owner, 23 Sep 2026). */
   const can = useApprovalsCan();
-  const { view } = useAppView(roleOfUser(user, can));
+  const { view } = useAppView(roleOfUser(user, can), user && user.id);
   const mayScan = canScanIn(view);
   const links = usePrimaryNav();
   const location = useLocation();
