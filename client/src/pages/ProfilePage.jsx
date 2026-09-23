@@ -10,6 +10,7 @@ import { TYPE_INFO } from '../utils/connectionsApi';
 import { apiUrl, authFetch } from '../utils/api';
 import Avatar from '../components/Avatar.jsx';
 import { AVATARS, resolveAvatarIndex } from '../utils/avatars';
+import { askToNotify, chime, setNotifyChoice, wantsNotices } from '../utils/notify.js';
 import Icon from '../components/Icon';
 import AssetImg from '../components/AssetImg';
 
@@ -55,6 +56,22 @@ export default function ProfilePage() {
   const [savingAvatar, setSavingAvatar] = useState(false);
   const [photoError, setPhotoError] = useState('');
   const photoInput = useRef(null);
+  /* Whether this phone is allowed to tell them something arrived. Asked for,
+     never assumed (the owner, 23 September 2026). */
+  const [noticesOn, setNoticesOn] = useState(() => wantsNotices());
+  const [noticeBusy, setNoticeBusy] = useState(false);
+
+  const toggleNotices = async () => {
+    if (noticeBusy) return;
+    setNoticeBusy(true);
+    try {
+      if (noticesOn) { setNotifyChoice(false); setNoticesOn(false); return; }
+      const ok = await askToNotify();
+      setNoticesOn(ok);
+      // A sound the moment they say yes, so they know what it sounds like.
+      if (ok) chime();
+    } finally { setNoticeBusy(false); }
+  };
   const [copied, setCopied] = useState(false);
   const [revoking, setRevoking] = useState(false);
   const [confirmingRevoke, setConfirmingRevoke] = useState(false);
@@ -434,6 +451,31 @@ export default function ProfilePage() {
                 </button>
               </section>
             )}
+
+            <section className={styles.block}>
+              <h3 className={styles.blockH}>Notifications</h3>
+              <button
+                type="button"
+                className={styles.row}
+                onClick={toggleNotices}
+                aria-pressed={noticesOn}
+              >
+                <span className={styles.rowIcon}><Icon name="bell" /></span>
+                <span className={styles.rowMain}>
+                  <span className={styles.rowTitle}>
+                    {noticesOn ? 'Alerts and sound are on' : 'Turn on alerts and sound'}
+                  </span>
+                  <span className={styles.rowMeta}>
+                    {noticesOn
+                      ? 'This phone makes a sound and shows a notice when a check is decided'
+                      : 'Be told on this phone when a check is decided or a ticket reaches you'}
+                  </span>
+                </span>
+                <span className={`${styles.switch} ${noticesOn ? styles.switchOn : ''}`} aria-hidden="true">
+                  <span className={styles.knob} />
+                </span>
+              </button>
+            </section>
 
             <section className={styles.block}>
               <h3 className={styles.blockH}>Profile details</h3>

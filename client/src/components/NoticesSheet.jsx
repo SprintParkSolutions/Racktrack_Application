@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import useModalA11y from '../hooks/useModalA11y.js';
 import { apiUrl, authFetch } from '../utils/api';
+import { announce } from '../utils/notify.js';
 import Icon from './Icon';
 import styles from './NoticesSheet.module.css';
 
@@ -59,7 +60,15 @@ export function when(d) {
 }
 
 /* One request for everybody's unread count, shared by the bell and the sheet
-   so opening the sheet does not ask twice. */
+   so opening the sheet does not ask twice.
+
+   It asks again every so often, because a decision arrives while the person
+   is holding the phone, not when they next open the app. Each answer goes to
+   announce() (utils/notify.js), which makes a sound and posts a notification
+   for anything that arrived since this device last looked - and stays silent
+   on the first load and for anybody who has not said yes. */
+const EVERY_MS = 45_000;
+
 export function useNotices() {
   const [rows, setRows] = useState(null);
   const [unread, setUnread] = useState(0);
@@ -71,10 +80,18 @@ export function useNotices() {
         const list = Array.isArray(d.notifications) ? d.notifications : [];
         setRows(list);
         setUnread(Number(d.unread) || list.filter((n) => !n.readAt).length);
+        announce(list);
       })
       .catch(() => { setRows([]); setUnread(0); });
   }, []);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    const t = setInterval(load, EVERY_MS);
+    /* A phone that was in a pocket asks the moment it is looked at again. */
+    const onWake = () => { if (!document.hidden) load(); };
+    document.addEventListener('visibilitychange', onWake);
+    return () => { clearInterval(t); document.removeEventListener('visibilitychange', onWake); };
+  }, [load]);
   return { rows, unread, reload: load };
 }
 
