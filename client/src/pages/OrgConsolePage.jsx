@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useId } from 'react';
+import { useState, useEffect, useCallback, useId, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { apiUrl, authFetch, publicOrigin } from '../utils/api';
@@ -284,39 +284,19 @@ export default function OrgConsolePage() {
             {activeOrg && isOwner ? activeOrg.name : (activeOrg?.name || 'Organizations')}
           </h1>
         </div>
-        {/* The controls of this console: one row of objects built from the
-            same parts as everything else on the page - white with light down
-            the fill, a hairline ring, a shadow - each with a mark so it is
-            read at a glance rather than by reading four labels. Signing out
-            is the last of them and the only one that is not ink, because it
-            is the only one that ends something (the owner, 23 Sep 2026).
-            The role is not a control, so it is a quiet chip, not a black
-            pill sitting among the buttons. */}
-        <div className={styles.headActions}>
-          <span className={styles.roleBadge}>{roleLabel(user?.role)}</span>
-          <div className={styles.headBtns}>
-            {/* Organisation setup: where the racks are, who decides, rules.
-                The gate sends a new admin there; this is how they come back. */}
-            <button className={styles.headBtn} onClick={() => navigate('/setup')}>
-              <Icon name="settings" className={styles.headIcon} />
-              <span>Settings</span>
-            </button>
-            {isOwner && (
-              <button className={styles.headBtn} onClick={() => navigate('/dashboard')}>
-                <Icon name="space_dashboard" className={styles.headIcon} />
-                <span>Console</span>
-              </button>
-            )}
-            <button className={styles.headBtn} onClick={() => navigate('/')}>
-              <Icon name="rack" className={styles.headIcon} />
-              <span>App</span>
-            </button>
-            <button className={`${styles.headBtn} ${styles.headOut}`} onClick={logout}>
-              <Icon name="logout" className={styles.headIcon} />
-              <span>Sign out</span>
-            </button>
-          </div>
-        </div>
+        {/* One way in to everything this person can do with their account.
+            Four buttons and a role pill in the header competed with the
+            organisation's own name; the owner chose a corner menu on 23
+            September 2026. What is inside is the same four things. */}
+        <AccountMenu
+          user={user}
+          role={roleLabel(user?.role)}
+          isOwner={isOwner}
+          onSettings={() => navigate('/setup')}
+          onConsole={() => navigate('/dashboard')}
+          onApp={() => navigate('/')}
+          onSignOut={logout}
+        />
       </header>
       )}
 
@@ -682,6 +662,69 @@ function fmtDate(s) {
  * The owner asked on 23 September 2026 for this console to be compact and to
  * fit the screen. An organisation with forty people used to print all forty,
  * and the Sites under them were a thumb's worth of scrolling away. */
+/* The account menu in the corner.
+ *
+ * A round mark with this person's initials, and behind it everything they can
+ * do that is not about the organisation in front of them: its settings, the
+ * owner's console, the application itself, and signing out. It closes on a
+ * click anywhere else, on Escape, and after a choice.
+ */
+function AccountMenu({ user, role, isOwner, onSettings, onConsole, onApp, onSignOut }) {
+  const [open, setOpen] = useState(false);
+  const box = useRef(null);
+  useEffect(() => {
+    if (!open) return undefined;
+    const away = (e) => { if (box.current && !box.current.contains(e.target)) setOpen(false); };
+    const esc = (e) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('pointerdown', away);
+    document.addEventListener('keydown', esc);
+    return () => {
+      document.removeEventListener('pointerdown', away);
+      document.removeEventListener('keydown', esc);
+    };
+  }, [open]);
+
+  const go = (fn) => () => { setOpen(false); fn(); };
+  const mark = String(user?.username || '?').trim().slice(0, 1).toUpperCase();
+
+  return (
+    <div className={styles.acct} ref={box}>
+      <button
+        type="button"
+        className={`${styles.acctBtn} ${open ? styles.acctOn : ''}`}
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`${user?.username || 'Your account'}, ${role}. Account menu`}
+      >
+        {mark}
+      </button>
+      {open ? (
+        <div className={styles.acctMenu} role="menu">
+          <div className={styles.acctWho}>
+            <b>{user?.username || 'You'}</b>
+            <em>{role}</em>
+          </div>
+          <button type="button" className={styles.acctItem} role="menuitem" onClick={go(onSettings)}>
+            <Icon name="settings" className={styles.acctIcon} />Settings
+          </button>
+          {isOwner ? (
+            <button type="button" className={styles.acctItem} role="menuitem" onClick={go(onConsole)}>
+              <Icon name="space_dashboard" className={styles.acctIcon} />Console
+            </button>
+          ) : null}
+          <button type="button" className={styles.acctItem} role="menuitem" onClick={go(onApp)}>
+            <Icon name="rack" className={styles.acctIcon} />App
+          </button>
+          <button type="button" className={`${styles.acctItem} ${styles.acctOut}`} role="menuitem" onClick={go(onSignOut)}>
+            <Icon name="logout" className={styles.acctIcon} />Sign out
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function usePaged(items, per) {
   const [page, setPage] = useState(0);
   const all = items || [];
@@ -735,15 +778,31 @@ function SecTitle({ icon, children }) {
   );
 }
 
+/* The newest two, and a way to the rest.
+ *
+ * This section printed every scan the console had fetched, which on a busy
+ * organisation was the longest thing on the page and the least acted on. Two
+ * is enough to say what has been happening; the whole history is a page of
+ * its own and "See all" goes there (the owner, 23 September 2026). */
+const RECENT_SHOWN = 2;
+
 function RecentScans({ scans, showOrg = false }) {
   const navigate = useNavigate();
   if (!scans || scans.length === 0) return null;
   const open = (rackId) => navigate(`/results/${rackId}`);
+  const shown = scans.slice(0, RECENT_SHOWN);
   return (
     <section className={styles.block}>
-      <div className={styles.sectionHead}><SecTitle icon="history">Recent scans</SecTitle></div>
+      <div className={styles.sectionHead}>
+        <SecTitle icon="history">Recent scans</SecTitle>
+        {scans.length > RECENT_SHOWN ? (
+          <button type="button" className={styles.seeAll} onClick={() => navigate('/history')}>
+            See all
+          </button>
+        ) : null}
+      </div>
       <div className={styles.list}>
-        {scans.map((s, i) => (
+        {shown.map((s, i) => (
           <div
             key={s.rack_id + '_' + i}
             className={`${styles.row} ${styles.rowClickable}`}

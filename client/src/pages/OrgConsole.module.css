@@ -59,57 +59,60 @@
   box-shadow: inset 0 0 0 1px rgba(35, 73, 196, .16);
 }
 
-/* ── The console's own controls ──────────────────────────────────────────
-   One row of objects, each a mark and a word: the same white fill, hairline
-   ring and shadow every container on this page is built from, so the header
-   belongs to the page rather than floating above it. */
-.headBtns {
-  display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;
-  padding: 4px; border-radius: 15px;
-  background: rgba(255, 255, 255, .7);
+/* ── The account menu ────────────────────────────────────────────────────
+   A round mark in the corner, and behind it everything this person can do
+   that is not about the organisation in front of them. Four buttons and a
+   role pill used to sit here and compete with the organisation's own name
+   (the owner chose this on 23 September 2026). */
+.acct { position: relative; flex-shrink: 0; }
+.acctBtn {
+  width: 40px; height: 40px; border-radius: 14px; border: 0;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F6F9FC 100%);
+  color: #24408F; font-family: var(--font); font-size: var(--fs-item);
+  font-weight: var(--fw-title); cursor: pointer; -webkit-tap-highlight-color: transparent;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, .9),
-    0 0 0 1px rgba(16, 32, 60, .055),
-    0 10px 20px -16px rgba(16, 32, 60, .7);
+    0 0 0 1px rgba(16, 32, 60, .07),
+    0 10px 20px -14px rgba(16, 32, 60, .75);
+  transition: transform .12s, box-shadow .16s;
 }
-.headBtn {
-  display: inline-flex; align-items: center; gap: 7px;
-  min-height: 34px; padding: 0 12px;
-  border: 0; border-radius: 11px;
-  background: transparent; color: #0B0B0C;
+.acctBtn:hover { transform: translateY(-1px); }
+.acctBtn:active { transform: scale(0.95); }
+.acctBtn:focus-visible { outline: 2px solid #0B0B0C; outline-offset: 3px; }
+.acctOn { box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 0 0 1.5px rgba(35, 73, 196, .45), 0 10px 20px -14px rgba(16,32,60,.75); }
+
+.acctMenu {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 40;
+  min-width: 212px; padding: 6px; border-radius: 16px;
+  background: #ffffff;
+  box-shadow:
+    0 0 0 1px rgba(16, 32, 60, .07),
+    0 18px 44px -18px rgba(16, 32, 60, .45),
+    0 2px 6px rgba(16, 32, 60, .08);
+  animation: acctIn .14s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes acctIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .acctMenu { animation: none; } }
+.acctWho {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 9px 12px 11px; margin-bottom: 4px;
+  border-bottom: 1px solid #F0F1F4;
+}
+.acctWho b { font-size: var(--fs-item); font-weight: var(--fw-title); color: #0B0B0C; }
+.acctWho em { font-style: normal; font-size: var(--fs-sub); color: #6b6b6b; }
+.acctItem {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  min-height: 38px; padding: 0 12px; border: 0; border-radius: 10px;
+  background: transparent; color: #0B0B0C; text-align: left;
   font-family: var(--font); font-size: var(--fs-sub); font-weight: var(--fw-label);
   cursor: pointer; -webkit-tap-highlight-color: transparent;
-  transition: background .16s, transform .12s;
+  transition: background .14s;
 }
-.headBtn:hover { background: #ffffff; box-shadow: 0 1px 2px rgba(16, 32, 60, .12); }
-.headBtn:active { transform: scale(0.97); }
-.headBtn:focus-visible { outline: 2px solid #0B0B0C; outline-offset: 2px; }
-.headIcon { font-size: var(--fs-item); color: #5B5F6B; }
-.headBtn:hover .headIcon { color: #24408F; }
-/* The one control that ends something. */
-.headOut { color: #9D322A; }
-.headOut .headIcon { color: #9D322A; }
-.headOut:hover { background: #FDF2F1; }
-.headOut:hover .headIcon { color: #9D322A; }
-@media (max-width: 560px) {
-  .headBtns { width: 100%; }
-  .headBtn { flex: 1 1 0; justify-content: center; padding: 0 8px; }
-  .headBtn span { display: none; }
-  .headBtn { min-height: 40px; }
-  .headIcon { font-size: var(--fs-section); }
-}
-/* Was a #ececec hairline with #545454 text on white - testers reported
-   secondary controls "too dull and blending into the background", and this is
-   one of them. The border is now dark enough to read as an edge and the label
-   is ink, matching the global .btn-ghost in index.css, which was already fixed
-   for exactly this reason. */
-.ghostBtn {
-  font-size: var(--fs-sub); font-weight: var(--fw-label); padding: 8px 14px;
-  min-height: 34px;
-  border-radius: 999px; border: 1.5px solid rgba(18, 18, 18, 0.38); background: #fff; color: #121212;
-  cursor: pointer; transition: border-color .16s, background-color .16s;
-}
-.ghostBtn:hover { border-color: #121212; background: rgba(18, 18, 18, 0.05); }
+.acctItem:hover { background: #F4F7FB; }
+.acctIcon { font-size: var(--fs-item); color: #5B5F6B; }
+.acctOut { color: #9D322A; margin-top: 4px; border-top: 1px solid #F0F1F4; border-radius: 0 0 10px 10px; }
+.acctOut .acctIcon { color: #9D322A; }
+.acctOut:hover { background: #FDF2F1; }
 
 /* ── Banners ── */
 .banner, .error {
@@ -160,6 +163,16 @@
   cursor: pointer; transition: background .16s, border-color .16s; white-space: nowrap;
 }
 .dangerBtn:hover { background: rgba(220,38,38,0.08); border-color: rgba(220,38,38,0.6); }
+
+/* The way to the whole of a list whose newest few are shown here. */
+.seeAll {
+  margin-left: auto; border: 0; background: transparent;
+  padding: 4px 2px; cursor: pointer;
+  font-family: var(--font); font-size: var(--fs-sub); font-weight: var(--fw-label);
+  color: #24408F; -webkit-tap-highlight-color: transparent;
+}
+.seeAll:hover { text-decoration: underline; }
+.seeAll:focus-visible { outline: 2px solid #0B0B0C; outline-offset: 2px; border-radius: 6px; }
 
 /* ── Empty state ── */
 .empty {
