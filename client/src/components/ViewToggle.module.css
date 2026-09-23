@@ -1,0 +1,43 @@
+/* The view toggle, in the Menu and in the sidebar.
+ *
+ * The same object in both: a sunken track with the view you are in filled in
+ * the app's blue, so it is plain from across the room which app you are
+ * looking at. Lifted out of Home on 23 September 2026. */
+.wrap { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.title {
+  margin: 0;
+  font-family: var(--font);
+  font-size: var(--fs-label); font-weight: var(--fw-title);
+  letter-spacing: var(--ls-caps); text-transform: uppercase;
+  color: #8A8F99;
+}
+.views {
+  display: flex;
+  gap: 3px;
+  padding: 4px;
+  border-radius: 14px;
+  background: rgba(14, 26, 48, .07);
+  box-shadow: inset 0 1px 2px rgba(14, 26, 48, .10);
+}
+.tab {
+  flex: 1 1 0; min-width: 0;
+  border: 0; border-radius: 11px;
+  padding: 8px 12px;
+  background: transparent;
+  color: #4A5160;
+  font-family: var(--font);
+  font-size: var(--fs-label); font-weight: var(--fw-label);
+  letter-spacing: -0.005em;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: background var(--dur-fast, 150ms) var(--ease-out), color .15s;
+}
+.tab:not(.on):hover { color: #0B0B0C; }
+/* The one you are in: filled, and its word stays white on hover. */
+.on {
+  background: linear-gradient(180deg, #3566DF 0%, #2349C4 100%);
+  color: #ffffff;
+  font-weight: var(--fw-title);
+  box-shadow: 0 1px 2px rgba(23, 50, 143, .34);
+}
+.on:hover { color: #ffffff; }
+.tab:focus-visible { outline: 2px solid #2349C4; outline-offset: 2px; }

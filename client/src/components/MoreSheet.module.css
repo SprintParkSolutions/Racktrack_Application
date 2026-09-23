@@ -203,3 +203,7 @@
   .head { padding: 12px 56px 10px 16px; }
   .footRow { padding: 7px 10px; }
 }
+
+/* The view toggle, first in the sheet: which app you are in, before the list
+   of where you can go in it (23 September 2026). */
+.viewToggle { margin: 0 0 16px; }

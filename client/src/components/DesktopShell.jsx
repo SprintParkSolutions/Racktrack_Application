@@ -5,6 +5,7 @@ import styles from './DesktopShell.module.css';
 import ThemeToggle from './ThemeToggle.jsx';
 import { useAuth } from '../AuthContext';
 import { usePrimaryNav, NAV_GROUPS } from '../nav/navLinks.jsx';
+import ViewToggle from './ViewToggle.jsx';
 import ExternalLink from './ExternalLink.jsx';
 import { ShellHeaderContext } from './ShellHeader.jsx';
 
@@ -265,6 +266,11 @@ export default function DesktopShell({ children }) {
             Report, Topology, Drift, Switches, Profile and Sign out were all
             below the fold with nothing to say so. */}
         <div className={styles.navScroll}>
+        {/* Which app this person is in. On Home until 23 September 2026, when
+            the owner moved it to where the rest of the app's own controls
+            are - here, and in the phone's Menu. */}
+        <ViewToggle className={styles.viewToggle} />
+
         {NAV_GROUPS.filter((g) => g.key !== 'account').map((g) => {
           const items = links.filter((l) => l.group === g.key);
           if (!items.length) return null;

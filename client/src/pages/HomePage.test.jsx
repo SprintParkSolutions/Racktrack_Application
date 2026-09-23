@@ -382,7 +382,11 @@ describe('<HomePage> by role', () => {
      the server has not answered. */
   test('the banner is the role, in words', () => {
     expect(bannerFor({ role: 'admin', triage: 2, racks: 4 }).title).toBe('2 checks have nobody');
-    expect(bannerFor({ role: 'admin', triage: 0, racks: 4 }).title).toBe('Your estate is covered');
+    expect(bannerFor({ role: 'admin', triage: 0, racks: 4 }).title).toBe('Nothing is waiting on you');
+    // And before anybody has photographed anything, it does not claim a state
+    // it cannot know (the owner, 23 September 2026).
+    expect(bannerFor({ role: 'admin', triage: 0, racks: 0 }).title)
+      .toBe('Nothing has been photographed yet');
     // And no button anywhere in it that opens a console.
     expect(bannerFor({ role: 'spoc', waiting: 1, racks: 4 }).title).toBe('A check is waiting for you');
     expect(bannerFor({ role: 'tech', racks: 4 }).title).toBe('Ready to scan a rack');
@@ -423,20 +427,22 @@ describe('<HomePage> by role', () => {
 
   /* The toggle: an admin holds two ways of working and may shift between
      them; an employee holds one and is offered nothing. */
-  test('an admin can shift to the employee view, and then the camera is theirs', async () => {
+  test('an admin in the employee view gets the camera, and Home never draws the toggle', async () => {
     answers.current['/api/approvals/me'] = { ok: true, can: { admin: true } };
+    // The toggle itself lives in the Menu and the sidebar now
+    // (components/ViewToggle.jsx), so Home is asked only to obey it.
+    localStorage.setItem('rt.view:9', 'employee');   // the account this test signs in as
     mount();
-    await waitFor(() => expect(screen.getByRole('tab', { name: 'Admin' })).toBeTruthy());
-    expect(screen.getByRole('tab', { name: 'Admin' }).getAttribute('aria-selected')).toBe('true');
-    fireEvent.click(screen.getByRole('tab', { name: 'Employee' }));
     await waitFor(() => expect(screen.getByRole('button', { name: /Scan a rack/ })).toBeTruthy());
     // And with it the employee's own ways on, the scan history among them.
     expect(screen.getByRole('button', { name: /Scan history/ })).toBeTruthy();
     // The line under the name says which view they are in, beside the Site.
     expect(screen.getByText('Employee · DC-007 Bengaluru')).toBeTruthy();
+    expect(screen.queryByRole('tab', { name: 'Admin' })).toBeNull();
+    expect(screen.queryByRole('tab', { name: 'Employee' })).toBeNull();
   });
 
-  test('a technician is offered no toggle: there is nothing to shift to', async () => {
+  test('a technician is offered no toggle anywhere: there is nothing to shift to', async () => {
     mount();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Your racks' })).toBeTruthy());
     expect(screen.queryByRole('tab', { name: 'Employee' })).toBeNull();

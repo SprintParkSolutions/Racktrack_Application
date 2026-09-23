@@ -192,13 +192,17 @@
   line-height: 1.25; letter-spacing: -.02em; color: #0B0B0C;
   text-wrap: balance;
 }
-/* What it is about, in one strip. */
+/* What it is about, in one strip.
+ *
+ * Laid out with wrapping flex rather than an auto-fit grid: a grid gives every
+ * row the same number of columns, so four facts on a phone left the fourth
+ * alone beside two empty cells (the owner, 23 September 2026). Wrapped, the
+ * last row's cells grow to fill the width, so there is never a hole. */
 .facts {
-  margin: 0; display: grid; gap: 1px;
-  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  margin: 0; display: flex; flex-wrap: wrap; gap: 1px;
   background: #E9ECF1; border: 1px solid #E9ECF1; border-radius: 12px; overflow: hidden;
 }
-.facts > div { background: #ffffff; padding: 9px 12px; min-width: 0; }
+.facts > div { flex: 1 1 128px; background: #ffffff; padding: 9px 12px; min-width: 0; }
 .facts dt {
   font-family: var(--font); font-size: var(--fs-label); font-weight: var(--fw-title);
   letter-spacing: var(--ls-caps); text-transform: uppercase; color: #8A8F99;

@@ -371,13 +371,30 @@ export function bannerFor({ role, racks = 0, waiting = 0, triage = 0,
     };
   }
   if (role === 'admin') {
+    /* "Your estate is covered" was a claim about their estate that this screen
+       cannot make - it knows what is waiting on an admin, not whether a
+       cabinet matches its record - and it ended by telling somebody who never
+       photographs a rack to photograph a rack (the owner, 23 September 2026).
+       So it says the one thing that is true and worth knowing: whether
+       anything needs them. */
+    if (triage > 0) {
+      return {
+        title: triage === 1 ? 'One check has nobody' : `${triage} checks have nobody`,
+        words: 'A check whose Site names no single point of contact waits for an admin to choose one.',
+        steps: [],
+      };
+    }
+    if (racks === 0 && !loading) {
+      return {
+        title: 'Nothing has been photographed yet',
+        words: 'When somebody photographs a rack at one of your sites, the check goes to that '
+          + "site's contact and appears here.",
+        steps: [],
+      };
+    }
     return {
-      title: triage > 0
-        ? (triage === 1 ? 'One check has nobody' : `${triage} checks have nobody`)
-        : 'Your estate is covered',
-      words: triage > 0
-        ? 'A check whose Site names no single point of contact waits for an admin to choose one.'
-        : 'Every check has somebody. Scan a rack and RackTrack reads it against your records.',
+      title: 'Nothing is waiting on you',
+      words: 'Every check has gone to the contact for its site. What they decide is in RackTrack Control.',
       steps: [],
     };
   }
@@ -622,25 +639,10 @@ export default function HomePage() {
         {/* ── The line: the hour, who you are, and what you are here ── */}
         <header className={styles.line}>
           <div className={styles.lineText}>
-            {/* Which pair of eyes the app is in. Only drawn when there is
-               something to shift to: an employee holds one job and a row of
-               one is a label pretending to be a choice. */}
-            {views.length > 1 && (
-              <div className={styles.views} role="tablist" aria-label="How you are working today">
-                {views.map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    role="tab"
-                    aria-selected={view === v}
-                    className={`${styles.viewTab} ${view === v ? styles.viewOn : ''}`}
-                    onClick={() => shift(v)}
-                  >
-                    {VIEW_LABEL[v]}
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* The toggle that shifts between Admin, SPOC and Employee is in
+                the Menu and in the sidebar now, not here: it is a thing about
+                the whole app, and it belongs where the rest of the app is
+                (the owner, 23 September 2026). components/ViewToggle.jsx. */}
             <p className={styles.hour}>{greeting}</p>
             <h1 className={styles.who}>{user?.username || 'there'}</h1>
             <p className={styles.place}>{placeLine(role, org, where)}</p>

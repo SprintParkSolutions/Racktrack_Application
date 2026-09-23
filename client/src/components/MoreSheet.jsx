@@ -5,6 +5,7 @@ import styles from './MoreSheet.module.css';
 import useModalA11y from '../hooks/useModalA11y.js';
 import { useAuth } from '../AuthContext.jsx';
 import ExternalLink from './ExternalLink.jsx';
+import ViewToggle from './ViewToggle.jsx';
 
 /**
  * The navigation drawer.
@@ -83,6 +84,10 @@ export default function MoreSheet({ links, onClose }) {
         </header>
 
         <div className={styles.scroll}>
+          {/* Which app you are in, before the list of where you can go in it.
+              It was at the top of Home until 23 September 2026. */}
+          <ViewToggle className={styles.viewToggle} onShift={onClose} />
+
           {grouped.map((section) => (
             <nav key={section.key} className={styles.group} aria-label={section.title}>
               {section.title && <p className={styles.groupTitle}>{section.title}</p>}

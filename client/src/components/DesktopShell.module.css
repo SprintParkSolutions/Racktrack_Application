@@ -351,3 +351,6 @@
 .navLinkFoot { width: auto; flex: 1; margin-bottom: 0; min-width: 0; }
 .signOut { padding: 8px; border-radius: 9px; }
 .signOut svg { width: 18px; height: 18px; }
+
+/* The view toggle at the top of the rail: which app this person is in. */
+.viewToggle { margin: 0 12px 14px; }
