@@ -794,6 +794,25 @@
   display: flex; align-items: stretch;
   gap: var(--ctl-gap, 6px);
 }
+/* Which kind of port, in the line with the number rather than on a row of
+   its own above it (the owner, 23 September 2026). Narrow on purpose: the
+   number is the question, this only says which set of sockets it counts in. */
+.portTypeSel {
+  flex: 0 0 auto; width: auto; max-width: 42%;
+  min-height: var(--field-h, 36px);
+  padding: 0 26px 0 10px;
+  border: 1px solid var(--md-outline-variant, rgba(0,0,0,0.14));
+  border-radius: var(--ctl-radius, 8px);
+  background-color: #ffffff;
+  color: #121212;
+  font-family: var(--font); font-size: var(--fs-sub); font-weight: var(--fw-label);
+  -webkit-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' stroke='%23757575' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 9px center;
+  cursor: pointer;
+}
+.portTypeSel:hover { border-color: rgba(0, 0, 0, .4); }
+.portTypeSel:focus-visible { outline: 2px solid #2349C4; outline-offset: 1px; }
 /* Written three times over - here, and twice more under [data-theme='light'],
    both !important, both restating a 10px/14px padding and a 10px radius. The
    later two quietly undid every size set here. One rule. */
@@ -2381,12 +2400,26 @@
    otherwise is what clipped the label. So they break where the meaning breaks:
    what to do with this port's report, then how to leave it. The second pair is
    quieter, because going somewhere else is not what this screen is for. */
+/* One row, four controls. It wrapped, and the two that leave the port were
+   drawn as ghosts on a second line - four things doing one job, in two
+   shapes, on two lines. Now: one line, one shape, and on a narrow phone the
+   row scrolls sideways rather than breaking apart. */
 .reportRow {
-  display: flex; flex-wrap: wrap; align-items: center;
+  display: flex; flex-wrap: nowrap; align-items: center;
   gap: var(--ctl-gap, 6px);
   margin: 2px 0 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
-.reportRowSplit { flex: 0 0 100%; height: 0; }
+.reportRow::-webkit-scrollbar { display: none; }
+/* The two that leave this port: the same object as the two that act on it,
+   one step quieter in its ink. */
+.reportChipPlain {
+  color: #3A4048;
+  border-color: #E6E8EC;
+}
+.reportChipPlain:hover { color: #000000; border-color: #000000; }
 /* Unified action pill - white-focused, black accent */
 .reportChip {
   display: inline-flex; align-items: center; justify-content: center; gap: 5px;
@@ -3752,9 +3785,18 @@
    carries the gutter, so indenting it again put its contents on a fourth
    left edge - "Find the other end" started 16px in from the question below
    it and 14px in from the chips below that. */
+/* What was found, as one object rather than a run of labels under a rule:
+   white, a hairline round it, and the cells divided from one another (the
+   owner, 23 September 2026 - "keep a container and make it visually
+   appealing"). */
 .pBlock {
-  padding: 8px 0 0;
-  border-top: 1px solid #EFEFEF;
+  margin: 8px 0 0;
+  padding: 0;
+  border: 1px solid #E6E8EC;
+  border-radius: 14px;
+  background: #ffffff;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(16, 32, 60, .04);
 }
 .pBlockHead {
   margin: 0 0 2px;
@@ -3769,18 +3811,29 @@
 
 /* Two rows of four: a small grey label over its value. Seven short answers do
    not need seven full-width lines. */
+/* As many columns as fit, each cell divided by a hairline: the gap IS the
+   line, drawn by the grid's own background. Only the cells that have an
+   answer are rendered, so the shape follows what the photograph read. */
 .pGrid {
-  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px 10px; padding: 2px 0 8px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 1px; padding: 0;
+  background: #EEF0F3;
 }
 .pCellWide { grid-column: span 2; }
-.pCell { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.pCell {
+  display: flex; flex-direction: column; gap: 2px; min-width: 0;
+  padding: 9px 11px; background: #ffffff;
+}
 .pCellKey { font-size: var(--fs-label); color: #757575; white-space: nowrap; }
 .pCellVal {
   display: flex; align-items: center; gap: 5px; min-width: 0;
   font-size: var(--fs-item); font-weight: var(--fw-label); color: #121212; overflow-wrap: anywhere; }
 .pCellSwatch { flex: none; width: 10px; height: 10px; border-radius: 3px; border: 1px solid rgba(0,0,0,.15); }
-.pCellNote { margin: 0 0 8px; font-size: var(--fs-sub); color: #757575; }
+.pCellNote {
+  margin: 0; padding: 9px 11px;
+  border-top: 1px solid #EEF0F3; background: #ffffff;
+  font-size: var(--fs-sub); color: #757575;
+}
 .pRow {
   display: flex; align-items: baseline; gap: 14px;
   padding: 6px 0;

@@ -4077,25 +4077,32 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                 <span className={styles.pCellKey}>{label}</span>
                 <span className={`${styles.pCellVal} ${opts.mono ? styles.mono : ''}`}>
                   {opts.swatch && <span className={styles.pCellSwatch} style={{ background: opts.swatch }} />}
-                  {value || '-'}
+                  {value}
                   {opts.extra}
                 </span>
               </div>
             );
+            /* Only what was actually found. A cell with a dash in it is a
+               label taking up a quarter of the row to say nothing (the owner,
+               23 September 2026): a photograph that could not read the cable
+               colour simply has no Colour on this card. */
+            const facts = [
+              ['Device', selectedLabel, { mono: true, wide: true }],
+              ['Port', portNum, { mono: true, extra: portInfo?._port_shift ? <UserTag label="Renumbered" /> : null }],
+              ['Unit', shelf, { mono: true }],
+              ['Status', stateText],
+              ['Port type', portInfo?.port_type ? prettyPortType(portInfo.port_type) : null,
+                { extra: portInfo?._port_type_user ? <UserTag /> : null }],
+              ['Cable', connectorVal],
+              ['Colour', colorVal, {
+                swatch: colorVal ? cableColorCSS(colorVal) : null,
+                extra: portInfo?._cable_color_model ? <UserTag /> : null,
+              }],
+            ].filter(([, value]) => value !== null && value !== undefined && value !== '');
             return (
               <div className={styles.pBlock}>
                 <div className={styles.pGrid}>
-                  {cell('Device', selectedLabel, { mono: true, wide: true })}
-                  {cell('Port', portNum, { mono: true, extra: portInfo?._port_shift ? <UserTag label="Renumbered" /> : null })}
-                  {cell('Unit', shelf, { mono: true })}
-                  {cell('Status', stateText)}
-                  {cell('Port type', portInfo?.port_type ? prettyPortType(portInfo.port_type) : null,
-                    { extra: portInfo?._port_type_user ? <UserTag /> : null })}
-                  {cell('Cable', connectorVal)}
-                  {cell('Colour', colorVal, {
-                    swatch: colorVal ? cableColorCSS(colorVal) : null,
-                    extra: portInfo?._cable_color_model ? <UserTag /> : null,
-                  })}
+                  {facts.map(([label, value, opts]) => cell(label, value, opts || {}))}
                 </div>
                 {neighborStatus === 'ok' && neighbor?.found && (
                   <p className={styles.pCellNote}>A device is answering on this port.</p>
@@ -4217,26 +4224,26 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
               The type switch, then the number. Switching type re-points the
               input at that set of ports, so another kind of port can be found
               without going back to the rack. */}
-          {!ticketMode && selectedDevice && portCatsToShow.length > 1 && (
-            <div className={styles.prTypeSwitch}>
-              {portCatsToShow.map(opt => {
-                const on = portCategory === opt.k;
-                const count = portCatCount(selectedDevice, opt.k);
-                return (
-                  <button
-                    key={opt.k}
-                    type="button"
-                    className={`${styles.portTypeBtn} ${on ? styles.portTypeBtnOn : ''}`}
-                    onClick={() => { if (!on) { setPortCategory(opt.k); setNextPort(''); setError(null); } }}
-                  >
-                    {opt.label}{count > 0 ? ` · ${count}` : ''}
-                  </button>
-                );
-              })}
-            </div>
-          )}
           {!ticketMode && selectedDevice && (
             <div className={styles.prAnother} style={{ '--ac': rc }}>
+              {/* The kind of port sits in the line with the number here too. */}
+              {portCatsToShow.length > 1 && (
+                <select
+                  className={styles.portTypeSel}
+                  value={portCategory}
+                  aria-label="Which kind of port"
+                  onChange={(e) => { setPortCategory(e.target.value); setNextPort(''); setError(null); }}
+                >
+                  {portCatsToShow.map(opt => {
+                    const count = portCatCount(selectedDevice, opt.k);
+                    return (
+                      <option key={opt.k} value={opt.k}>
+                        {opt.label}{count > 0 ? ` · ${count}` : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+              )}
               <input
                 className={`input ${styles.portInput}`}
                 type="text" inputMode="numeric" pattern="[0-9]*"
@@ -4367,10 +4374,11 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
                 </>
               )}
             </div>
-            {/* View and Share act on the port that is on screen; the two after
-                this leave it. They go on their own line, quieter. */}
-            <span className={styles.reportRowSplit} aria-hidden="true" />
-            <button className={`${styles.reportChip} ${styles.reportChipQuiet}`} onClick={() => {
+            {/* One row, four controls, all drawn the same: View and Share act on
+                the port on screen, Another device and New scan leave it. They
+                used to be split across two lines with the last two greyed out,
+                which read as a broken row (the owner, 23 September 2026). */}
+            <button className={`${styles.reportChip} ${styles.reportChipPlain}`} onClick={() => {
               setPhase('detect');
               setTab('overview');
               setSelectedIdx(null);
@@ -4388,7 +4396,7 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="4" rx="1"/><rect x="2" y="10" width="20" height="4" rx="1"/><rect x="2" y="17" width="20" height="4" rx="1"/></svg>
               Another device
             </button>
-            <button className={`${styles.reportChip} ${styles.reportChipQuiet}`} onClick={() => navigate('/scan')}>
+            <button className={`${styles.reportChip} ${styles.reportChipPlain}`} onClick={() => navigate('/scan')}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
               New scan
             </button>
@@ -5316,26 +5324,30 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             </div>
             {/* Port type - RJ45 / SFP / Console / USB - only when there is a
                 choice to make. Sent as port_category so the pipeline
-                highlights the right port set. */}
-            {portCatsToShow.length > 1 && (
-            <div className={styles.portTypeRow}>
-              {portCatsToShow.map(opt => {
-                const on = portCategory === opt.k;
-                const count = portCatCount(selectedDevice, opt.k);
-                return (
-                  <button
-                    key={opt.k}
-                    type="button"
-                    onClick={() => setPortCategory(opt.k)}
-                    className={`${styles.portTypeBtn} ${on ? styles.portTypeBtnOn : ''}`}
-                  >
-                    {opt.label}{count > 0 ? ` · ${count}` : ''}
-                  </button>
-                );
-              })}
-            </div>
-            )}
+                highlights the right port set.
+
+                It stands in the line with the number, not on a row of its own:
+                a row of type buttons above the field, at both levels of the
+                lookup, was two lines of chrome in front of one question (the
+                owner, 23 September 2026). */}
             <div className={styles.portInputRow} data-tour="port-input-row">
+              {portCatsToShow.length > 1 && (
+                <select
+                  className={styles.portTypeSel}
+                  value={portCategory}
+                  aria-label="Which kind of port"
+                  onChange={(e) => setPortCategory(e.target.value)}
+                >
+                  {portCatsToShow.map(opt => {
+                    const count = portCatCount(selectedDevice, opt.k);
+                    return (
+                      <option key={opt.k} value={opt.k}>
+                        {opt.label}{count > 0 ? ` · ${count}` : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+              )}
               <input
                 className={`input ${styles.portInput}`}
                 type="text" inputMode="numeric" pattern="[0-9]*"
