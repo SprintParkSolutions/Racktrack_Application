@@ -599,6 +599,56 @@ async function raiseTask(cfg, ctx, fetchImpl = req) {
   }
 }
 
+/**
+ * The open incidents assigned to one person.
+ *
+ * The other half of the ticket workflow (the owner, 23 September 2026): a
+ * ticket raised in ServiceNow itself, by whoever raises tickets there, and
+ * given to one of our technicians. RackTrack has to find it to be able to
+ * send that person to the rack.
+ *
+ * Only the open ones, newest first, and only the fields a decision is made
+ * from - the words of it above all, because the rack is named in them.
+ */
+async function assignedTo(cfg, who, fetchImpl = req) {
+  const sysId = norm(who && who.sysId);
+  const email = norm(who && who.email);
+  try {
+    let id = sysId;
+    if (!id && email) {
+      const found = await findUsers(cfg, [email], fetchImpl);
+      const rows = (found && found[email.toLowerCase()]) || [];
+      id = rows.length === 1 ? rows[0].sysId : null;
+    }
+    if (!id) return { ok: true, incidents: [], why: 'nobody on the instance matches that address' };
+
+    // Open, in ServiceNow's own terms: anything before Resolved.
+    const query = `assigned_to=${id}^state<6^ORDERBYDESCopened_at`;
+    const url = `${base(cfg, cfg.incidentTable)}`
+      + `?sysparm_query=${encodeURIComponent(query)}`
+      + '&sysparm_fields=sys_id,number,state,short_description,description,opened_at,correlation_id'
+      + '&sysparm_limit=25&sysparm_display_value=false';
+    const r = await fetchImpl(url, 'GET', null, undefined, 15000, cfg);
+    if (!r.ok) return { ok: false, status: r.status, error: refusal(r), incidents: [] };
+    const rows = (r.body && r.body.result) || [];
+    return {
+      ok: true,
+      incidents: rows.map((row) => ({
+        sysId: row.sys_id,
+        number: row.number,
+        state: STATE[Number(row.state)] || 'unknown',
+        summary: norm(row.short_description),
+        description: norm(row.description),
+        openedAt: norm(row.opened_at) || null,
+        correlationId: norm(row.correlation_id) || null,
+        url: urlOf(cfg, row.sys_id),
+      })),
+    };
+  } catch (err) {
+    return { ...unreachable(err), incidents: [] };
+  }
+}
+
 /** What ServiceNow said, as one line a person can be shown. */
 function refusal(r) {
   const said = r && r.body && r.body.error && (r.body.error.message || r.body.error.detail);
@@ -1023,7 +1073,7 @@ module.exports = {
   raise, statusOf, findExisting, login,
   STATE, CLOSED_STATES,
   correlationForCheck, toCheckIncident, appUrlFor, findUsers, makeUser, resolveUser, raiseCheck,
-  toTaskIncident, raiseTask,
+  toTaskIncident, raiseTask, assignedTo,
   update, setState, workNote, reassign,
   choices, pickCloseCode, pickHoldReason, attach,
   STATE_CODE,

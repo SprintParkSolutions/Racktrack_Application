@@ -67,7 +67,7 @@ router.get('/dashboard', gates.readers, (req, res) => res.json({
  * Only the tickets an admin raised by hand (uid `task:`) and only the open
  * ones: the per-item tickets of a drift check are worked in the check itself.
  */
-router.get('/my-tasks', (req, res) => {
+router.get('/my-tasks', wrap(async (req, res) => {
   const who = service.actorOf(req.user);
   if (who.id == null) return res.json({ ok: true, tasks: [] });
   const rows = store.listTickets({
@@ -95,10 +95,26 @@ router.get('/my-tasks', (req, res) => {
       siteName: (site && site.name) || null,
       tenantId: plan.tenantId ?? null,
     };
-  }).sort((a, b) => String(b.raisedAt || '').localeCompare(String(a.raisedAt || '')));
+  });
 
-  return res.json({ ok: true, tasks });
-});
+  /* And the ones raised in ServiceNow itself and given to this person. Those
+     are read from the instance, not from our own tables (lib/approvals/
+     intake.js), because that is where they live and where they are worked.
+     A ticket that names no rack we know is left out: it is still their
+     ticket, and ServiceNow is still where they work it. */
+  let fromTool = [];
+  try {
+    fromTool = await require('../../lib/approvals/intake').fromServiceNow(req.user);
+  } catch { fromTool = []; }
+  // A ticket RackTrack raised is already in the list above under its own
+  // number; the instance's copy of it must not appear twice.
+  const seen = new Set(tasks.map((t) => String(t.number || '')).filter(Boolean));
+
+  const all = [...tasks, ...fromTool.filter((t) => !seen.has(String(t.number || '')))]
+    .sort((a, b) => String(b.raisedAt || '').localeCompare(String(a.raisedAt || '')));
+
+  return res.json({ ok: true, tasks: all });
+}));
 
 /** Every drift ticket the caller may see, across plans, with its plan and clocks. */
 router.get('/tickets', gates.readers, (req, res) => answer(res,

@@ -113,3 +113,11 @@
 }
 .go:active { transform: scale(0.985); }
 .goIcon { font-size: var(--fs-item); }
+
+/* Where a ticket came from, when it did not come from RackTrack. */
+.where2 {
+  font-family: var(--font); font-size: var(--fs-label); font-weight: var(--fw-label);
+  padding: 4px 9px; border-radius: 8px;
+  background: #F2F4F7; color: #4A5160;
+  box-shadow: inset 0 0 0 1px rgba(16, 32, 60, .08);
+}

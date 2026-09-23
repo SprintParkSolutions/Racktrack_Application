@@ -7497,7 +7497,28 @@ app.get('/api/scan/:rackId/ticket-answer', auth.requireAuth, async (req, res) =>
   const [planIdRaw, ...rest] = raw.split(':');
   const planId = Number(planIdRaw);
   const uid = rest.join(':');
-  if (!planId || !uid) return res.status(400).json({ error: 'Name the ticket as planId:uid.' });
+  if (!uid) return res.status(400).json({ error: 'Name the ticket as planId:uid.' });
+
+  /* A ticket raised in ServiceNow has no check of ours behind it: it arrives
+     as `0:sn:<number>`, and its words are read back from the instance through
+     the same intake that listed it (23 September 2026). */
+  if (!planId && uid.startsWith('sn:')) {
+    const { decode: readClaim, answer: answerClaim } = require('./lib/approvals/claim');
+    let mineNow = [];
+    try { mineNow = await require('./lib/approvals/intake').fromServiceNow(req.user); } catch { mineNow = []; }
+    const found = mineNow.find((t) => String(t.uid) === uid);
+    if (!found) return res.status(404).json({ error: 'That ticket is not open against you.' });
+    const read = found.claim || readClaim([found.summary, found.note].filter(Boolean).join(' '));
+    let shot = null;
+    try {
+      if (fs.existsSync(path.join(outputsDir, rackId, 'device_unit_map.json'))) {
+        await healPortDataIfMissing(rackId);
+        shot = buildResponse(rackId, true);
+      }
+    } catch { shot = null; }
+    return res.json({ ok: true, claim: read, ...answerClaim(read, shot || { devices: [] }) });
+  }
+  if (!planId) return res.status(400).json({ error: 'Name the ticket as planId:uid.' });
 
   let ticket = null;
   try {

@@ -70,7 +70,12 @@ export default function TasksPage() {
      ticket goes with it so what comes back can be read against what was
      asked. */
   const photograph = (t) => {
-    const q = new URLSearchParams({ rack: t.rackId || '', task: `${t.planId}:${t.uid}` });
+    const q = new URLSearchParams({
+      rack: t.rackId || '',
+      // A ticket raised in ServiceNow has no check of ours behind it yet, so
+      // it travels as 0:sn:<number> (23 September 2026).
+      task: `${t.planId || 0}:${t.uid}`,
+    });
     navigate(`/scan?${q.toString()}`);
   };
 
@@ -102,13 +107,17 @@ export default function TasksPage() {
             <li key={`${t.planId}:${t.uid}`} className={styles.card}>
               <div className={styles.cardTop}>
                 <span className={styles.tag}>{t.status === 'open' ? 'New' : 'In hand'}</span>
+                {/* Where it came from, when it did not come from RackTrack. */}
+                {t.from === 'servicenow' ? <span className={styles.where2}>ServiceNow</span> : null}
                 <span className={styles.when}>{since(t.raisedAt)}</span>
               </div>
               <h2 className={styles.asked}>{l.asked}</h2>
               <p className={styles.where}><Icon name="rack" className={styles.whereIcon} />{l.where}</p>
               {t.note ? <p className={styles.note}>{t.note}</p> : null}
               <p className={styles.from}>
-                {l.from}{l.number ? ` · ${l.number}` : ''}
+                {t.from === 'servicenow'
+                  ? `Raised in ServiceNow${l.number ? ` · ${l.number}` : ''}`
+                  : `${l.from}${l.number ? ` · ${l.number}` : ''}`}
               </p>
               <button type="button" className={styles.go} onClick={() => photograph(t)}>
                 Photograph this rack
