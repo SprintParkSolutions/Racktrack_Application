@@ -360,7 +360,7 @@ export function RackArt({ className = '' }) {
  * number this page used to print there is said where it can be acted on.
  */
 export function bannerFor({ role, racks = 0, waiting = 0, triage = 0,
-  loading = false, failed = false }) {
+  loading = false, failed = false, org = null, sites = 0, open = 0 }) {
   // The racks could not be read. Say that, rather than "scan your first rack"
   // at somebody who has a hundred.
   if (failed) {
@@ -392,9 +392,25 @@ export function bannerFor({ role, racks = 0, waiting = 0, triage = 0,
         steps: [],
       };
     }
+    /* The estate itself, not a verdict on it. "Nothing is waiting on you" put
+       an empty state on the biggest card in the app for the person who opens
+       RackTrack to see their organisation (the owner, 23 September 2026). So
+       it is named, counted, and says where the work is. */
+    const count = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+    const held = [
+      sites > 0 ? count(sites, 'site', 'sites') : null,
+      racks > 0 ? count(racks, 'rack read', 'racks read') : null,
+    ].filter(Boolean).join(', ');
+    const where = open > 0
+      ? (open === 1
+        ? 'One check is with the contact for its site, and what they decide is in RackTrack Control.'
+        : `${open} checks are with the contacts for their sites, `
+          + 'and what they decide is in RackTrack Control.')
+      : 'Every check has gone to the contact for its site, and what they decide is in '
+        + 'RackTrack Control.';
     return {
-      title: 'Nothing is waiting on you',
-      words: 'Every check has gone to the contact for its site. What they decide is in RackTrack Control.',
+      title: org || 'Your organization',
+      words: held ? `${held}. ${where}` : where,
       steps: [],
     };
   }
@@ -617,6 +633,10 @@ export default function HomePage() {
     triage,
     loading,
     failed: scansFailed,
+    // An admin's own card names their estate, so it needs to know it.
+    org,
+    sites: (sites || []).length,
+    open: (plans || []).filter((p) => p && OPEN_STATUS.has(p.status)).length,
   });
 
   const { lead, alt } = actionsFor({ role: role.key, waiting: needs.length });

@@ -382,7 +382,15 @@ describe('<HomePage> by role', () => {
      the server has not answered. */
   test('the banner is the role, in words', () => {
     expect(bannerFor({ role: 'admin', triage: 2, racks: 4 }).title).toBe('2 checks have nobody');
-    expect(bannerFor({ role: 'admin', triage: 0, racks: 4 }).title).toBe('Nothing is waiting on you');
+    /* An admin's card names their estate rather than passing a verdict on it
+       (the owner, 23 September 2026). */
+    const calm = bannerFor({ role: 'admin', triage: 0, racks: 4, org: 'DC-007', sites: 2, open: 9 });
+    expect(calm.title).toBe('DC-007');
+    expect(calm.words).toMatch(/2 sites/);
+    expect(calm.words).toMatch(/4 racks read/);
+    expect(calm.words).toMatch(/9 checks are with the contacts/);
+    // Without an organisation name it still never reads as an empty state.
+    expect(bannerFor({ role: 'admin', triage: 0, racks: 4 }).title).toBe('Your organization');
     // And before anybody has photographed anything, it does not claim a state
     // it cannot know (the owner, 23 September 2026).
     expect(bannerFor({ role: 'admin', triage: 0, racks: 0 }).title)
