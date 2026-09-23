@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import styles from './EstateMap.module.css';
 
 /**
@@ -32,8 +32,8 @@ const TW = 30;
 const TH = 15;
 const ROW = 1.55;
 const AISLE = 0.9;      // the gap between one room's rows and the next
-const HEIGHT = 34;            // how tall a cabinet stands
-const FOOT_X = 0.40;          // half its footprint, across
+const HEIGHT = 44;            // how tall a cabinet stands
+const FOOT_X = 0.38;          // half its footprint, across
 const FOOT_Y = 0.30;          // and back
 
 /* The floor is drawn into a picture of this shape whatever it holds, so a
@@ -143,85 +143,107 @@ export function floorOf(racks) {
   return { placed, plate, blocks, cols, view: { x: x0, y: y0, w, h }, cut: racks.length - drawn.length };
 }
 
+/* At most this many labels float over one floor. On the demo estate every
+   room wanted one and they wrote over each other; the biggest rooms are the
+   ones worth naming, and the rest are read by their colour. */
+export const LABELS_MAX = 3;
+/* And no two labels may sit closer than this share of the picture's height,
+   or the one under is unreadable. */
+export const LABEL_GAP = 0.15;
+
 /**
  * One room's label: its name, and the share of its checked racks that match
  * the records. A room nothing has been checked in says so rather than
  * printing a nought per cent at somebody.
  *
- * The label stands over the first row of the room's own cabinets, and every
- * other one is shifted along the row, so two rooms one aisle apart never
- * write over each other.
+ * Two blocks that read the same name are one label, not two: a Site whose
+ * racks are partly in a named room and partly in none gave the same name
+ * twice, one on top of the other. The biggest rooms keep their labels and
+ * the rest are read by the colour of their cabinets.
  */
-export function roomsOf(placed, blocks) {
+export function roomsOf(placed, blocks, where = null) {
   const by = new Map();
   for (const r of placed) {
     const key = r.room || '';
     if (!by.has(key)) by.set(key, []);
     by.get(key).push(r);
   }
-  return blocks.map((b, i) => {
+  const marks = [];
+  const seen = new Map();
+  blocks.forEach((b, i) => {
     const list = by.get(b.room || '') || [];
-    const checked = list.filter((r) => r.state !== 'unchecked');
-    const good = checked.filter((r) => r.state === 'matched' || r.state === 'written');
+    /* The name the label will actually carry. Racks in no room at all take
+       the Site's own name, which is what the label used to print - so the
+       merge has to happen on that name and not on the room, or a Site with
+       some racks in a room and some in none writes its own name twice, one
+       label under the other. */
+    const name = b.room || where || null;
+    const already = seen.get(name || '');
+    if (already) { already.count += list.length; already.racks.push(...list); return; }
     // Over the room's own first row, and alternately along it.
     const x = (b.wide - 1) * (i % 2 === 0 ? 0.32 : 0.68);
-    const at = iso(x, b.row * ROW, HEIGHT + 16);
-    return {
-      key: b.room || `floor${i}`,
-      name: b.room || null,
+    const mark = {
+      key: `${name || 'floor'}-${i}`,
+      name,
       count: list.length,
-      figure: checked.length ? Math.round((good.length / checked.length) * 100) : null,
-      at,
+      racks: [...list],
+      at: iso(x, b.row * ROW, HEIGHT + 16),
     };
+    seen.set(name || '', mark);
+    marks.push(mark);
   });
+  return marks
+    .sort((a, b) => b.count - a.count)
+    .slice(0, LABELS_MAX)
+    .map((m) => {
+      const checked = m.racks.filter((r) => r.state !== 'unchecked');
+      const good = checked.filter((r) => r.state === 'matched' || r.state === 'written');
+      const off = checked.length - good.length;
+      return {
+        key: m.key,
+        name: m.name,
+        count: m.count,
+        /* What this room is actually like, in the app's own words.
+           It read "0% match" on the real estate, which is true and says
+           nothing: every rack there carries a check and not one of them came
+           back clean, so the figure was nought everywhere it was drawn. What
+           a person wants to know is how many racks are in the room and how
+           many of them are not as the records say. */
+        word: checked.length === 0 ? 'Not checked yet'
+          : off === 0 ? (m.count === 1 ? 'Matches' : `All ${m.count} match`)
+            : `${off} unmatched`,
+        at: m.at,
+      };
+    });
 }
 
-/* How far in a press of the control moves, and how far it may go. */
-const STEP = 1.35;
-const MIN_Z = 1;
-const MAX_Z = 2.6;
-
 export default function EstateMap({ racks = [], where = null, onRack = null, cut = 0 }) {
-  const stage = useRef(null);
-  const drag = useRef(null);
-  const [z, setZ] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-
   const floor = useMemo(() => floorOf(racks), [racks]);
-  const rooms = useMemo(() => roomsOf(floor.placed, floor.blocks), [floor]);
+  const rooms = useMemo(() => roomsOf(floor.placed, floor.blocks, where), [floor, where]);
   const { view } = floor;
 
-  // A point in the drawing, as a share of the picture: what a label floating
-  // over the floor is positioned by.
-  const share = useCallback(([x, y]) => ({
-    left: `${((x - view.x) / view.w) * 100}%`,
-    top: `${((y - view.y) / view.h) * 100}%`,
-  }), [view]);
-
-  const zoom = useCallback((by) => {
-    setZ((old) => {
-      const next = Math.min(MAX_Z, Math.max(MIN_Z, old * by));
-      if (next === MIN_Z) setPan({ x: 0, y: 0 });
-      return next;
+  /* Where each label actually lands.
+     A point in the drawing is first read as a share of the picture. Then it
+     is pulled inside the frame - a label anchored over a cabinet at the left
+     edge hung half off it - and pushed down off any label above it. Both were
+     wrong on the real estate before this: three labels, one over another, one
+     of them cut off by the edge of the floor. */
+  const marks = useMemo(() => {
+    const list = rooms
+      .map((r) => ({
+        ...r,
+        sx: Math.min(0.82, Math.max(0.18, (r.at[0] - view.x) / view.w)),
+        sy: Math.min(0.88, Math.max(0.13, (r.at[1] - view.y) / view.h)),
+      }))
+      .sort((a, b) => a.sy - b.sy);
+    let last = -1;
+    return list.filter((m) => {
+      if (last >= 0 && m.sy - last < LABEL_GAP) m.sy = last + LABEL_GAP;
+      if (m.sy > 0.92) return false;   // no room left for it on the floor
+      last = m.sy;
+      return true;
     });
-  }, []);
-  const recentre = useCallback(() => { setZ(1); setPan({ x: 0, y: 0 }); }, []);
-
-  /* Dragging is only for a floor that has been moved in on: at rest the map
-     is whole, and a swipe over it has to scroll the page like anywhere else.
-     Once it is zoomed the stage takes the gesture, which is the only time it
-     is worth taking. */
-  const down = useCallback((e) => {
-    if (z <= MIN_Z) return;
-    drag.current = { x: e.clientX, y: e.clientY, from: pan };
-    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* not a real pointer */ }
-  }, [z, pan]);
-  const move = useCallback((e) => {
-    const d = drag.current;
-    if (!d) return;
-    setPan({ x: d.from.x + (e.clientX - d.x), y: d.from.y + (e.clientY - d.y) });
-  }, []);
-  const up = useCallback(() => { drag.current = null; }, []);
+  }, [rooms, view]);
 
   if (!floor.placed.length) return null;
 
@@ -229,19 +251,8 @@ export default function EstateMap({ racks = [], where = null, onRack = null, cut
 
   return (
     <div className={styles.map}>
-      <div
-        ref={stage}
-        className={styles.stage}
-        style={{ aspectRatio: `${ASPECT}`, touchAction: z > MIN_Z ? 'none' : 'pan-y' }}
-        onPointerDown={down}
-        onPointerMove={move}
-        onPointerUp={up}
-        onPointerCancel={up}
-      >
-        <div
-          className={styles.moves}
-          style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${z})` }}
-        >
+      <div className={styles.stage} style={{ aspectRatio: `${ASPECT}` }}>
+        <div className={styles.moves}>
           <svg
             className={styles.art}
             viewBox={`${view.x.toFixed(1)} ${view.y.toFixed(1)} ${view.w.toFixed(1)} ${view.h.toFixed(1)}`}
@@ -264,6 +275,16 @@ export default function EstateMap({ racks = [], where = null, onRack = null, cut
                 <stop offset="100%" stopColor="#3566DF" stopOpacity="0" />
               </linearGradient>
               <clipPath id="em-plate-clip"><polygon points={pts(floor.plate)} /></clipPath>
+              {/* The floor stops being a floor at the edges rather than
+                  ending on a drawn line. A hard diamond with a stroke round
+                  it read as a diagram of a room; this reads as a room. */}
+              <radialGradient id="em-fade" cx="50%" cy="50%" r="58%">
+                <stop offset="46%" stopColor="#FFFFFF" stopOpacity="1" />
+                <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+              </radialGradient>
+              <mask id="em-floor-mask">
+                <rect x={view.x} y={view.y} width={view.w} height={view.h} fill="url(#em-fade)" />
+              </mask>
             </defs>
 
             {/* the light the floor stands in */}
@@ -275,8 +296,9 @@ export default function EstateMap({ racks = [], where = null, onRack = null, cut
             />
 
             {/* the floor itself, and the tiles on it */}
-            <polygon points={pts(floor.plate)} fill="url(#em-plate)" stroke="#C8D4E4" strokeWidth="1.2" strokeLinejoin="round" />
-            <g clipPath="url(#em-plate-clip)" stroke="#CBD7E7" strokeWidth=".7" opacity=".85">
+            <g mask="url(#em-floor-mask)">
+            <polygon points={pts(floor.plate)} fill="url(#em-plate)" />
+            <g clipPath="url(#em-plate-clip)" stroke="#C6D3E4" strokeWidth=".7" opacity=".6">
               {Array.from({ length: floor.cols + 3 }, (_, i) => {
                 const a = iso(i - 1.2, -1.2);
                 const b = iso(i - 1.2, 40);
@@ -293,6 +315,7 @@ export default function EstateMap({ racks = [], where = null, onRack = null, cut
                 x={view.x} y={view.y} width={view.w * 0.3} height={view.h}
                 fill="url(#em-sweep)"
               />
+            </g>
             </g>
 
             {/* the cabinets, back row first so the front row stands over it */}
@@ -323,15 +346,15 @@ export default function EstateMap({ racks = [], where = null, onRack = null, cut
                   <polygon points={pts(side)} fill={tone.side} />
                   <polygon points={pts(face)} fill={tone.face} />
                   <polygon points={pts(top)} fill={tone.top} />
-                  {/* the equipment behind the door, three shelves of it */}
-                  {[0.26, 0.48, 0.70].map((v) => {
+                  {/* the equipment behind the door, shelf by shelf */}
+                  {[0.16, 0.30, 0.44, 0.58, 0.72, 0.86].map((v) => {
                     const a = f(-FOOT_X * 0.72, FOOT_Y, HEIGHT * (1 - v));
                     const b = f(FOOT_X * 0.72, FOOT_Y, HEIGHT * (1 - v));
-                    return <line key={v} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke="#FFFFFF" strokeWidth="1.6" opacity=".38" strokeLinecap="round" />;
+                    return <line key={v} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke="#FFFFFF" strokeWidth="1.5" opacity=".3" strokeLinecap="round" />;
                   })}
                   {/* a rack with differences on it keeps a light on */}
                   {r.state === 'unmatched' && (
-                    <circle className="em-alive" cx={iso(r.x, r.y, HEIGHT + 11)[0]} cy={iso(r.x, r.y, HEIGHT + 11)[1]} r="3.4" fill="#B4690E" />
+                    <circle className="em-alive" cx={iso(r.x, r.y, HEIGHT + 11)[0]} cy={iso(r.x, r.y, HEIGHT + 11)[1]} r="3" fill="#B4690E" />
                   )}
                 </g>
               );
@@ -341,35 +364,18 @@ export default function EstateMap({ racks = [], where = null, onRack = null, cut
           {/* What each room holds, floating over the cabinets it names - the
               shape the owner pointed at on 23 Sep 2026. The figure is the
               share of that room's checked racks that match the records. */}
-          {rooms.map((room) => (
-            <span key={room.key} className={styles.room} style={share(room.at)}>
-              <span className={styles.roomName}>{room.name || where || 'This site'}</span>
-              <span className={styles.roomFigure}>
-                {room.figure === null ? 'Not checked' : `${room.figure}% match`}
-              </span>
+          {marks.map((room) => (
+            <span
+              key={room.key}
+              className={styles.room}
+              style={{ left: `${room.sx * 100}%`, top: `${room.sy * 100}%` }}
+            >
+              <span className={styles.roomName}>{room.name || 'This site'}</span>
+              <span className={styles.roomFigure}>{room.word}</span>
             </span>
           ))}
         </div>
 
-        {/* Move in, move out, put it back. The glyphs are drawn rather than
-            typed, so no sign leaks into the page's words. */}
-        <div className={styles.controls}>
-          <button type="button" className={styles.control} onClick={() => zoom(STEP)} aria-label="Move in">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-              <path d="M12 6v12M6 12h12" />
-            </svg>
-          </button>
-          <button type="button" className={styles.control} onClick={() => zoom(1 / STEP)} aria-label="Move out">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-              <path d="M6 12h12" />
-            </svg>
-          </button>
-          <button type="button" className={styles.control} onClick={recentre} aria-label="Put the floor back">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="4.4" /><path d="M12 3v2.4M12 18.6V21M3 12h2.4M18.6 12H21" />
-            </svg>
-          </button>
-        </div>
       </div>
 
       {/* What the colours mean, and anything the floor could not hold. */}

@@ -998,3 +998,7 @@
 @media (min-width: 720px) {
   .shot { width: 260px; }
 }
+
+/* The floor runs to both edges of its card: the owner called it restricted
+   on 23 September 2026 when it sat in a bordered box inside one. */
+.floorSect { --em-bleed: 16px; }

@@ -493,10 +493,13 @@ export default function OrgConsolePage() {
                         onClick={() => setScanFilter(on ? null : { type: 'site', name: s.name })}
                         title="Show this site's scans">
                         <div className={styles.rowName}>{s.name}</div>
+                        {/* Who is there, and nothing else. How many scans a
+                           site has, when the last one was, and whether it is
+                           ready to scan were three more facts on every row
+                           that nobody acts on from this page (the owner,
+                           23 September 2026). */}
                         <div className={styles.rowSub}>
-                          {s.users} user{s.users === 1 ? '' : 's'} · {s.scans} scan{s.scans === 1 ? '' : 's'}
-                          {s.last_scan ? ` · last ${fmtDate(s.last_scan)}` : ''}
-                          {setupBySite[s.id] !== undefined && <> · <CompletenessLine completeness={setupBySite[s.id]} /></>}
+                          {s.users} user{s.users === 1 ? '' : 's'}
                         </div>
                       </button>
                       <div className={styles.rowActions}>

@@ -456,42 +456,6 @@ export function waysFor(role) {
 
 
 /**
- * The four more ways on, under the first four.
- *
- * The owner asked on 23 September 2026 for Home to carry a grid of the
- * things people press most, the way the services app they showed does. The
- * first four keep the order they set on 22 September - this person's own
- * work, the assistant, the racks or the estate, their account - and these
- * four stand under them. Every one is a page this app already has, and none
- * is gated away from the role it is offered to: an employee is never shown
- * Reports or Data sources, which refuse them at the door.
- */
-export function moreWaysFor(role) {
-  if (role === 'spoc') {
-    return [
-      { key: 'switches', label: 'Switches', icon: 'dns', to: '/switch-info' },
-      { key: 'ports', label: 'Port history', icon: 'clock', to: '/port-history' },
-      { key: 'market', label: 'Marketplace', icon: 'shopping_cart', to: '/marketplace' },
-      { key: 'support', label: 'Contact support', icon: 'group', to: '/contact' },
-    ];
-  }
-  if (role === 'admin' || role === 'manager') {
-    return [
-      { key: 'reports', label: 'Reports', icon: 'space_dashboard', to: '/dashboard' },
-      { key: 'ports', label: 'Port history', icon: 'clock', to: '/port-history' },
-      { key: 'market', label: 'Marketplace', icon: 'shopping_cart', to: '/marketplace' },
-      { key: 'support', label: 'Contact support', icon: 'group', to: '/contact' },
-    ];
-  }
-  return [
-    { key: 'two', label: 'Two racks', icon: 'two_racks', to: '/multi-rack/new' },
-    { key: 'mine', label: 'Your checks', icon: 'check', to: '/my-checks' },
-    { key: 'ports', label: 'Port history', icon: 'clock', to: '/port-history' },
-    { key: 'support', label: 'Contact support', icon: 'group', to: '/contact' },
-  ];
-}
-
-/**
  * The three figures over the floor.
  *
  * The owner took a row of counts off the way in on 22 September 2026, and
@@ -540,49 +504,6 @@ export function figuresFor({ racks = 0, checked = 0, matched = 0, waiting = 0,
     });
   }
   return out;
-}
-
-/**
- * How a check travels, end to end.
- *
- * The complaint that started the redesign was that people do not know what
- * comes after what. This is the answer, said once on the way in: five steps,
- * in the order they happen, reading left to right. It is a drawing of the
- * workflow the app already runs and not a control - nothing here is pressed.
- */
-export const JOURNEY = [
-  { key: 'photo', icon: 'qr_code_scanner', label: 'Photo' },
-  { key: 'read', icon: 'rack', label: 'Read' },
-  { key: 'compare', icon: 'dns', label: 'Compare' },
-  { key: 'decide', icon: 'person_check', label: 'SPOC' },
-  { key: 'record', icon: 'check', label: 'Record' },
-];
-
-/**
- * One true line about how things stand, and where to go with it.
- *
- * Counted here from what is already on the page. It says the most pressing
- * true thing and nothing else, and when there is nothing pressing it says
- * that too rather than going quiet.
- */
-export function worthKnowing({ unmatched = 0, waiting = 0, unchecked = 0, racks = 0 }) {
-  if (unmatched > 0) {
-    return unmatched === 1
-      ? 'One rack has differences that nobody has sent yet.'
-      : `${unmatched} racks have differences that nobody has sent yet.`;
-  }
-  if (waiting > 0) {
-    return waiting === 1
-      ? 'One check is with you to read.'
-      : `${waiting} checks are with you to read.`;
-  }
-  if (unchecked > 0) {
-    return unchecked === 1
-      ? 'One rack has never been checked against your records.'
-      : `${unchecked} racks have never been checked against your records.`;
-  }
-  if (racks > 0) return 'Every rack you have read matches your records.';
-  return 'Scan a rack and RackTrack reads what is mounted in it.';
 }
 
 export default function HomePage() {
@@ -668,19 +589,30 @@ export default function HomePage() {
   const site = useMemo(() => {
     const list = sites || [];
     if (!list.length) return null;
-    return list.find((s) => String(s.id) === String(floorSite)) || list[0];
-  }, [sites, floorSite]);
+    const chosen = list.find((s) => String(s.id) === String(floorSite));
+    if (chosen) return chosen;
+    /* Nothing chosen yet: the Site this person belongs to, not whichever one
+       the server named first. An admin of two Sites opened on the other one,
+       while the line under their name said they were at this one. */
+    const own = user?.tenant?.id;
+    return list.find((s) => own != null && String(s.id) === String(own)) || list[0];
+  }, [sites, floorSite, user]);
 
   const floor = useMemo(() => {
     const rooms = new Map((site?.spaces || []).map((sp) => [String(sp.id), sp.name]));
     // A cabinet opens its own page only if that rack has actually been read.
     // A rack bolted in during setup and never photographed has no page yet.
     const seen = new Set((scans || []).map((s) => String(s.rackId)));
-    const fromSite = (site?.racks || []).map((r, i) => {
+    const taken = new Set();
+    const out = [];
+
+    // What the Site's own setup says stands in it.
+    (site?.racks || []).forEach((r, i) => {
       const plan = r.rackId ? byRack.get(r.rackId) : null;
       const st = stateOf(plan);
       const name = String(r.name || '').trim();
-      return {
+      if (r.rackId) taken.add(String(r.rackId));
+      out.push({
         key: `s${r.id ?? i}`,
         rackId: r.rackId || null,
         name: name && !UNNAMED.test(name) ? name : null,
@@ -688,9 +620,32 @@ export default function HomePage() {
         state: st.key,
         word: st.label,
         open: seen.has(String(r.rackId)),
-      };
+      });
     });
-    if (fromSite.length) return fromSite;
+
+    /* And the racks photographed into this Site that its setup does not list.
+       On the demo estate a Site had one rack registered and a dozen
+       photographed, and a floor drawn from the setup alone showed one
+       cabinet where the person had read twelve. */
+    if (site) {
+      for (const r of racks) {
+        if (!r.rackId || taken.has(String(r.rackId))) continue;
+        if (!r.where || !site.name || r.where !== site.name) continue;
+        taken.add(String(r.rackId));
+        out.push({
+          key: `r${r.rackId}`,
+          rackId: r.rackId,
+          name: r.name,
+          room: null,
+          state: r.state.key,
+          word: r.state.label,
+          open: true,
+        });
+      }
+      return out;
+    }
+
+    // No estate set up at all: what this person has photographed is the floor.
     return racks.map((r, i) => ({
       key: `r${r.rackId || i}`,
       rackId: r.rackId,
@@ -746,7 +701,7 @@ export default function HomePage() {
   );
   const greeting = useMemo(() => greetingAt(), []);
 
-  const ways = [...waysFor(role.key), ...moreWaysFor(role.key)];
+  const ways = waysFor(role.key);
 
   const banner = bannerFor({
     role: role.key,
@@ -759,12 +714,11 @@ export default function HomePage() {
 
   const { lead, alt } = actionsFor({ role: role.key, waiting: needs.length });
 
-  /* What the figures are counted from: the racks of the floor, which is the
-     estate rather than one person's camera roll. */
-  const checked = floor.filter((r) => r.state !== 'unchecked').length;
-  const matched = floor.filter((r) => r.state === 'matched' || r.state === 'written').length;
-  const unmatched = floor.filter((r) => r.state === 'unmatched').length;
-  const unchecked = floor.length - checked;
+  /* What the figures are counted from: every rack this person has read, not
+     the one Site the floor happens to be showing. The floor is a picture of
+     one place and the picker changes it; the figures must not move with it. */
+  const matched = racks.filter((r) => r.state.key === 'matched' || r.state.key === 'written').length;
+  const checked = racks.filter((r) => r.state.key !== 'unchecked').length;
 
   const figures = figuresFor({
     racks: racks.length,
@@ -842,7 +796,7 @@ export default function HomePage() {
                 </ul>
               )}
             </div>
-            {racks.length === 0 && <RackArt className={styles.bannerArt} />}
+            <RackArt className={styles.bannerArt} />
           </div>
 
           {/* How much has been read, how much of it matches, and what is
@@ -877,7 +831,7 @@ export default function HomePage() {
         {/* ── The floor. Every cabinet is a rack the server knows, in the
                colour of its own newest check, and it opens its own page. ── */}
         {floor.length > 0 && (
-          <section className={styles.sect} aria-labelledby="home-floor">
+          <section className={`${styles.sect} ${styles.floorSect}`} aria-labelledby="home-floor">
             <div className={styles.sectTop}>
               <h2 className={styles.sectTitle} id="home-floor">Your datacenter</h2>
               {/* The Site's name, unless the picker under it is already
@@ -909,40 +863,17 @@ export default function HomePage() {
           </section>
         )}
 
-        {/* ── How a check travels. Said once, on the way in, because not
-               knowing what comes after what is what started the redesign. ── */}
-        <section className={styles.sect} aria-labelledby="home-journey">
-          <div className={styles.sectTop}>
-            <h2 className={styles.sectTitle} id="home-journey">How a check travels</h2>
-          </div>
-          <ol className={styles.journey}>
-            {JOURNEY.map((s, i) => (
-              <li key={s.key} className={styles.leg}>
-                <span className={styles.legGlyph} aria-hidden="true"><Icon name={s.icon} /></span>
-                <span className={styles.legLabel}>{s.label}</span>
-                {i < JOURNEY.length - 1 && (
-                  <Icon name="chevron_right" className={styles.legNext} />
-                )}
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        {/* ── The grid of what people press most. The first four are the
-               owner's order of 22 Sep 2026; four more stand under them. ── */}
-        <section className={styles.sect} aria-labelledby="home-ways">
-          <div className={styles.sectTop}>
-            <h2 className={styles.sectTitle} id="home-ways">Popular features</h2>
-          </div>
-          <nav className={styles.ways} aria-label="Popular features">
-            {ways.map((w) => (
-              <button key={w.key} type="button" className={styles.way} onClick={() => navigate(w.to)}>
-                <span className={styles.wayGlyph} aria-hidden="true"><Icon name={w.icon} /></span>
-                <span className={styles.wayLabel}>{w.label}</span>
-              </button>
-            ))}
-          </nav>
-        </section>
+        {/* The four ways on. No heading and no container round them: four
+            marks with their words are already objects, and the owner asked on
+            23 Sep 2026 for four and nothing framing them. */}
+        <nav className={styles.ways} aria-label="Ways on">
+          {ways.map((w) => (
+            <button key={w.key} type="button" className={styles.way} onClick={() => navigate(w.to)}>
+              <span className={styles.wayGlyph} aria-hidden="true"><Icon name={w.icon} /></span>
+              <span className={styles.wayLabel}>{w.label}</span>
+            </button>
+          ))}
+        </nav>
 
         {/* Anything an admin or a SPOC has put on this person: the app's own
             notices, the same ones the Scan screen shows. It draws nothing when
@@ -1038,22 +969,6 @@ export default function HomePage() {
           </section>
         )}
 
-        {/* ── One true line about how things stand, and the assistant beside
-               it. Counted from what is already on this page. ── */}
-        <section className={styles.sect} aria-labelledby="home-know">
-          <div className={styles.sectTop}>
-            <h2 className={styles.sectTitle} id="home-know">Worth knowing</h2>
-          </div>
-          <div className={styles.know}>
-            <p className={styles.knowWords}>
-              {worthKnowing({ unmatched, waiting: needs.length, unchecked, racks: racks.length })}
-            </p>
-            <button type="button" className={styles.ask} onClick={() => navigate('/help')}>
-              <Icon name="chat" className={styles.askGlyph} />
-              Ask DOT
-            </button>
-          </div>
-        </section>
       </main>
     </div>
   );

@@ -57,8 +57,7 @@ vi.mock('../AuthContext.jsx', () => ({ useAuth: () => ({ user: user.current }) }
 
 import { forgetApprovalsCan } from '../hooks/useApprovalsCan.js';
 import HomePage, {
-  roleOf, actionsFor, bannerFor, waysFor, moreWaysFor,
-  figuresFor, worthKnowing, JOURNEY,
+  roleOf, actionsFor, bannerFor, waysFor, figuresFor,
   greetingAt, placeLine, stateOf,
 } from './HomePage.jsx';
 
@@ -344,13 +343,9 @@ describe('<HomePage> on a new account', () => {
     // words. A rack nobody has photographed is drawn on the floor but does
     // not open: there is no page for it yet.
     expect(screen.getAllByRole('button').map((b) => b.textContent).filter(Boolean)).toEqual([
-      'Scan a rack',
-      'Switches', 'Ask DOT', 'Scan history', 'Your account',
-      'Two racks', 'Your checks', 'Port history', 'Contact support',
-      'Ask DOT',
+      'Scan a rack', 'Switches', 'Ask DOT', 'Scan history', 'Your account',
     ]);
     expect(screen.getByRole('button', { name: 'Your profile' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Move in' })).toBeTruthy();
   });
 
   test('a scan list that could not be loaded says so rather than claiming none', async () => {
@@ -505,11 +500,13 @@ describe('<HomePage> beyond the racks', () => {
     expect(screen.getByText('Racks read')).toBeTruthy();
     expect(screen.getByText('5')).toBeTruthy();
     expect(screen.getByText('in your site')).toBeTruthy();
-    // The floor holds the Site's four racks and all four carry a check: one
-    // written and one that matches its records, so the rate is half.
+    /* Every one of the five carries a check: one written, one that matches
+       its records, and three that do not. The figures count the racks this
+       person has read, not the one Site the floor is showing - the picker
+       must not move them. */
     expect(screen.getByText('Match rate')).toBeTruthy();
-    expect(screen.getByText('50%')).toBeTruthy();
-    expect(screen.getByText('of 4 racks checked')).toBeTruthy();
+    expect(screen.getByText('40%')).toBeTruthy();
+    expect(screen.getByText('of 5 racks checked')).toBeTruthy();
     // And four checks are with this person.
     expect(screen.getByText('Waiting')).toBeTruthy();
     expect(screen.getByText('checks with you')).toBeTruthy();
@@ -542,78 +539,6 @@ describe('<HomePage> beyond the racks', () => {
     // RK-0000BBBB was scanned; the Site's fourth rack is the one with no scan
     // behind it, and it is not offered as something to press.
     expect(screen.queryByRole('button', { name: /never/ })).toBeNull();
-  });
-
-  /* Five legs, in the order they happen. Not knowing what comes after what
-     is what started the redesign. */
-  test('how a check travels is said once, on the way in', async () => {
-    mount();
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'How a check travels' })).toBeTruthy());
-    expect(JOURNEY.map((j) => j.label)).toEqual(['Photo', 'Read', 'Compare', 'SPOC', 'Record']);
-  });
-
-  /* One true line, counted from what the page already holds. */
-  test('what is worth knowing is the most pressing true thing', () => {
-    expect(worthKnowing({ unmatched: 2, waiting: 1, unchecked: 3, racks: 6 }))
-      .toBe('2 racks have differences that nobody has sent yet.');
-    expect(worthKnowing({ unmatched: 0, waiting: 1, unchecked: 3, racks: 6 }))
-      .toBe('One check is with you to read.');
-    expect(worthKnowing({ unmatched: 0, waiting: 0, unchecked: 1, racks: 6 }))
-      .toBe('One rack has never been checked against your records.');
-    expect(worthKnowing({ unmatched: 0, waiting: 0, unchecked: 0, racks: 6 }))
-      .toBe('Every rack you have read matches your records.');
-    expect(worthKnowing({ racks: 0 }))
-      .toBe('Scan a rack and RackTrack reads what is mounted in it.');
-  });
-
-  /* Four tiles in one order for everybody, and only the first changes with
-     the role: what this person's own work is, the assistant, their racks,
-     their account. */
-  test('the ways on are four, in order, and they fit the job', () => {
-    expect(waysFor('tech').map((w) => w.to))
-      .toEqual(['/switch-info', '/help', '/history', '/profile']);
-    // Nobody who runs the estate is offered a history of their own scans:
-    // they never took one (the owner, 23 Sep 2026).
-    expect(waysFor('spoc').map((w) => w.to))
-      .toEqual(['/my-checks', '/help', '/organizations', '/profile']);
-    expect(waysFor('admin').map((w) => w.to))
-      .toEqual(['/organizations', '/help', '/connections', '/profile']);
-    for (const role of ['admin', 'spoc']) {
-      expect(waysFor(role).map((w) => w.to)).not.toContain('/history');
-    }
-    // A SPOC's first way on is their own checks, in professional words.
-    expect(waysFor('spoc')[0].label).toBe('Your checks');
-    // And none of them repeats the bar's own raised control.
-    for (const role of ['tech', 'admin', 'spoc']) {
-      expect(waysFor(role).map((w) => w.to)).not.toContain('/scan');
-      expect(waysFor(role)).toHaveLength(4);
-    }
-  });
-
-  /* Four more under them, so the grid is the eight things people press most
-     (the owner, 23 Sep 2026). Every one is a page this app already has, and
-     none is gated away from the role it is offered to. */
-  test('the four more ways on fit the role, and none of them is a closed door', () => {
-    expect(moreWaysFor('tech').map((w) => w.to))
-      .toEqual(['/multi-rack/new', '/my-checks', '/port-history', '/contact']);
-    expect(moreWaysFor('spoc').map((w) => w.to))
-      .toEqual(['/switch-info', '/port-history', '/marketplace', '/contact']);
-    expect(moreWaysFor('admin').map((w) => w.to))
-      .toEqual(['/dashboard', '/port-history', '/marketplace', '/contact']);
-    for (const role of ['tech', 'spoc', 'admin']) {
-      const all = [...waysFor(role), ...moreWaysFor(role)];
-      expect(all).toHaveLength(8);
-      // No page twice, and no glyph twice: eight marks in a grid have to read
-      // as eight things.
-      expect(new Set(all.map((w) => w.to)).size).toBe(8);
-      expect(new Set(all.map((w) => w.icon)).size).toBe(8);
-      // Nothing an employee would be refused at the door.
-      if (role === 'tech') {
-        for (const shut of ['/dashboard', '/connections']) {
-          expect(all.map((w) => w.to)).not.toContain(shut);
-        }
-      }
-    }
   });
 
 });
