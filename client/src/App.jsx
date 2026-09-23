@@ -67,6 +67,7 @@ import OrgConsolePage from './pages/OrgConsolePage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import CheckPage from './pages/CheckPage.jsx';
 import MyChecksPage from './pages/MyChecksPage.jsx';
+import TasksPage from './pages/TasksPage.jsx';
 import MultiRackNewPage from './pages/MultiRackNewPage.jsx';
 import { ShutterProvider } from './ShutterContext.jsx';
 import { AuthProvider, useAuth } from './AuthContext.jsx';
@@ -609,6 +610,11 @@ export default function App() {
             {/* One check, followed, inside the app. Where "Track this check"
                 goes for everybody: the Desk is for the people who decide. */}
             {/* The single point of contact's own list: every check with them. */}
+            {/* The second workflow's front door: what somebody has asked this
+                person to go and look at (23 September 2026). */}
+            <Route path="/tasks" element={
+              <ProtectedRoute><ResponsiveLayout withBottomNav><TasksPage /></ResponsiveLayout></ProtectedRoute>
+            } />
             <Route path="/my-checks" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><MyChecksPage /></ResponsiveLayout></ProtectedRoute>
             } />

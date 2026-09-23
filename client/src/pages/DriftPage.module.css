@@ -424,3 +424,6 @@
 .timeline {
   margin: 10px -4px 0;
 }
+
+/* What the ticket asked, under the rack's name on a check that came from one. */
+.askedFor { margin: 12px 0 0; }

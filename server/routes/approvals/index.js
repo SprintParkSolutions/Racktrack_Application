@@ -26,6 +26,7 @@ const path = require('path');
 const express = require('express');
 
 const service = require('../../lib/approvals/service');
+const store = require('../../lib/approvals/store');
 const gates = require('../netbox/gates');
 const shapeOfSettings = require('./settings_shape');
 const { answer, wrap, filtersOf } = require('./http');
@@ -53,6 +54,51 @@ router.get('/queue', gates.readers, (req, res) => res.json({ ok: true, ...servic
 router.get('/dashboard', gates.readers, (req, res) => res.json({
   ok: true, ...service.dashboard(req.user, filtersOf(req.query, ['orgId', 'tenantId'])),
 }));
+
+/**
+ * The tickets waiting for the person signed in, for the phone.
+ *
+ * Not the Desk's ticket list, which is every ticket of the organisation with
+ * its clocks. This is one question: what has somebody asked ME to go and do?
+ * It is the front of the second workflow the owner described on 23 September
+ * 2026 - a ticket is raised, the person it went to is told which rack it is
+ * about and where that rack is, and they photograph it.
+ *
+ * Only the tickets an admin raised by hand (uid `task:`) and only the open
+ * ones: the per-item tickets of a drift check are worked in the check itself.
+ */
+router.get('/my-tasks', (req, res) => {
+  const who = service.actorOf(req.user);
+  if (who.id == null) return res.json({ ok: true, tasks: [] });
+  const rows = store.listTickets({
+    ticketAssigneeUserId: who.id,
+    ticketStatus: 'open,accepted,in_progress,pending',
+    limit: 100,
+  }).filter((t) => String(t.itemUid || t.uid || '').startsWith('task:'));
+
+  const tasks = rows.map((t) => {
+    const plan = store.getPlan(t.planId, { heavy: false }) || {};
+    const site = plan.tenantId != null ? store.tenantById(plan.tenantId) : null;
+    const ext = t.external || {};
+    return {
+      planId: t.planId,
+      uid: t.itemUid || t.uid,
+      summary: t.summary || t.question || null,
+      note: t.note || null,
+      raisedBy: t.raisedBy || null,
+      raisedAt: t.raisedAt || null,
+      status: t.status || 'open',
+      number: ext.number || t.number || null,
+      url: ext.url || t.url || null,
+      rackId: plan.rackId ?? null,
+      rackName: plan.rackName ?? null,
+      siteName: (site && site.name) || null,
+      tenantId: plan.tenantId ?? null,
+    };
+  }).sort((a, b) => String(b.raisedAt || '').localeCompare(String(a.raisedAt || '')));
+
+  return res.json({ ok: true, tasks });
+});
 
 /** Every drift ticket the caller may see, across plans, with its plan and clocks. */
 router.get('/tickets', gates.readers, (req, res) => answer(res,

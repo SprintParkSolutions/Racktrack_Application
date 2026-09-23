@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { BackIcon } from '../components/BackButton.jsx';
 import { apiUrl, authFetch } from '../utils/api';
 import { useApprovalsCan } from '../hooks/useApprovalsCan.js';
 import { useSmartBack } from '../hooks/useSmartBack';
 import ExternalLink from '../components/ExternalLink.jsx';
 import PortsCheck from '../components/PortsCheck.jsx';
+import TaskAsk from '../components/TaskAsk.jsx';
 import { PortHistoryContent } from './PortHistoryPage.jsx';
 import ReportViewer from '../components/ReportViewer.jsx';
 import { driftCheckUrl, driftReportUrl } from '../utils/approvals.js';
@@ -272,6 +273,7 @@ export default function DriftPage() {
      It is only drawn once a switch exists - there is no history of ports
      nobody has read. */
   const { rackId } = useParams();
+  const { search } = useLocation();
   // Does this rack hold a switch? Only then is there a history of its ports.
   const [hasSwitch, setHasSwitch] = useState(false);
   // A notice about a check that was sent names it (?plan=). That check is shown
@@ -809,6 +811,10 @@ export default function DriftPage() {
             </h1>
           </span>
         </header>
+        {/* What the ticket asked, when this check came from one. What the
+            photograph found is read against it, which is the whole point of
+            the second workflow (23 September 2026). */}
+        <TaskAsk search={search} className={styles.askedFor} />
 
         {plan && !busy && (
           <div className={styles.rack}>

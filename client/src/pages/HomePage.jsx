@@ -447,7 +447,10 @@ export function waysFor(role) {
     ];
   }
   return [
-    { key: 'switches', label: 'Switches', icon: 'dns', to: '/switch-info' },
+    /* A technician's own work: what has been asked of them. Switches is one
+       tap further on, in the menu - somebody waiting on you comes first
+       (23 September 2026). */
+    { key: 'tasks', label: 'Tickets for you', icon: 'mail', to: '/tasks' },
     { key: 'dot', label: 'Ask DOT', icon: 'chat', to: '/help' },
     { key: 'racks', label: 'Scan history', icon: 'history', to: '/history' },
     { key: 'you', label: 'Your account', icon: 'person_check', to: '/profile' },

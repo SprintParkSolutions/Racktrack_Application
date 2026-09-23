@@ -343,7 +343,7 @@ describe('<HomePage> on a new account', () => {
     // words. A rack nobody has photographed is drawn on the floor but does
     // not open: there is no page for it yet.
     expect(screen.getAllByRole('button').map((b) => b.textContent).filter(Boolean)).toEqual([
-      'Scan a rack', 'Switches', 'Ask DOT', 'Scan history', 'Your account',
+      'Scan a rack', 'Tickets for you', 'Ask DOT', 'Scan history', 'Your account',
     ]);
     expect(screen.getByRole('button', { name: 'Your profile' })).toBeTruthy();
   });

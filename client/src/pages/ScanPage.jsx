@@ -1,9 +1,10 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import styles from './ScanPage.module.css';
 import { validateMedia } from '../utils/validateMedia';
 import AssignedNotice from '../components/AssignedNotice.jsx';
+import TaskAsk, { taskParam, withTask } from '../components/TaskAsk.jsx';
 import SitePicker from '../components/SitePicker.jsx';
 import { IMAGE_ACCEPT, VIDEO_ACCEPT } from '../utils/mediaAccept';
 import { apiUrl, authFetch } from '../utils/api';
@@ -925,6 +926,11 @@ function AnalyzingOverlay({ progress, step }) {
 // ── Page ─────────────────────────────────────────────────────
 export default function ScanPage() {
   const navigate = useNavigate();
+  /* The ticket this photograph is being taken for, if it came from one. It
+     travels in the address and goes on to whatever the scan finds, so the
+     person never has to remember what they came for (23 September 2026). */
+  const { search } = useLocation();
+  const task = taskParam(search);
   const goBackFromScan = useSmartBack('/');
   // useTour() is null outside TourProvider (e.g. a page rendered in isolation
   // by a test), so read through optional chaining rather than destructuring.
@@ -1276,11 +1282,11 @@ export default function ScanPage() {
         } catch (_) { /* fall through to deep-link path */ }
         setTimeout(() => {
           if (firstResult) {
-            navigate(`/results/${encodeURIComponent(first.rackId)}`,
+            navigate(withTask(`/results/${encodeURIComponent(first.rackId)}`, task),
               { state: { result: firstResult } });
           } else {
             // Fetch failed - let ResultsPage cold-fetch via useParams.
-            navigate(`/results/${encodeURIComponent(first.rackId)}`);
+            navigate(withTask(`/results/${encodeURIComponent(first.rackId)}`, task));
           }
         }, 600);
         return;
@@ -1294,7 +1300,7 @@ export default function ScanPage() {
         try { prefetchScan(data.rackId); } catch (_) {}
       }
 
-      setTimeout(() => navigate(data.rackId ? `/results/${data.rackId}` : '/results', {
+      setTimeout(() => navigate(withTask(data.rackId ? `/results/${data.rackId}` : '/results', task), {
         state: { result: data, ticketMode: useTicketMode, ticket: useTicketMode ? ticket : null }
       }), 600);
     } catch (err) {
@@ -1389,7 +1395,7 @@ export default function ScanPage() {
       if (data.rackId) {
         try { prefetchScan(data.rackId); } catch (_) {}
       }
-      setTimeout(() => navigate(data.rackId ? `/results/${data.rackId}` : '/results', { state: { result: data } }), 600);
+      setTimeout(() => navigate(withTask(data.rackId ? `/results/${data.rackId}` : '/results', task), { state: { result: data } }), 600);
     } catch (err) {
       clearInterval(ticker); setLoading(false); setProgress(0); setError(err.message);
     }
@@ -1461,6 +1467,8 @@ export default function ScanPage() {
 
       {/* Anything an admin has put on this person, said where the app opens. */}
       <AssignedNotice />
+      {/* What was asked, above the camera: the person is here because of it. */}
+      <TaskAsk search={search} />
 
       <div className={`pc ${styles.scanContent} ${isDesktop ? styles.scanContentDesktop : ''}`}>
         <div className={styles.scanIntro}>

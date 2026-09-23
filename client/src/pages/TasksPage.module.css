@@ -1,0 +1,115 @@
+/* Tickets for you.
+ *
+ * The second workflow's front door: what was asked, which rack, and one
+ * control. Built from the same parts as Home - white containers with light
+ * down the fill, a hairline ring and a shadow - because it is the same
+ * person's phone and the same product.
+ */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: clamp(18px, 5vw, 26px) clamp(16px, 5.2vw, 26px)
+    calc(var(--rt-bottom-nav-space, var(--nav-clear)) + 16px);
+  min-height: 100vh;
+  background: #ffffff;
+}
+
+.head { display: flex; flex-direction: column; gap: 4px; }
+.title {
+  margin: 0;
+  font-family: var(--font);
+  font-size: clamp(22px, 6.4vw, 28px);
+  font-weight: var(--fw-title);
+  letter-spacing: -0.028em;
+  color: #0B0B0C;
+}
+.sub {
+  margin: 0;
+  font-family: var(--font);
+  font-size: var(--fs-body);
+  color: #5B5F6B;
+}
+.quiet { font-family: var(--font); font-size: var(--fs-body); color: #8A8F99; }
+
+/* ── Nothing waiting ─────────────────────────────────────────────────── */
+.none {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 40px 20px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F7FAFD 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .9),
+    0 0 0 1px rgba(16, 32, 60, .05),
+    0 16px 30px -26px rgba(16, 32, 60, .5);
+  text-align: center;
+}
+.noneIcon { font-size: var(--fs-page); color: #BCC0C8; }
+.noneTitle { margin: 4px 0 0; font-family: var(--font); font-size: var(--fs-item); font-weight: var(--fw-title); color: #0B0B0C; }
+.noneSub { margin: 0; max-width: 32ch; font-family: var(--font); font-size: var(--fs-sub); color: #6b6b6b; line-height: 1.5; }
+
+/* ── One ticket ──────────────────────────────────────────────────────── */
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.card {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 16px 16px 14px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FCFDFF 62%, #F7FAFD 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .9),
+    0 0 0 1px rgba(16, 32, 60, .055),
+    0 2px 5px rgba(16, 32, 60, .045),
+    0 20px 36px -28px rgba(16, 32, 60, .5);
+}
+.cardTop { display: flex; align-items: center; gap: 10px; }
+.tag {
+  font-family: var(--font); font-size: var(--fs-label); font-weight: var(--fw-title);
+  letter-spacing: var(--ls-caps); text-transform: uppercase;
+  padding: 4px 9px; border-radius: 8px;
+  background: #EEF2FC; color: #24408F;
+  box-shadow: inset 0 0 0 1px rgba(35, 73, 196, .16);
+}
+.when { margin-left: auto; font-family: var(--font); font-size: var(--fs-sub); color: #8A8F99; }
+
+/* What was asked, in the words of whoever asked it. */
+.asked {
+  margin: 2px 0 0;
+  font-family: var(--font);
+  font-size: var(--fs-head);
+  font-weight: var(--fw-title);
+  line-height: 1.2;
+  letter-spacing: -0.022em;
+  color: #0B0B0C;
+  text-wrap: balance;
+}
+.where {
+  margin: 0; display: flex; align-items: center; gap: 7px;
+  font-family: var(--font); font-size: var(--fs-body); font-weight: var(--fw-label); color: #3A4048;
+}
+.whereIcon { font-size: var(--fs-item); color: #5B5F6B; }
+.note {
+  margin: 0; padding: 10px 12px; border-radius: 12px;
+  background: #F6F8FB;
+  font-family: var(--font); font-size: var(--fs-sub); line-height: 1.5; color: #3A4048;
+}
+.from { margin: 0; font-family: var(--font); font-size: var(--fs-sub); color: #8A8F99; }
+
+/* The one control. */
+.go {
+  margin-top: 4px;
+  width: 100%; min-height: 48px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  border: 0; border-radius: 14px;
+  background: linear-gradient(180deg, #3566DF 0%, #2349C4 55%, #17328F 100%);
+  color: #ffffff;
+  font-family: var(--font); font-size: var(--fs-item); font-weight: var(--fw-title);
+  letter-spacing: -0.01em;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .3),
+    0 1px 2px rgba(23, 50, 143, .3),
+    0 14px 24px -14px rgba(23, 50, 143, .85);
+  transition: transform var(--dur-fast, 150ms) var(--ease-out);
+}
+.go:active { transform: scale(0.985); }
+.goIcon { font-size: var(--fs-item); }

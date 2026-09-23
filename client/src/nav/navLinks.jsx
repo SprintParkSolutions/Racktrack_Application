@@ -139,6 +139,10 @@ export function usePrimaryNav() {
       hint: 'Two racks as one job' }]),
     ...(runsTheEstate ? [] : [{ group: 'work', to: '/history', label: 'Scan history',
       icon: <HistoryIcon />, end: false, inBar: true, barLabel: 'Racks' }]),
+    /* What somebody has asked this person to go and look at. The second
+       workflow starts here rather than at a rack (23 September 2026). */
+    ...(runsTheEstate ? [] : [{ group: 'work', to: '/tasks', label: 'Tickets for you',
+      icon: <InboxIcon />, end: false, hint: 'What you have been asked to look at' }]),
     // The technician's fourth tab. A person who has just checked a rack looks
     // a port up next more often than they do anything else, and for somebody
     // who decides that slot is the Desk instead.
