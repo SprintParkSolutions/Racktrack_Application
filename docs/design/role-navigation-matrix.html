@@ -1,6 +1,6 @@
 <!-- https://claude.ai/artifact/8N8xvVubyNDeiSLLGXMQEj -->
 <title>Role Navigation Matrix</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@400&display=swap">
 <style>
   :root {
     color-scheme: light;
@@ -8,487 +8,369 @@
     --card: #FFFFFF;
     --ink: #10141A;
     --ink-2: #545C6B;
-    --ink-3: #868E9C;
+    --ink-3: #8A92A0;
     --line: #E4E7EC;
-    --line-soft: #EFF1F4;
-    --accent: #2349C4;
-    --accent-soft: #EEF2FC;
-    --accent-line: #D4DEF7;
-    --green: #1F6B4A;
-    --green-soft: #E8F2ED;
-    --amber: #9A6B12;
-    --amber-soft: #FBF2E0;
-    --rose: #A63A46;
-    --rose-soft: #FBEDEE;
-    --display: 'Newsreader', Georgia, 'Times New Roman', serif;
+    --line-soft: #F0F2F5;
+    --on: #2349C4;
+    --on-soft: #EAF0FD;
+    --on-line: #C9D8F6;
+    --display: 'Newsreader', Georgia, serif;
     --body: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
   }
 
-  body {
-    margin: 0;
-    background: var(--paper);
-    color: var(--ink);
-    font-family: var(--body);
-    font-size: 15px;
-    line-height: 1.55;
-    -webkit-font-smoothing: antialiased;
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 980px; margin: 0 auto; padding-inline: 16px; padding-block: 26px 120px; }
+
+  h1 { font-family: var(--display); font-size: clamp(26px, 5vw, 34px); font-weight: 600; letter-spacing: -.02em; margin: 0 0 8px; }
+  .lede { margin: 0 0 18px; color: var(--ink-2); max-width: 64ch; }
+
+  /* What the three ticks mean. */
+  .key { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .keyItem {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 8px 11px; font-size: 13.5px; color: var(--ink-2);
+  }
+  .keyItem b { color: var(--ink); font-size: 13px; font-weight: 700; }
+  .swatch {
+    flex: none; width: 34px; height: 24px; border-radius: 7px;
+    background: var(--on); color: #fff;
+    font-size: 10.5px; font-weight: 700; letter-spacing: .04em;
+    display: grid; place-items: center;
   }
 
-  .wrap {
-    max-width: 1180px;
-    margin: 0 auto;
-    padding-inline: 16px;
-    padding-block: 28px 140px;
+  /* The grid. */
+  .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+  table { border-collapse: collapse; width: 100%; min-width: 620px; }
+  thead th {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 2;
+    background: var(--card); border-bottom: 1px solid var(--line);
+    padding: 12px 10px 10px; text-align: left; vertical-align: bottom;
   }
+  th.who { text-align: center; width: 150px; }
+  th.who b { display: block; font-family: var(--display); font-size: 16px; font-weight: 600; }
+  th.who span { display: block; font-size: 11.5px; color: var(--ink-3); font-weight: 400; margin-top: 1px; }
+  th.what { width: auto; }
+  th.what b { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
 
-  /* ── Head ─────────────────────────────────────────────────────── */
-  header.head { margin-bottom: 26px; }
-  .eyebrow {
-    font-family: var(--body);
-    font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
-    color: var(--ink-3); margin: 0 0 8px;
+  tbody tr { border-bottom: 1px solid var(--line-soft); }
+  tbody tr:last-child { border-bottom: 0; }
+  tr.group td {
+    background: #FAFBFC; padding: 8px 10px;
+    font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3);
   }
-  h1 {
-    font-family: var(--display);
-    font-size: clamp(28px, 5vw, 40px); font-weight: 500; letter-spacing: -.02em;
-    line-height: 1.12; margin: 0 0 10px; color: var(--ink); text-wrap: balance;
-  }
-  .lede { margin: 0; max-width: 68ch; color: var(--ink-2); font-size: 16px; }
-  .how {
-    margin-top: 16px; padding: 13px 15px;
-    background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: 10px;
-    color: #1B3480; font-size: 14px; max-width: 72ch;
-  }
-  .how b { font-weight: 700; }
+  td { padding: 9px 10px; vertical-align: middle; }
+  td.feature { min-width: 190px; }
+  .fname { font-size: 14.5px; font-weight: 600; }
+  .fpath { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); margin-top: 1px; }
 
-  /* ── Role panel ───────────────────────────────────────────────── */
-  .roles { display: grid; gap: 18px; }
-  @media (min-width: 1000px) { .roles { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; } }
+  .ticks { display: flex; gap: 5px; justify-content: center; }
+  .tick {
+    width: 42px; height: 28px; border-radius: 7px; cursor: pointer;
+    font-family: var(--body); font-size: 10.5px; font-weight: 700; letter-spacing: .04em;
+    border: 1px solid var(--line); background: #F7F8FA; color: var(--ink-3);
+  }
+  .tick:hover { border-color: var(--on-line); background: var(--on-soft); color: var(--on); }
+  .tick[aria-pressed="true"] { background: var(--on); border-color: var(--on); color: #fff; }
+  .tick.locked { cursor: default; opacity: .75; }
+  .tick.locked:hover { background: var(--on); border-color: var(--on); color: #fff; }
+  .tick:focus-visible { outline: 2px solid var(--on); outline-offset: 2px; }
+  .none { text-align: center; font-size: 11.5px; color: var(--ink-3); }
 
-  .role {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    overflow: hidden;
+  /* Adding something the app does not have yet. */
+  .add { margin-top: 18px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .add h2 { font-family: var(--display); font-size: 18px; font-weight: 600; margin: 0 0 3px; }
+  .add p { margin: 0 0 10px; font-size: 13.5px; color: var(--ink-2); }
+  .addRow { display: flex; gap: 8px; flex-wrap: wrap; }
+  .addRow input {
+    flex: 1 1 220px; min-width: 0; height: 38px; padding: 0 11px;
+    font-family: var(--body); font-size: 14.5px; color: var(--ink);
+    border: 1px solid var(--line); border-radius: 9px; background: var(--card);
   }
-  .roleHead { padding: 15px 16px 13px; border-bottom: 1px solid var(--line-soft); }
-  .roleName {
-    font-family: var(--display); font-size: 21px; font-weight: 600; letter-spacing: -.01em;
-    margin: 0; color: var(--ink);
+  .addRow input:focus-visible { outline: 2px solid var(--on); outline-offset: 1px; }
+  button.plus {
+    height: 38px; padding: 0 14px; border-radius: 9px; cursor: pointer;
+    border: 1px solid var(--on-line); background: var(--on-soft); color: #1B3480;
+    font-family: var(--body); font-size: 14px; font-weight: 700;
   }
-  .roleWho { margin: 3px 0 0; font-size: 13.5px; color: var(--ink-2); }
-  .roleTag {
-    display: inline-block; margin-top: 9px;
-    font-family: var(--mono); font-size: 11.5px; letter-spacing: .02em;
-    padding: 3px 8px; border-radius: 6px;
-    background: var(--accent-soft); color: #1B3480; border: 1px solid var(--accent-line);
-  }
-  .role[data-role="spoc"] .roleTag { background: var(--green-soft); color: #14513A; border-color: #C9E2D6; }
-  .role[data-role="admin"] .roleTag { background: var(--amber-soft); color: #7A5410; border-color: #EEDCB6; }
+  button.plus:hover { background: #DFE9FB; }
 
-  /* ── One place things appear ──────────────────────────────────── */
-  .place { padding: 14px 16px; border-top: 1px solid var(--line-soft); }
-  .place:first-of-type { border-top: 0; }
-  .placeTop { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
-  .placeName {
-    margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
-    color: var(--ink);
-  }
-  .placeCount {
-    font-family: var(--mono); font-size: 11.5px; color: var(--ink-3);
-    margin-left: auto; font-variant-numeric: tabular-nums;
-  }
-  .placeWhat { margin: 0 0 10px; font-size: 13px; color: var(--ink-2); line-height: 1.45; }
-
-  .slots { display: flex; flex-direction: column; gap: 7px; }
-  .slot { display: flex; align-items: center; gap: 7px; }
-  .slot select {
-    flex: 1 1 auto; min-width: 0; height: 38px; padding: 0 9px;
-    font-family: var(--body); font-size: 14px; color: var(--ink);
-    background: var(--card); border: 1px solid var(--line); border-radius: 8px;
-    -webkit-appearance: none; appearance: none;
-    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' stroke='%23868E9C' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat; background-position: right 10px center;
-    padding-right: 28px;
-  }
-  .slot select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-  .slot.fixed select { background-color: #F7F8FA; color: var(--ink-2); }
-  .drop {
-    flex: 0 0 auto; width: 30px; height: 30px; border-radius: 8px;
-    border: 1px solid var(--line); background: var(--card); color: var(--ink-3);
-    font-size: 15px; line-height: 1; cursor: pointer;
-  }
-  .drop:hover { background: var(--rose-soft); border-color: #EBC9CD; color: var(--rose); }
-  .add {
-    margin-top: 9px; height: 34px; padding: 0 12px;
-    border: 1px solid var(--accent-line); border-radius: 8px;
-    background: var(--accent-soft); color: #1B3480;
-    font-family: var(--body); font-size: 13.5px; font-weight: 600; cursor: pointer;
-  }
-  .add:hover { background: #E4ECFB; }
-  .pin {
-    display: inline-block; margin-left: 6px;
-    font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em;
-    color: var(--ink-3);
-  }
-
-  /* ── The phone, so "where" is not just a word ─────────────────── */
-  .phone {
-    margin: 10px 0 2px; border: 1px solid var(--line); border-radius: 12px;
-    background: #FBFCFD; padding: 9px 10px 10px;
-  }
-  .phoneBar { display: flex; align-items: flex-end; gap: 4px; justify-content: space-between; }
-  .tab {
-    flex: 1 1 0; min-width: 0; text-align: center;
-    font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
-    color: var(--ink-2); padding: 6px 2px 4px; border-radius: 7px; background: #F1F3F6;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .tab.cam { flex: 0 0 42px; background: var(--ink); color: #fff; border-radius: 50%; height: 42px; display: grid; place-items: center; font-size: 15px; padding: 0; }
-  .tab.menu { background: #E9ECF1; }
-
-  /* ── Not shown ────────────────────────────────────────────────── */
-  .hidden-list { display: flex; flex-wrap: wrap; gap: 6px; }
-  .chip {
-    font-size: 12.5px; padding: 4px 9px; border-radius: 999px;
-    background: #F2F3F6; color: var(--ink-2); border: 1px solid var(--line);
-  }
-
-  /* ── Notes + copy ─────────────────────────────────────────────── */
-  .notes {
-    margin-top: 22px; background: var(--card); border: 1px solid var(--line);
-    border-radius: 14px; padding: 16px;
-  }
-  .notes h2 {
-    font-family: var(--display); font-size: 19px; font-weight: 600; margin: 0 0 4px;
-  }
-  .notes p { margin: 0 0 10px; font-size: 14px; color: var(--ink-2); }
+  .notes { margin-top: 14px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .notes h2 { font-family: var(--display); font-size: 18px; font-weight: 600; margin: 0 0 3px; }
+  .notes p { margin: 0 0 10px; font-size: 13.5px; color: var(--ink-2); }
   .notes textarea {
-    width: 100%; box-sizing: border-box; min-height: 92px; padding: 10px 12px;
+    width: 100%; box-sizing: border-box; min-height: 80px; padding: 10px 12px;
     font-family: var(--body); font-size: 14.5px; line-height: 1.5; color: var(--ink);
-    background: var(--card); border: 1px solid var(--line); border-radius: 9px; resize: vertical;
+    border: 1px solid var(--line); border-radius: 9px; background: var(--card); resize: vertical;
   }
-  .notes textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .notes textarea:focus-visible { outline: 2px solid var(--on); outline-offset: 1px; }
 
   .barFixed {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
-    background: rgba(255, 255, 255, .94);
-    backdrop-filter: blur(8px);
+    background: rgba(255,255,255,.95); backdrop-filter: blur(8px);
     border-top: 1px solid var(--line);
     padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
   }
-  .barIn {
-    max-width: 1180px; margin: 0 auto;
-    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  }
+  .barIn { max-width: 980px; margin: 0 auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .barWords { font-size: 13.5px; color: var(--ink-2); margin-right: auto; }
-  button.go {
-    height: 40px; padding: 0 16px; border: 0; border-radius: 9px;
-    background: var(--accent); color: #fff;
-    font-family: var(--body); font-size: 14.5px; font-weight: 600; cursor: pointer;
-  }
+  .barWords.said { color: #1F6B4A; font-weight: 600; }
+  button.go { height: 40px; padding: 0 16px; border: 0; border-radius: 9px; background: var(--on); color: #fff; font-family: var(--body); font-size: 14.5px; font-weight: 700; cursor: pointer; }
   button.go:hover { background: #1C3AA6; }
-  button.ghost {
-    height: 40px; padding: 0 14px; border-radius: 9px;
-    border: 1px solid var(--line); background: var(--card); color: var(--ink);
-    font-family: var(--body); font-size: 14.5px; font-weight: 600; cursor: pointer;
-  }
-  button.ghost:hover { background: #F3F5F8; }
+  button.ghost { height: 40px; padding: 0 14px; border-radius: 9px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-family: var(--body); font-size: 14.5px; font-weight: 600; cursor: pointer; }
+  button.ghost:hover { background: #F2F4F7; }
 
   .out {
-    margin-top: 10px; width: 100%; box-sizing: border-box; min-height: 200px;
+    margin-top: 12px; width: 100%; box-sizing: border-box; min-height: 180px;
     font-family: var(--mono); font-size: 12.5px; line-height: 1.6;
-    padding: 12px; border: 1px solid var(--line); border-radius: 9px;
-    background: #FBFCFD; color: var(--ink);
+    padding: 12px; border: 1px solid var(--line); border-radius: 9px; background: #FBFCFD; color: var(--ink);
   }
-  .said { font-size: 13.5px; color: var(--green); font-weight: 600; }
-
-  footer.foot {
-    margin-top: 26px; padding-top: 14px; border-top: 1px solid var(--line);
-    font-size: 13px; color: var(--ink-3);
-  }
-  footer.foot code { font-family: var(--mono); font-size: 12.5px; color: var(--ink-2); }
+  footer.foot { margin-top: 20px; font-size: 12.5px; color: var(--ink-3); }
+  footer.foot code { font-family: var(--mono); font-size: 12px; }
 </style>
 
 <div class="wrap">
-  <header class="head">
-    <p class="eyebrow">RackTrack &middot; phone and desktop navigation</p>
-    <h1>Which tabs each role sees, and where</h1>
-    <p class="lede">
-      Every destination the app carries, set against the three people it is for. This is the matrix as the
-      code stands today (23 September 2026) - the bottom bar, the four marks on Home, and the Menu, which is
-      the same list the desktop sidebar draws.
-    </p>
-    <div class="how">
-      <b>To change it:</b> pick a different feature in any dropdown, drop one with the &times;, or add a row.
-      Then press <b>Copy the matrix</b> at the bottom and paste it back to me - I will make the app match it.
-    </div>
-  </header>
+  <h1>Which tabs each role sees</h1>
+  <p class="lede">
+    One row per screen, one column per person. Tap a box to give it to them, tap it again to take it away.
+    Nothing lit means they do not see that screen at all.
+  </p>
 
-  <div class="roles" id="roles"></div>
+  <div class="key">
+    <span class="keyItem"><span class="swatch">BAR</span><span><b>Bottom bar</b> &middot; the tabs along the bottom of the phone</span></span>
+    <span class="keyItem"><span class="swatch">HOME</span><span><b>Home</b> &middot; the four marks under the big card</span></span>
+    <span class="keyItem"><span class="swatch">MENU</span><span><b>Menu</b> &middot; behind MENU, and the sidebar on a laptop</span></span>
+  </div>
+
+  <div class="scroll">
+    <table>
+      <thead>
+        <tr>
+          <th class="what"><b>Screen</b></th>
+          <th class="who"><b>Employee</b><span>at the rack</span></th>
+          <th class="who"><b>SPOC</b><span>decides checks</span></th>
+          <th class="who"><b>Admin</b><span>runs the estate</span></th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <section class="add">
+    <h2>Something that is not on the list</h2>
+    <p>A screen you want that the app does not have yet. Add it here and tick who gets it.</p>
+    <div class="addRow">
+      <input id="newName" type="text" placeholder="What it is called, for example: Rack labels" autocomplete="off">
+      <button type="button" class="plus" id="addBtn">Add it</button>
+    </div>
+  </section>
 
   <section class="notes">
     <h2>Anything else</h2>
-    <p>A feature that does not exist yet, a name you want changed, an order you want kept - write it here and it travels with the copy.</p>
-    <textarea id="notes" placeholder="For example: a technician should also reach Switches from the Menu."></textarea>
+    <p>Order, names, or why - it travels with the copy.</p>
+    <textarea id="notes" placeholder="For example: on the employee bar I want Racks before 2 Racks."></textarea>
   </section>
 
   <footer class="foot">
-    Built from <code>client/src/nav/navLinks.jsx</code> (bar, Menu, sidebar) and <code>waysFor()</code> in
-    <code>client/src/pages/HomePage.jsx</code> (the marks on Home). An admin or a SPOC who shifts the toggle
-    on Home to Employee is given the employee's whole column, including the camera.
+    As the app stands on 23 September 2026, from <code>navLinks.jsx</code> and <code>waysFor()</code>.
+    Home and Menu are on every bar and are not a choice. An admin or a SPOC who shifts the toggle on Home to
+    Employee gets the employee's whole column.
   </footer>
 </div>
 
 <div class="barFixed">
   <div class="barIn">
-    <span class="barWords" id="status">Change what you want, then copy it for Claude.</span>
+    <span class="barWords" id="status">Tick what you want, then copy it for Claude.</span>
     <button type="button" class="ghost" id="reset">Back to today's</button>
-    <button type="button" class="go" id="copy">Copy the matrix</button>
+    <button type="button" class="go" id="copy">Copy for Claude</button>
   </div>
 </div>
 
 <script>
-/* Every destination the application has, grouped the way the Menu groups them.
-   `fixed` marks the ones that are the same for everybody and are not a choice. */
-const FEATURES = [
-  { group: 'Rack work', items: [
-    { id: 'home', label: 'Home', path: '/' },
-    { id: 'scan', label: 'Scan a rack (camera)', path: '/scan' },
-    { id: 'two', label: 'Two racks', path: '/multi-rack/new' },
-    { id: 'history', label: 'Scan history', path: '/history' },
-    { id: 'tasks', label: 'Tickets for you', path: '/tasks' },
-    { id: 'mine', label: 'Incidents you raised', path: '/my-incidents' },
-    { id: 'ports', label: 'Port history', path: '/port-history' },
-    { id: 'checks', label: 'Your checks', path: '/my-checks' },
-    { id: 'desk', label: 'RackTrack Control (Drift)', path: '/approvals/' },
+/* Every screen, in the order the Menu groups them. `lock` marks the ones the
+   app fixes for everybody: Home starts every bar, the Menu ends it. */
+const GROUPS = [
+  { name: 'Rack work', items: [
+    { id: 'home',    label: 'Home',                  path: '/',                  lock: 'bar' },
+    { id: 'scan',    label: 'Scan a rack (camera)',  path: '/scan' },
+    { id: 'two',     label: 'Two racks',             path: '/multi-rack/new' },
+    { id: 'history', label: 'Scan history',          path: '/history' },
+    { id: 'tasks',   label: 'Tickets for you',       path: '/tasks' },
+    { id: 'mine',    label: 'Incidents you raised',  path: '/my-incidents' },
+    { id: 'ports',   label: 'Port history',          path: '/port-history' },
+    { id: 'checks',  label: 'Your checks',           path: '/my-checks' },
+    { id: 'desk',    label: 'RackTrack Control',     path: '/approvals/' },
   ]},
-  { group: 'A rack you scanned', items: [
-    { id: 'overview', label: 'Rack overview', path: '/results/:rack' },
-    { id: 'report', label: 'Rack report', path: '/results/:rack/report' },
-    { id: 'drift', label: 'Drift check', path: '/results/:rack/drift' },
-    { id: 'network', label: 'Network', path: '/results/:rack/network' },
-    { id: 'topology', label: 'Topology', path: '/results/:rack/topology' },
-    { id: 'switches', label: 'Switches', path: '/switch-info' },
+  { name: 'A rack you scanned - reached from the rack itself, not the bar', items: [
+    { id: 'report',   label: 'Rack report',  path: '/results/<rack>/report' },
+    { id: 'drift',    label: 'Drift check',  path: '/results/<rack>/drift' },
+    { id: 'network',  label: 'Network',      path: '/results/<rack>/network' },
+    { id: 'topology', label: 'Topology',     path: '/results/<rack>/topology' },
+    { id: 'switches', label: 'Switches',     path: '/switch-info' },
   ]},
-  { group: 'Organization', items: [
-    { id: 'org', label: 'Organization', path: '/organizations' },
-    { id: 'sources', label: 'Data sources', path: '/connections' },
-    { id: 'setup', label: 'Organization settings', path: '/setup' },
+  { name: 'Organization', items: [
+    { id: 'org',     label: 'Organization',           path: '/organizations' },
+    { id: 'sources', label: 'Data sources',           path: '/connections' },
+    { id: 'setup',   label: 'Organization settings',  path: '/setup' },
   ]},
-  { group: 'Platform (owner)', items: [
-    { id: 'console', label: 'Console', path: '/dashboard' },
-    { id: 'lab', label: 'EVE-NG lab', path: '/lab' },
-    { id: 'market', label: 'Marketplace (not linked)', path: '/marketplace' },
+  { name: 'Owner only', items: [
+    { id: 'console', label: 'Console',      path: '/dashboard' },
+    { id: 'lab',     label: 'EVE-NG lab',   path: '/lab' },
+    { id: 'market',  label: 'Marketplace',  path: '/marketplace' },
   ]},
-  { group: 'Everybody', items: [
-    { id: 'dot', label: 'Ask DOT', path: '/help' },
-    { id: 'support', label: 'Contact support', path: '/contact' },
-    { id: 'profile', label: 'Your account', path: '/profile' },
-    { id: 'menu', label: 'Menu', path: '(the sheet)' },
+  { name: 'Everybody', items: [
+    { id: 'dot',     label: 'Ask DOT',          path: '/help' },
+    { id: 'support', label: 'Contact support',  path: '/contact' },
+    { id: 'profile', label: 'Your account',     path: '/profile' },
+    { id: 'menu',    label: 'Menu',             path: 'the sheet',  lock: 'bar' },
   ]},
 ];
-const BY_ID = {};
-for (const g of FEATURES) for (const f of g.items) BY_ID[f.id] = f;
 
-/* The three people, and what each of them is shown today. `pin` on a slot
-   means the app fixes it there: Home always starts the bar, the camera is
-   always the centre, the Menu always ends it. */
+const ROLES = [
+  { key: 'tech',  name: 'Employee' },
+  { key: 'spoc',  name: 'SPOC' },
+  { key: 'admin', name: 'Admin' },
+];
+const PLACES = [
+  { key: 'bar',  word: 'BAR'  },
+  { key: 'home', word: 'HOME' },
+  { key: 'menu', word: 'MENU' },
+];
+
+/* What the app does today: for each screen, where it appears for each person. */
 const TODAY = {
-  tech: {
-    name: 'Employee',
-    who: 'A technician at the rack - and anyone who shifts the toggle to Employee.',
-    tag: 'role: member, or any role in Employee view',
-    bar: [
-      { id: 'home', pin: 'always first' },
-      { id: 'two' },
-      { id: 'scan', pin: 'the camera, always centre' },
-      { id: 'history' },
-      { id: 'menu', pin: 'always last' },
-    ],
-    home: ['tasks', 'dot', 'history', 'profile'],
-    menu: ['scan', 'two', 'history', 'tasks', 'mine', 'ports', 'dot', 'support', 'profile'],
-    hidden: ['checks', 'desk', 'org', 'sources', 'console'],
-  },
-  spoc: {
-    name: 'Single point of contact',
-    who: 'Decides the checks for their site. No camera, unless they shift to Employee.',
-    tag: 'can.spoc = true (the server decides, not the role)',
-    bar: [
-      { id: 'home', pin: 'always first' },
-      { id: 'desk' },
-      { id: 'menu', pin: 'always last' },
-    ],
-    home: ['checks', 'dot', 'tasks', 'profile'],
-    menu: ['tasks', 'checks', 'desk', 'dot', 'support', 'profile'],
-    hidden: ['scan', 'two', 'history', 'ports', 'mine', 'org', 'sources', 'console'],
-  },
-  admin: {
-    name: 'Organization admin',
-    who: 'Runs the estate. Reaches the rack work by shifting the toggle to Employee.',
-    tag: 'role: owner or org_admin',
-    bar: [
-      { id: 'home', pin: 'always first' },
-      { id: 'desk' },
-      { id: 'org' },
-      { id: 'sources' },
-      { id: 'menu', pin: 'always last' },
-    ],
-    home: ['org', 'dot', 'sources', 'profile'],
-    menu: ['desk', 'org', 'sources', 'dot', 'support', 'profile'],
-    hidden: ['scan', 'two', 'history', 'ports', 'mine', 'tasks', 'checks'],
-  },
+  home:     { tech: ['bar'],         spoc: ['bar'],          admin: ['bar'] },
+  scan:     { tech: ['bar', 'menu'], spoc: [],               admin: [] },
+  two:      { tech: ['bar', 'menu'], spoc: [],               admin: [] },
+  history:  { tech: ['bar', 'home', 'menu'], spoc: [],       admin: [] },
+  tasks:    { tech: ['home', 'menu'], spoc: ['home', 'menu'], admin: [] },
+  mine:     { tech: ['menu'],        spoc: [],               admin: [] },
+  ports:    { tech: ['menu'],        spoc: [],               admin: [] },
+  checks:   { tech: [],              spoc: ['home', 'menu'], admin: [] },
+  desk:     { tech: [],              spoc: ['bar', 'menu'],  admin: ['bar', 'menu'] },
+  report:   { tech: [],              spoc: [],               admin: [] },
+  drift:    { tech: [],              spoc: [],               admin: [] },
+  network:  { tech: [],              spoc: [],               admin: [] },
+  topology: { tech: [],              spoc: [],               admin: [] },
+  switches: { tech: [],              spoc: [],               admin: [] },
+  org:      { tech: [],              spoc: [],               admin: ['bar', 'home', 'menu'] },
+  sources:  { tech: [],              spoc: [],               admin: ['bar', 'home', 'menu'] },
+  setup:    { tech: [],              spoc: [],               admin: [] },
+  console:  { tech: [],              spoc: [],               admin: ['menu'] },
+  lab:      { tech: [],              spoc: [],               admin: [] },
+  market:   { tech: [],              spoc: [],               admin: [] },
+  dot:      { tech: ['home', 'menu'], spoc: ['home', 'menu'], admin: ['home', 'menu'] },
+  support:  { tech: ['menu'],        spoc: ['menu'],         admin: ['menu'] },
+  profile:  { tech: ['home', 'menu'], spoc: ['home', 'menu'], admin: ['home', 'menu'] },
+  menu:     { tech: ['bar'],         spoc: ['bar'],          admin: ['bar'] },
 };
 
-const PLACES = [
-  { key: 'bar', name: 'Bottom bar on the phone',
-    what: 'The row of tabs at the bottom of every screen. Home starts it, the Menu ends it, and the camera sits in the middle when the person has one.' },
-  { key: 'home', name: 'Home, the four marks',
-    what: 'The row under the big card on Home - what you call the popular features. Four, in this order.' },
-  { key: 'menu', name: 'Menu, and the desktop sidebar',
-    what: 'The sheet behind MENU on the phone, and the rail down the left on a laptop. Same list, drawn twice.' },
-];
+let state = JSON.parse(JSON.stringify(TODAY));
+let extra = [];   // screens the owner added that the app does not have
 
-const state = JSON.parse(JSON.stringify(TODAY));
 const el = (t, cls, text) => { const n = document.createElement(t); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+const allItems = () => GROUPS.flatMap((g) => g.items).concat(extra);
+const itemById = (id) => allItems().find((f) => f.id === id);
 
-function selectFor(value, onChange) {
-  const s = el('select');
-  for (const g of FEATURES) {
-    const og = el('optgroup'); og.label = g.group;
-    for (const f of g.items) {
-      const o = el('option', null, f.label + '  ' + f.path);
-      o.value = f.id;
-      if (f.id === value) o.selected = true;
-      og.appendChild(o);
+function cellFor(feature, roleKey) {
+  const td = el('td');
+  const box = el('div', 'ticks');
+  const held = state[feature.id] && state[feature.id][roleKey] ? state[feature.id][roleKey] : [];
+  for (const place of PLACES) {
+    const on = held.includes(place.key);
+    const locked = feature.lock === place.key && on;
+    const b = el('button', 'tick' + (locked ? ' locked' : ''), place.word);
+    b.type = 'button';
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.setAttribute('aria-label', feature.label + ', ' + place.word + ', ' + (on ? 'shown' : 'not shown'));
+    b.title = locked ? 'The app always puts this here' : (on ? 'Tap to take it away' : 'Tap to give it to them');
+    if (locked) { b.disabled = true; } else {
+      b.addEventListener('click', () => {
+        const list = state[feature.id][roleKey];
+        const at = list.indexOf(place.key);
+        if (at >= 0) list.splice(at, 1); else list.push(place.key);
+        render();
+      });
     }
-    s.appendChild(og);
+    box.appendChild(b);
   }
-  s.addEventListener('change', () => onChange(s.value));
-  return s;
-}
-
-function drawPhone(role) {
-  const box = el('div', 'phone');
-  const bar = el('div', 'phoneBar');
-  for (const slot of state[role].bar) {
-    const f = BY_ID[slot.id];
-    if (slot.id === 'scan') { const t = el('div', 'tab cam', '●'); t.title = 'Scan a rack'; bar.appendChild(t); continue; }
-    const t = el('div', 'tab' + (slot.id === 'menu' ? ' menu' : ''), (f ? f.label : slot.id).replace(' (Drift)', '').replace(' (camera)', ''));
-    bar.appendChild(t);
-  }
-  box.appendChild(bar);
-  return box;
+  td.appendChild(box);
+  return td;
 }
 
 function render() {
-  const host = document.getElementById('roles');
-  host.textContent = '';
-  for (const role of ['tech', 'spoc', 'admin']) {
-    const r = state[role];
-    const panel = el('section', 'role');
-    panel.dataset.role = role;
+  const body = document.getElementById('rows');
+  body.textContent = '';
+  const groups = GROUPS.concat(extra.length ? [{ name: 'You added these', items: extra }] : []);
+  for (const g of groups) {
+    const head = el('tr', 'group');
+    const td = el('td', null, g.name);
+    td.colSpan = 4;
+    head.appendChild(td);
+    body.appendChild(head);
 
-    const head = el('div', 'roleHead');
-    head.appendChild(el('h2', 'roleName', r.name));
-    head.appendChild(el('p', 'roleWho', r.who));
-    head.appendChild(el('span', 'roleTag', r.tag));
-    panel.appendChild(head);
-
-    for (const place of PLACES) {
-      const sec = el('div', 'place');
-      const top = el('div', 'placeTop');
-      top.appendChild(el('h3', 'placeName', place.name));
-      const list = r[place.key];
-      top.appendChild(el('span', 'placeCount', list.length + (place.key === 'home' ? ' of 4' : '')));
-      sec.appendChild(top);
-      sec.appendChild(el('p', 'placeWhat', place.what));
-      if (place.key === 'bar') sec.appendChild(drawPhone(role));
-
-      const slots = el('div', 'slots');
-      list.forEach((entry, i) => {
-        const id = typeof entry === 'string' ? entry : entry.id;
-        const pin = typeof entry === 'string' ? null : entry.pin;
-        const row = el('div', 'slot' + (pin ? ' fixed' : ''));
-        row.appendChild(selectFor(id, (v) => {
-          if (typeof list[i] === 'string') list[i] = v; else list[i].id = v;
-          render();
-        }));
-        if (pin) {
-          row.appendChild(el('span', 'pin', pin));
-        } else {
-          const x = el('button', 'drop', '×');
-          x.type = 'button';
-          x.title = 'Take this one away';
-          x.addEventListener('click', () => { list.splice(i, 1); render(); });
-          row.appendChild(x);
-        }
-        slots.appendChild(row);
-      });
-      sec.appendChild(slots);
-
-      const add = el('button', 'add', '+ Add one here');
-      add.type = 'button';
-      add.addEventListener('click', () => {
-        list.splice(Math.max(0, list.length - (place.key === 'bar' ? 1 : 0)), 0,
-          place.key === 'bar' ? { id: 'tasks' } : 'tasks');
-        render();
-      });
-      sec.appendChild(add);
-      panel.appendChild(sec);
+    for (const f of g.items) {
+      if (!state[f.id]) state[f.id] = { tech: [], spoc: [], admin: [] };
+      const tr = el('tr');
+      const name = el('td', 'feature');
+      name.appendChild(el('div', 'fname', f.label));
+      name.appendChild(el('div', 'fpath', f.path));
+      tr.appendChild(name);
+      for (const r of ROLES) tr.appendChild(cellFor(f, r.key));
+      body.appendChild(tr);
     }
-
-    const off = el('div', 'place');
-    const offTop = el('div', 'placeTop');
-    offTop.appendChild(el('h3', 'placeName', 'Not shown to them'));
-    off.appendChild(offTop);
-    off.appendChild(el('p', 'placeWhat', 'Taken away on purpose. Moving one of these into a list above is how you give it back.'));
-    const chips = el('div', 'hidden-list');
-    for (const id of r.hidden) chips.appendChild(el('span', 'chip', BY_ID[id] ? BY_ID[id].label : id));
-    off.appendChild(chips);
-    panel.appendChild(off);
-
-    host.appendChild(panel);
   }
   save();
 }
 
 function asText() {
-  const lines = ['RACKTRACK - WHAT EACH ROLE SEES', ''];
-  for (const role of ['tech', 'spoc', 'admin']) {
-    const r = state[role];
-    lines.push(r.name.toUpperCase() + '  (' + r.tag + ')');
+  const out = ['RACKTRACK - WHAT EACH ROLE SEES', ''];
+  for (const r of ROLES) {
+    out.push(r.name.toUpperCase());
     for (const place of PLACES) {
-      const names = r[place.key].map((e) => {
-        const id = typeof e === 'string' ? e : e.id;
-        const f = BY_ID[id];
-        return f ? f.label + ' [' + f.path + ']' : id;
-      });
-      lines.push('  ' + place.name + ': ' + (names.length ? names.join(', ') : 'nothing'));
+      const names = allItems()
+        .filter((f) => (state[f.id] && state[f.id][r.key] || []).includes(place.key))
+        .map((f) => f.label + (f.isNew ? ' (NEW - does not exist yet)' : ''));
+      out.push('  ' + place.word + ': ' + (names.length ? names.join(', ') : 'nothing'));
     }
-    lines.push('  Not shown: ' + r.hidden.map((id) => (BY_ID[id] ? BY_ID[id].label : id)).join(', '));
-    lines.push('');
+    const nothing = allItems().filter((f) => !(state[f.id] && state[f.id][r.key] || []).length).map((f) => f.label);
+    out.push('  NOT SHOWN: ' + (nothing.length ? nothing.join(', ') : 'nothing'));
+    out.push('');
   }
   const note = (document.getElementById('notes').value || '').trim();
-  if (note) { lines.push('NOTES'); lines.push(note); lines.push(''); }
-  return lines.join('\n');
+  if (note) { out.push('NOTES'); out.push(note); out.push(''); }
+  return out.join('\n');
 }
 
 function save() {
-  try {
-    localStorage.setItem('rt.matrix', JSON.stringify({ state, note: document.getElementById('notes').value }));
-  } catch (e) { /* a private window: the page still works, it just forgets */ }
+  try { localStorage.setItem('rt.matrix2', JSON.stringify({ state, extra, note: document.getElementById('notes').value })); }
+  catch (e) { /* a private window: the page still works, it just forgets */ }
 }
 function load() {
   try {
-    const held = JSON.parse(localStorage.getItem('rt.matrix') || 'null');
-    if (held && held.state) {
-      for (const k of Object.keys(state)) if (held.state[k]) state[k] = held.state[k];
-      if (held.note) document.getElementById('notes').value = held.note;
-    }
+    const held = JSON.parse(localStorage.getItem('rt.matrix2') || 'null');
+    if (!held) return;
+    if (held.extra) extra = held.extra;
+    if (held.state) state = Object.assign(state, held.state);
+    if (held.note) document.getElementById('notes').value = held.note;
   } catch (e) { /* same */ }
 }
+
+document.getElementById('addBtn').addEventListener('click', () => {
+  const box = document.getElementById('newName');
+  const name = (box.value || '').trim();
+  if (!name) { box.focus(); return; }
+  const id = 'new' + (extra.length + 1) + Date.now().toString(36).slice(-3);
+  extra.push({ id, label: name, path: 'new - not built yet', isNew: true });
+  state[id] = { tech: [], spoc: [], admin: [] };
+  box.value = '';
+  render();
+  document.getElementById('status').textContent = 'Added "' + name + '" at the bottom - now tick who gets it.';
+  document.getElementById('status').className = 'barWords';
+});
+document.getElementById('newName').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); document.getElementById('addBtn').click(); }
+});
 
 document.getElementById('copy').addEventListener('click', async () => {
   const text = asText();
@@ -499,25 +381,22 @@ document.getElementById('copy').addEventListener('click', async () => {
     status.className = 'barWords said';
   } catch (e) {
     let out = document.getElementById('out');
-    if (!out) {
-      out = document.createElement('textarea');
-      out.id = 'out';
-      out.className = 'out';
-      document.querySelector('.notes').appendChild(out);
-    }
+    if (!out) { out = el('textarea', 'out'); out.id = 'out'; document.querySelector('.notes').appendChild(out); }
     out.value = text;
     out.select();
-    status.textContent = 'Copying was blocked - the text is at the bottom of the page, select and copy it.';
+    status.textContent = 'Copying was blocked - the text is at the bottom, select it and copy.';
     status.className = 'barWords';
   }
 });
 
 document.getElementById('reset').addEventListener('click', () => {
-  for (const k of Object.keys(TODAY)) state[k] = JSON.parse(JSON.stringify(TODAY[k]));
+  state = JSON.parse(JSON.stringify(TODAY));
+  extra = [];
   document.getElementById('notes').value = '';
   render();
-  document.getElementById('status').textContent = "Back to what the app does today.";
-  document.getElementById('status').className = 'barWords';
+  const status = document.getElementById('status');
+  status.textContent = 'Back to what the app does today.';
+  status.className = 'barWords';
 });
 
 document.getElementById('notes').addEventListener('input', save);
