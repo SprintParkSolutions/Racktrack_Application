@@ -150,7 +150,7 @@ function shelfInName(name) {
   return said.size === 1 ? [...said][0] : null;
 }
 
-/** One suggestion in the shape the Drift Desk reads. State is put on afterwards. */
+/** One suggestion in the shape the RackTrack Control reads. State is put on afterwards. */
 const card = (rule, { itemUid = null, netboxId = null, ...rest }) => ({
   id: `${rule}|${itemUid || '-'}|${netboxId || '-'}`,
   rule,

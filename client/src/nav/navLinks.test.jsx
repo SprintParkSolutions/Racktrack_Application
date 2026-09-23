@@ -45,7 +45,7 @@ describe('the phone bar', () => {
     // The owner named them on 23 Sep 2026: home, two racks, the camera in the
     // middle, the scan history, and Menu. Port history moved into the Menu.
     expect(inBar()).toEqual(['Home', '2 Racks', 'Racks']);
-    expect(labels()).not.toContain('Drift Desk');
+    expect(labels()).not.toContain('RackTrack Control');
   });
 
   test("an organisation admin's bar is the estate, not a technician's work", () => {
@@ -59,7 +59,7 @@ describe('the phone bar', () => {
 
   test('a technician who is a Site contact is a SPOC, and gets the Desk', () => {
     can.current = { spoc: true };
-    expect(labels()).toContain('Drift Desk');
+    expect(labels()).toContain('RackTrack Control');
     // Home, the Desk, and the Menu the bar draws itself: three (the owner,
     // 23 September 2026). Their own list of checks is in the Menu - the Desk
     // is where checks are read, and a second tab to the same work is a second
@@ -83,7 +83,7 @@ describe('the phone bar', () => {
     expect(labels()).toContain('Scan a rack');
     expect(labels()).toContain('Two racks');
     // And the Desk goes: in the employee's view they are working as one.
-    expect(labels()).not.toContain('Drift Desk');
+    expect(labels()).not.toContain('RackTrack Control');
   });
 
   /* Menu is added by the bar itself from everything not in it. In the

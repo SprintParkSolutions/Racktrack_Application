@@ -197,7 +197,7 @@ describe('<AssignedNotice>', () => {
     await screen.findByText('Your check was approved');
   });
 
-  test('the person who sent it opens their own drift check; whoever has to act opens Drift Desk', async () => {
+  test('the person who sent it opens their own drift check; whoever has to act opens RackTrack Control', async () => {
     reply.rows = [told('approved', 'approved', 'RackTrack: your check on rack R1 was approved')];
     mount();
     fireEvent.click(await screen.findByRole('button', { name: 'Open the check' }));
@@ -212,7 +212,7 @@ describe('<AssignedNotice>', () => {
     await screen.findByText('drift check of RK-5B81BE87, plan=140');
     cleanup();
 
-    // no rack on the notice: the check in Drift Desk is the way in
+    // no rack on the notice: the check in RackTrack Control is the way in
     reply.rows = [told('completed', 'written', 'RackTrack: your check on rack R1 is written', { data: { ...DATA, kind: 'written', rackId: null } })];
     mount();
     fireEvent.click(await screen.findByRole('button', { name: 'Open the check' }));

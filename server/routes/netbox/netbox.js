@@ -177,7 +177,7 @@ router.post('/:id/preview', gates.technician, async (req, res) => {
 /**
  * Write to NetBox - the old door, which is now only a way back in.
  *
- * A check is written by its final approval, in Drift Desk, as that approval
+ * A check is written by its final approval, in RackTrack Control, as that approval
  * is given. What is left for this door is the retry: a check that is approved
  * and was never written, or whose write NetBox refused part of. It does no
  * writing of its own. After the checks a request needs - a NetBox, an

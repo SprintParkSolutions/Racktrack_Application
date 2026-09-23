@@ -715,7 +715,7 @@ export default function DriftPage() {
         {sent && plan && (
           /* Where this goes depends on who is pressing it. Somebody who
              decides - a single point of contact, an admin - works in RackTrack
-             Drift Desk and is sent straight there. The technician who sent the
+             RackTrack Control and is sent straight there. The technician who sent the
              check decides nothing, so the Desk has nothing for them: they get
              the check's own page in the app. The owner's rule, 22 Sep 2026. */
           deskPerson ? (
@@ -727,7 +727,7 @@ export default function DriftPage() {
                 </svg>
               </span>
               <span className={styles.actionText}>
-                <b>Drift Desk</b>
+                <b>RackTrack Control</b>
                 <small>Read it and decide</small>
               </span>
               <i className={styles.actionGo} aria-hidden="true" />

@@ -109,7 +109,7 @@ const PAGE_TITLE = {
   '/profile':          { title: 'Profile',             sub: 'Account & history' },
   '/history':          { title: 'Scan history',        sub: 'Every rack you have scanned' },
   '/organizations':    { title: 'Organizations',       sub: 'Members, sites & approvals' },
-  '/approvals':        { title: 'Drift Desk',          sub: 'Moved to RackTrack Drift Desk' },
+  '/approvals':        { title: 'RackTrack Control',          sub: 'Moved to RackTrack Control' },
   '/setup':            { title: 'Organization settings', sub: 'Sites, their SPOCs and the rules' },
   '/connections':      { title: 'Connections',         sub: 'Active data sources' },
   '/results':          { title: 'Scan results',        sub: 'Devices & ports' },

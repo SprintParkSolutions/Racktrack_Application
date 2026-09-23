@@ -44,10 +44,10 @@ const settle = () => new Promise((r) => setTimeout(r, 0));
 describe('<ApprovalsMovedPage>', () => {
   test('says approvals has moved and offers exactly one way on', () => {
     render(<ApprovalsMovedPage />);
-    expect(screen.getByRole('heading', { name: 'This has moved to RackTrack Drift Desk' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'This has moved to RackTrack Control' })).toBeTruthy();
     const links = screen.getAllByRole('link');
     expect(links).toHaveLength(1);
-    expect(links[0].textContent.trim()).toBe('Open Drift Desk');
+    expect(links[0].textContent.trim()).toBe('Open RackTrack Control');
     expect(links[0].getAttribute('href')).toBe(URL);
     expect(links[0].getAttribute('target')).toBe('_blank');
     expect(screen.queryAllByRole('button')).toHaveLength(0);
@@ -55,7 +55,7 @@ describe('<ApprovalsMovedPage>', () => {
 
   test('web build: the hand-over is fetched and its address opens in a tab', async () => {
     render(<ApprovalsMovedPage />);
-    fireEvent.click(screen.getByRole('link', { name: 'Open Drift Desk' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Open RackTrack Control' }));
     await settle();
     expect(fetched.calls).toHaveLength(1);
     expect(fetched.calls[0].url).toBe('/api/auth/handoff');
@@ -70,7 +70,7 @@ describe('<ApprovalsMovedPage>', () => {
   test('native build: the hand-over address opens in our own web view, no browser', async () => {
     native.current = true;
     render(<ApprovalsMovedPage />);
-    fireEvent.click(screen.getByRole('link', { name: 'Open Drift Desk' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Open RackTrack Control' }));
     await settle();
     // The hand-over carries `in=app`, which tells the Desk it was opened from
     // inside the application and to write its name once rather than twice.
@@ -79,7 +79,7 @@ describe('<ApprovalsMovedPage>', () => {
     // paths that close it are the ones that mean "take me back to RackTrack".
     expect(site.open).toHaveBeenCalledWith({
       url: '/api/auth/handoff/KEY',
-      title: 'RackTrack Drift Desk',
+      title: 'RackTrack Control',
       closeOn: ['/', '/login'],
     });
     expect(open).not.toHaveBeenCalled();
@@ -89,7 +89,7 @@ describe('<ApprovalsMovedPage>', () => {
     native.current = true;
     site.fails.current = true;
     render(<ApprovalsMovedPage />);
-    fireEvent.click(screen.getByRole('link', { name: 'Open Drift Desk' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Open RackTrack Control' }));
     await settle();
     expect(open).toHaveBeenCalledWith({
       url: '/api/auth/handoff/KEY',

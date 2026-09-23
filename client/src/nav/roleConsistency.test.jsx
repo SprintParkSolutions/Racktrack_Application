@@ -56,6 +56,34 @@ const bar = (nav) => nav.filter((l) => l.inBar).map((l) => l.barLabel || l.label
 
 beforeEach(() => { who.current = PEOPLE.employee.user; can.current = {}; view.current = 'estate'; });
 
+/* The window between opening the app and the server saying what this account
+   may do. It is short and it is where the worst of these bugs live: a SPOC
+   read as a technician gets the whole employee app, camera and all. */
+describe('before the server has answered', () => {
+  test('a member is given nothing role-specific until their capabilities arrive', () => {
+    who.current = { id: 2, role: 'member' };
+    can.current = null;                    // /api/approvals/me has not answered
+    view.current = 'employee';             // and roleOfUser() reads them as a technician
+    const to = goes(renderHook(() => usePrimaryNav()).result.current);
+    for (const page of ['/scan', '/multi-rack/new', '/history', '/tasks', '/port-history']) {
+      expect(to).not.toContain(page);
+    }
+    // What belongs to no role is still there, so the app is never empty.
+    expect(to).toContain('/');
+    expect(to).toContain('/help');
+    expect(to).toContain('/profile');
+  });
+
+  test('an admin does not wait: their own role already says so', () => {
+    who.current = { id: 3, role: 'org_admin' };
+    can.current = null;
+    view.current = 'admin';
+    const to = goes(renderHook(() => usePrimaryNav()).result.current);
+    expect(to).toContain('/organizations');
+    expect(to).not.toContain('/scan');
+  });
+});
+
 describe('the bar, per role', () => {
   test('an employee works at the rack', () => {
     expect(bar(navFor('employee'))).toEqual(['Home', '2 Racks', 'Racks']);

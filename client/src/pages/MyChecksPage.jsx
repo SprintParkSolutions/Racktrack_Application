@@ -12,7 +12,7 @@ import styles from './MyChecksPage.module.css';
  * A SPOC does not scan racks. Somebody else photographs a rack, the check
  * reaches them with an incident raised against it, and their whole job is to
  * work through what has arrived. Until 22 September 2026 the only place that
- * list existed was RackTrack Drift Desk, a separate application; the owner
+ * list existed was RackTrack Control, a separate application; the owner
  * asked for it in the app, as a list of the incidents assigned to them.
  *
  * So this is one screen and one question - what is with me - answered in the

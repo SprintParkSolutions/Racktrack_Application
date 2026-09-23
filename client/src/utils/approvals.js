@@ -73,7 +73,7 @@ function pathOf(url) {
 export async function openApprovals(path = '/approvals/') {
   /* Say who is opening it. The Desk draws its own name and menu at the top,
      which is right in a browser tab and is one title too many inside the
-     app's own browser sheet, where "RackTrack Drift Desk" is already written
+     app's own browser sheet, where "RackTrack Control" is already written
      above it (23 September 2026). The Desk reads `in=app` and drops its
      wordmark; anything that ignores the flag is unaffected. */
   const withFlag = path.includes('in=app') ? path
@@ -139,7 +139,7 @@ async function openUrl(url) {
     return;
   }
   try {
-    await InAppSite.open({ url, title: 'RackTrack Drift Desk', closeOn: ['/', '/login'] });
+    await InAppSite.open({ url, title: 'RackTrack Control', closeOn: ['/', '/login'] });
     return;
   } catch { /* no such view in this build - fall back to the browser */ }
   await Browser.open({ url, presentationStyle: 'fullscreen', toolbarColor: '#ffffff' });

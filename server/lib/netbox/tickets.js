@@ -476,7 +476,7 @@ function readable(item, rackName) {
   return { ...item, name, diff };
 }
 
-/** Where the check opens in the Drift Desk, or null when no public address is set. */
+/** Where the check opens in the RackTrack Control, or null when no public address is set. */
 function appUrlFor(planId) {
   const root = norm(process.env.PUBLIC_BASE_URL).replace(/\/+$/, '');
   return root ? `${root}/approvals/drifts/${norm(planId)}` : null;

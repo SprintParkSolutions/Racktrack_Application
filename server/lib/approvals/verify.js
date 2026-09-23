@@ -57,7 +57,7 @@ const OUTPUTS_DIR = process.env.RT_OUTPUTS_DIR || path.resolve(__dirname, '..', 
  * The scan a person named.
  *
  * A number is a scan on the NetBox side. Anything else is the id the phone
- * files a rack's scans under (RK-...), which is what the Drift Desk offers in
+ * files a rack's scans under (RK-...), which is what the RackTrack Control offers in
  * its list: it names that rack's adopted scan. Looked up as a number, a rack id
  * is NaN and matched nothing, so every choice from that list was answered
  * "no such scan".

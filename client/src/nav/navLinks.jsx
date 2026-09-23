@@ -106,7 +106,16 @@ export function usePrimaryNav() {
      data sources, which is what the owner asked for on 23 September 2026 -
      "keep it admin level, not employee or technician level".  */
   const { view } = useAppView(roleOfUser(user, can), user && user.id);
-  const asEmployee = view === 'employee';
+  /* Whether we yet KNOW which app this person gets. An admin is known by
+     their own role; everybody else waits for GET /api/approvals/me, because
+     a technician is only a SPOC because that answer says so. */
+  const known = can !== null || isAdmin;
+  /* And the toggle only counts once the role is known. Before the answer
+     lands roleOfUser() reads a SPOC as a technician, viewsFor('tech') is
+     ['employee'], so `view` came back 'employee' and the whole employee
+     navigation showed anyway - the guard below was reading the toggle's
+     answer to a question nobody had asked yet. */
+  const asEmployee = known && view === 'employee';
   const isSpoc = Boolean(can && can.spoc) && !asEmployee;
   const runsTheEstate = (isAdmin || Boolean(can && can.spoc)) && !asEmployee;
 
@@ -119,14 +128,12 @@ export function usePrimaryNav() {
      the request failed. The owner saw Port history in a SPOC's sidebar on
      23 September 2026, and that is what it was.
 
-     Two people do not have to wait: an admin is an admin by their own role,
-     and anybody who has shifted the toggle to Employee has said which app
-     they want. Everybody else gets the entries that belong to no role until
-     the server has answered, and never the wrong ones. */
-  const settled = can !== null || isAdmin || asEmployee;
+     One person does not have to wait: an admin is an admin by their own
+     role. Everybody else gets the entries that belong to no role until the
+     server has answered, and never the wrong ones. */
   /* The employee's own work: only when we know this person is not running
      the estate. */
-  const employeeWork = settled && !runsTheEstate;
+  const employeeWork = known && !runsTheEstate;
 
   return [
     // ── Rack work. Home is first: "/" is the app's landing screen again, so
@@ -193,9 +200,9 @@ export function usePrimaryNav() {
     ...(runsTheEstate && isSpoc ? [{ group: 'work', to: '/my-checks', label: 'Your checks',
       icon: <InboxIcon />, end: false,
       hint: 'The checks waiting on you' }] : []),
-    ...(runsTheEstate ? [{ group: 'work', href: APPROVALS_URL, label: 'Drift Desk', icon: <InboxIcon />,
+    ...(runsTheEstate ? [{ group: 'work', href: APPROVALS_URL, label: 'RackTrack Control', icon: <InboxIcon />,
       inBar: true, barLabel: 'Drift',
-      hint: isAdmin ? 'Opens RackTrack Drift Desk' : 'The checks that are with you' }] : []),
+      hint: isAdmin ? 'Opens RackTrack Control' : 'The checks that are with you' }] : []),
 
     // ── Organization: owners and organisation admins.
     ...(isAdmin ? [{ group: 'org', to: '/organizations', label: 'Organizations', icon: <OrgIcon />, end: false,

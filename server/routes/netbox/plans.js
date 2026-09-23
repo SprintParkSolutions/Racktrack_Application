@@ -6,7 +6,7 @@
  * approve as a whole, and only what they approve is written, so there is one
  * name against every change that reaches the customer's record. When the site
  * has nobody valid to give it to, the check waits for an organization admin,
- * who chooses somebody in Drift Desk. The person who sent a check decides
+ * who chooses somebody in RackTrack Control. The person who sent a check decides
  * nothing on it.
  *
  * The rules are held in lib/approvals (machine.js, service.js, spoc.js), not
@@ -160,7 +160,7 @@ router.get('/:planId/contacts', gates.technician, async (req, res) => {
   if (!mine(req, plan)) return res.status(404).json({ error: 'no such plan' });
   const out = await service.contacts(req.params.planId, { actor: req.user });
   if (out.error) return res.status(out.code === 'not_found' ? 404 : 409).json({ error: out.error });
-  // Who else it could go to is an admin's question, asked in Drift Desk.
+  // Who else it could go to is an admin's question, asked in RackTrack Control.
   delete out.assignable;
   res.json(out);
 });
@@ -334,7 +334,7 @@ function notifyAssignee(plan, { person, items, incidents, rackName, siteName, by
 }
 
 const GOES_TO_THE_SPOC = 'A check goes to the site SPOC when it is sent. '
-  + 'An organization admin reassigns it in Drift Desk.';
+  + 'An organization admin reassigns it in RackTrack Control.';
 
 /**
  * Approve or reject items from the phone, one by one.

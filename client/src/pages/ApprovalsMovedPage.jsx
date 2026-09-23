@@ -13,13 +13,13 @@ import styles from './ApprovalsMovedPage.module.css';
 export default function ApprovalsMovedPage() {
   return (
     <div className={styles.page}>
-      <h1 className={styles.title}>This has moved to RackTrack Drift Desk</h1>
+      <h1 className={styles.title}>This has moved to RackTrack Control</h1>
       <p className={styles.text}>
-        Drift checks are now reviewed, assigned and written to NetBox in RackTrack Drift Desk.
+        Drift checks are now reviewed, assigned and written to NetBox in RackTrack Control.
         It opens signed in, on this same account.
       </p>
       <ExternalLink href={APPROVALS_URL} className={styles.primary}>
-        Open Drift Desk
+        Open RackTrack Control
       </ExternalLink>
     </div>
   );

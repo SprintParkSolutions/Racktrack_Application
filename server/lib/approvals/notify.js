@@ -288,7 +288,7 @@ const LINES = {
       p.why === 'wrong_spoc'
         ? `${holderName(plan, p)} says this check is not theirs: "${p.text || ''}".`
         : (p.text || ''),
-      'Open the check in Drift Desk and choose who it goes to.',
+      'Open the check in RackTrack Control and choose who it goes to.',
     ];
   },
   incident_failed: (plan, p) => {

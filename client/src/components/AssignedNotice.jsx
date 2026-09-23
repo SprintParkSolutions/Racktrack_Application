@@ -10,14 +10,14 @@ import styles from './AssignedNotice.module.css';
 /* ──────────────────────────────────────────────────────────────────────
    "Something has been assigned to you."
 
-   The notice already existed, but only inside RackTrack Drift Desk, under a
+   The notice already existed, but only inside RackTrack Control, under a
    bell - and the person it is for is a technician, who lives in this app and
    never opens that one unprompted. So it is shown here, where the app opens,
    and it is a guide rather than a message: what was asked, by whom, about which
    rack, and a button for each thing they can do about it.
 
    The words come from the server (lib/approvals/notify.js), so the email, the
-   Drift Desk inbox and this card all say the same thing.
+   RackTrack Control inbox and this card all say the same thing.
 
    It is no longer only the assignment. A check goes straight to the site's
    SPOC, so the same banner tells the SPOC it is theirs, tells the person who
@@ -83,7 +83,7 @@ export function headingFor(kind, part) {
   return (LABEL_BY_PART[part] && LABEL_BY_PART[part][kind]) || LABEL[kind] || 'A check';
 }
 // Where "Open the check" goes. Somebody who has to act on a check does that in
-// Drift Desk; the person who sent it follows it on their own Drift check screen.
+// RackTrack Control; the person who sent it follows it on their own Drift check screen.
 const IN_DESK = new Set(['assigned', 'needs_admin', 'write_failed', 'incident']);
 const IN_APP = new Set(['approved', 'rejected', 'rework', 'written']);
 
