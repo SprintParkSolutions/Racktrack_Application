@@ -71,7 +71,9 @@ describe('the phone bar', () => {
     // what somebody does standing at a rack they have just read; a single
     // point of contact never took the photograph (the owner, 23 Sep 2026).
     expect(labels()).not.toContain('Port history');
-    expect(labels()).not.toContain('Tickets for you');
+    // Tickets are the one piece of the employee's app they keep: a SPOC can
+    // be asked to go and look at a rack (the owner, 23 September 2026).
+    expect(labels()).toContain('Tickets for you');
   });
 
   test('an admin who shifts to Employee gets the whole employee app back', () => {

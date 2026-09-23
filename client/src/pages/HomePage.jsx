@@ -429,17 +429,22 @@ export function waysFor(role) {
 
      None of them repeats the bottom bar. */
   if (role === 'spoc') {
-    /* Three, not four. The estate was the third - "Your sites", which opens the
-       organization's own screens - and a single point of contact does not run
-       the estate: they decide the checks for their site. A tile that leaves
-       their work is worse than a gap, so there is no gap: the row is three
-       wide (the owner, 23 September 2026). */
+    /* The estate is not one of them. "Your sites" opened the organization's
+       own screens, and a single point of contact does not run the estate:
+       they decide the checks for their site. A tile that leaves their work is
+       worse than a gap.
+       What fills that place instead is the tickets raised to them: a SPOC can
+       also be asked to go and look at a rack, which the owner settled on
+       23 September 2026. It is the one piece of the employee's app they keep,
+       and nav/navLinks.jsx says the same thing - the test in
+       roleConsistency.test.js fails if the two ever disagree. */
     return [
       // Not the clock: scan history is a clock with an arrow round it, and two
       // tiles in the same row read as the same thing. A check arrives for this
       // person and waits to be read, so it is the envelope.
       { key: 'mine', label: 'Your checks', icon: 'mail', to: '/my-checks' },
       { key: 'dot', label: 'Ask DOT', icon: 'chat', to: '/help' },
+      { key: 'tasks', label: 'Tickets for you', icon: 'book', to: '/tasks' },
       { key: 'you', label: 'Your account', icon: 'person_check', to: '/profile' },
     ];
   }
