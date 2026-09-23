@@ -34,6 +34,17 @@ export function planOf(n) {
   return id == null ? null : String(id);
 }
 
+/** What a notice is about, as the server sends it beside the words. */
+export function factsOf(n) {
+  const d = n && n.data && typeof n.data === 'object' ? n.data : {};
+  return [
+    ['Incident', d.incidentNumber || null],
+    ['Rack', d.rackName || d.rackId || null],
+    ['Check', d.planId != null ? `#${d.planId}` : null],
+    ['From', d.sentBy || d.by || null],
+  ].filter(([, v]) => v);
+}
+
 /** A message with the parts that belong to an email taken off. */
 export function bodyOf(body) {
   return String(body || '')
@@ -110,11 +121,27 @@ export default function NoticesSheet({ notices, onClose, onOpenCheck }) {
     finally { setBusy(false); reload(); }
   };
 
+  /* Two steps, not one.
+   *
+   * Tapping a line used to leave the app for the drift page at once, so what
+   * had actually happened - which incident, which rack, who decided it - was
+   * never read. The owner asked on 23 September 2026 for the middle step: the
+   * message itself, with one button on it that goes to that drift. */
+  const [reading, setReading] = useState(null);
+
   const open = async (n) => {
     if (!n.readAt) { await read(n.id); reload(); }
+    setReading(n.id);
+  };
+
+  const goToCheck = (n) => {
     const plan = planOf(n);
     if (plan && onOpenCheck) { onClose(); onOpenCheck(plan); }
   };
+
+  /* The list is re-read while the sheet is open, so the message being read is
+     looked up each time rather than held. */
+  const note = reading == null ? null : (rows || []).find((n) => String(n.id) === String(reading)) || null;
 
   return createPortal(
     <div className={styles.backdrop} onClick={onClose}>
@@ -128,8 +155,15 @@ export default function NoticesSheet({ notices, onClose, onOpenCheck }) {
       >
         <div className={styles.grab} aria-hidden="true" />
         <header className={styles.top}>
-          <h2 className={styles.title}>Notifications</h2>
-          {rows && rows.length > 0 && unread > 0 && (
+          {note ? (
+            <button type="button" className={styles.back} onClick={() => setReading(null)}>
+              <Icon name="chevron_left" />
+              <span>All notifications</span>
+            </button>
+          ) : (
+            <h2 className={styles.title}>Notifications</h2>
+          )}
+          {!note && rows && rows.length > 0 && unread > 0 && (
             <button type="button" className={styles.all} onClick={readAll} disabled={busy}>
               {busy ? 'Marking' : 'Mark all read'}
             </button>
@@ -139,12 +173,39 @@ export default function NoticesSheet({ notices, onClose, onOpenCheck }) {
           </button>
         </header>
 
-        {rows === null && <p className={styles.quiet}>Reading what has arrived.</p>}
-        {rows !== null && rows.length === 0 && (
+        {/* ── Step two: the message itself ───────────────────────────── */}
+        {note && (
+          <div className={styles.one}>
+            <p className={styles.oneWhen}>{when(note.createdAt)}</p>
+            <h3 className={styles.oneTitle}>{note.subject}</h3>
+            {factsOf(note).length > 0 && (
+              <dl className={styles.facts}>
+                {factsOf(note).map(([k, v]) => (
+                  <div key={k}>
+                    <dt>{k}</dt>
+                    <dd>{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+            {bodyOf(note.body) && <p className={styles.oneBody}>{bodyOf(note.body)}</p>}
+            {planOf(note) ? (
+              <button type="button" className={styles.goTo} onClick={() => goToCheck(note)}>
+                Open this drift
+                <Icon name="chevron_right" />
+              </button>
+            ) : (
+              <p className={styles.quiet}>This one is not about a check, so there is nothing to open.</p>
+            )}
+          </div>
+        )}
+
+        {!note && rows === null && <p className={styles.quiet}>Reading what has arrived.</p>}
+        {!note && rows !== null && rows.length === 0 && (
           <p className={styles.quiet}>Nothing has arrived for you yet.</p>
         )}
 
-        {rows !== null && rows.length > 0 && (
+        {!note && rows !== null && rows.length > 0 && (
           <ul className={styles.list}>
             {rows.map((n) => {
               const line = bodyOf(n.body).split('\n').find((l) => l.trim()) || '';
