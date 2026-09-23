@@ -135,15 +135,15 @@ export function usePrimaryNav() {
     // both the employee's work. Neither is offered to somebody running the
     // estate: they did not take those photographs.
     ...(runsTheEstate ? [] : [{ group: 'work', to: '/multi-rack/new', label: 'Two racks',
-      icon: <TwoRackIcon />, end: false, hint: 'Two racks as one job' }]),
+      icon: <TwoRackIcon />, end: false, inBar: true, barLabel: '2 Racks',
+      hint: 'Two racks as one job' }]),
     ...(runsTheEstate ? [] : [{ group: 'work', to: '/history', label: 'Scan history',
       icon: <HistoryIcon />, end: false, inBar: true, barLabel: 'Racks' }]),
     // The technician's fourth tab. A person who has just checked a rack looks
     // a port up next more often than they do anything else, and for somebody
     // who decides that slot is the Desk instead.
     ...(runsTheEstate ? [] : [{ group: 'work', to: '/port-history', label: 'Port history',
-      icon: <PortsIcon />, end: false, inBar: true, barLabel: 'Ports',
-      hint: 'What changed on a port' }]),
+      icon: <PortsIcon />, end: false, hint: 'What changed on a port' }]),
     // Approvals is its own application on its own address, so this entry
     // carries `href` instead of `to`: the bar, the Menu and the sidebar draw
     // it as a link that leaves the app (components/ExternalLink.jsx).

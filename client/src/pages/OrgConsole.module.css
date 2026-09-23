@@ -137,11 +137,20 @@
 }
 @media (min-width: 560px) { .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (min-width: 900px) { .stats { grid-template-columns: repeat(8, minmax(0, 1fr)); } }
+/* The same object the rest of the app is built from: light down the fill, a
+   hairline ring, a shadow with reach. The owner asked on 23 September 2026 for
+   this console to be compact and to fit the screen, so the tiles are shorter
+   as well as better made. */
 .stat {
   position: relative; display: flex; align-items: center; gap: 0; min-width: 0;
-  min-height: 62px;
-  padding: 10px 12px 9px; border-radius: 10px;
-  border: 1px solid #eee; background: #fff;
+  min-height: 56px;
+  padding: 10px 12px 9px; border-radius: 14px;
+  border: 0;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FCFDFF 60%, #F7FAFD 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .9),
+    0 0 0 1px rgba(16, 32, 60, .055),
+    0 12px 22px -20px rgba(16, 32, 60, .6);
 }
 .statIcon { display: none; }
 .statIcon :global(.appIcon) {
@@ -150,7 +159,7 @@
 }
 .statText { min-width: 0; display: flex; flex-direction: column; }
 .statValue {
-  font-size: 1.65rem; font-weight: var(--fw-title); letter-spacing: -0.04em; line-height: 1;
+  font-size: var(--fs-page); font-weight: var(--fw-title); letter-spacing: -0.04em; line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 /* One line, in words rather than shouted capitals: "Organizations" fitted
@@ -165,9 +174,14 @@
   display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;
 }
 .card {
-  position: relative; text-align: left; padding: 16px 17px;
-  border-radius: 14px; border: 1px solid #eee; background: #fff; cursor: pointer;
-  transition: border-color .18s, box-shadow .18s, transform .12s;
+  position: relative; text-align: left; padding: 15px 16px;
+  border-radius: 16px; border: 0; cursor: pointer;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FCFDFF 62%, #F7FAFD 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .9),
+    0 0 0 1px rgba(16, 32, 60, .05),
+    0 14px 26px -22px rgba(16, 32, 60, .55);
+  transition: box-shadow .18s, transform .12s;
 }
 .card::after {
   content: '→'; position: absolute; top: 15px; right: 16px;
@@ -495,3 +509,26 @@
   }
   .hero { margin-top: -46px; }
 }
+
+/* ── The pager under a list ──────────────────────────────────────────────
+   A console that fits the screen moves a page at a time. Added 23 September
+   2026, when the owner asked for this page to be compact. */
+.pager {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid #F0F1F4;
+  font-size: var(--fs-sub); color: #6b6b6b;
+}
+.pagerN { font-variant-numeric: tabular-nums; }
+.pagerGo { margin-left: auto; display: inline-flex; gap: 8px; }
+.pagerBtn {
+  border: 0; border-radius: 11px; min-height: 34px; padding: 0 14px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F7FAFD 100%);
+  color: #0B0B0C; font-family: var(--font); font-size: var(--fs-sub);
+  font-weight: var(--fw-label); cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .9),
+    0 0 0 1px rgba(16, 32, 60, .06),
+    0 8px 16px -14px rgba(16, 32, 60, .7);
+}
+.pagerBtn:disabled { opacity: .45; cursor: default; }
+.pagerBtn:active:not(:disabled) { transform: scale(0.97); }

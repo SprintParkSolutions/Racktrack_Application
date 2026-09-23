@@ -42,7 +42,9 @@ beforeEach(() => { who.current = { role: 'member' }; can.current = {}; view.curr
 
 describe('the phone bar', () => {
   test('a technician gets four tabs, and none of them is the Desk', () => {
-    expect(inBar()).toEqual(['Home', 'Racks', 'Ports']);
+    // The owner named them on 23 Sep 2026: home, two racks, the camera in the
+    // middle, the scan history, and Menu. Port history moved into the Menu.
+    expect(inBar()).toEqual(['Home', '2 Racks', 'Racks']);
     expect(labels()).not.toContain('Drift Desk');
   });
 
@@ -66,7 +68,7 @@ describe('the phone bar', () => {
   test('an admin who shifts to Employee gets the whole employee app back', () => {
     who.current = { role: 'org_admin' };
     view.current = 'employee';
-    expect(inBar()).toEqual(['Home', 'Racks', 'Ports']);
+    expect(inBar()).toEqual(['Home', '2 Racks', 'Racks']);
     expect(labels()).toContain('Scan a rack');
     expect(labels()).toContain('Two racks');
     // And the Desk goes: in the employee's view they are working as one.
@@ -95,10 +97,10 @@ describe('what is not linked', () => {
     }
   });
 
-  test('two racks as one job stays for a technician, in the Menu', () => {
+  test('looking a port up stays for a technician, in the Menu', () => {
     view.current = 'employee';
-    const two = nav().find((l) => l.label === 'Two racks');
-    expect(two).toBeTruthy();
-    expect(two.inBar).toBeUndefined();
+    const ports = nav().find((l) => l.label === 'Port history');
+    expect(ports).toBeTruthy();
+    expect(ports.inBar).toBeUndefined();
   });
 });

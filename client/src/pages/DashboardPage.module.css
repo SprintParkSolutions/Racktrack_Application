@@ -47,15 +47,27 @@
 }
 
 /* ── One control row: the two tabs, and Refresh at the end ────────────── */
+/* One row: which view, then Live and Refresh. The underline tabs and the
+   outlined pill floating to their right never lined up with each other. */
 .controls {
   display: flex;
-  align-items: flex-end;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
   min-width: 0;
   margin-bottom: 14px;
-  border-bottom: 1px solid var(--md-outline-variant, rgba(0,0,0,0.1));
 }
-.tabBar { display: flex; gap: 2px; min-width: 0; }
+.tabBar {
+  display: inline-flex;
+  gap: 2px;
+  min-width: 0;
+  padding: 3px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, .75);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .9),
+    0 0 0 1px rgba(16, 32, 60, .06),
+    0 8px 16px -14px rgba(16, 32, 60, .7);
+}
 .tab {
   appearance: none;
   border: none;
@@ -66,32 +78,36 @@
   line-height: var(--lh-item);
   font-weight: var(--fw-label);
   color: var(--muted, #666666);
-  min-height: 44px;
-  padding: 0 14px;
+  min-height: 38px;
+  padding: 0 16px;
+  border-radius: 10px;
   white-space: nowrap;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  transition: color 0.12s ease, border-color 0.12s ease;
+  transition: background 0.14s ease, color 0.12s ease;
 }
 .tab:hover { color: var(--md-on-surface, #1c1c1c); }
 .tabActive {
   color: var(--md-on-surface, #1c1c1c);
   font-weight: var(--fw-title);
-  border-bottom-color: var(--accent, #121212);
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(16, 32, 60, .12);
 }
-.controlsEnd { margin-left: auto; padding-bottom: 6px; flex: none; }
+.controlsEnd { margin-left: auto; flex: none; display: inline-flex; gap: 8px; }
 
 .liveBtn, .refreshBtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 7px;
-  border: 1px solid var(--md-outline-variant, rgba(0,0,0,0.12));
-  background: var(--md-surface-container, rgba(0,0,0,0.04));
+  border: 0;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F7FAFD 100%);
   color: var(--md-on-surface, #1c1c1c);
-  border-radius: 999px;
-  min-height: 44px;
-  padding: 0 14px;
+  border-radius: 12px;
+  min-height: 38px;
+  padding: 0 13px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .9),
+    0 0 0 1px rgba(16, 32, 60, .06),
+    0 8px 16px -14px rgba(16, 32, 60, .7);
   font-size: var(--fs-body);
   line-height: var(--lh-body);
   font-weight: var(--fw-label);
@@ -103,9 +119,15 @@
   width: 8px; height: 8px; border-radius: 50%;
   background: var(--muted, #929292);
 }
-/* Live is a state, not a colour: black fill on white says it louder than
-   green did, and the app carries no hue. */
-.liveOn { border-color: #121212; background: #121212; color: #ffffff; }
+/* Live is a state: the page's own blue while it is on, so it reads as
+   running rather than as the heaviest control on the screen. */
+.liveOn {
+  background: linear-gradient(180deg, #3566DF 0%, #2349C4 100%);
+  color: #ffffff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .28),
+    0 8px 16px -12px rgba(23, 50, 143, .9);
+}
 .liveOn .liveDot { background: #ffffff; box-shadow: 0 0 0 0 rgba(255,255,255,0.6); animation: pulse 1.8s infinite; }
 @keyframes pulse {
   0%   { box-shadow: 0 0 0 0 rgba(255,255,255,0.5); }
@@ -131,14 +153,35 @@
 @media (min-width: 620px) { .figures { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (min-width: 980px) { .figures { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 
+/* A figure is an object on the page, not a rectangle drawn on it: light down
+   the fill, a hairline all round, a shadow with reach - the same parts Home's
+   containers are built from, so the two screens look like one product. The
+   owner called these dashboards flat and unprofessional on 23 Sep 2026. */
 .figure {
+  position: relative;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  background: var(--md-surface-container-lowest, #fff);
-  border: 1px solid var(--md-outline-variant, rgba(0,0,0,0.08));
-  border-radius: 14px;
-  padding: 12px 12px 11px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FCFDFF 60%, #F7FAFD 100%);
+  border: 0;
+  border-radius: 18px;
+  padding: 14px 14px 13px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .9),
+    0 0 0 1px rgba(16, 32, 60, .055),
+    0 2px 5px rgba(16, 32, 60, .045),
+    0 18px 32px -26px rgba(16, 32, 60, .55);
+}
+/* What a figure is about, as a thread along its top edge. Colour here carries
+   meaning and nothing else: the day's own number, something healthy, and
+   something that wants looking at. */
+.figure::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 16px; right: 16px;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(16, 32, 60, .10);
 }
 /* A display number: above the type scale on purpose, like the splash count. */
 .figValue {
@@ -170,10 +213,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* Today's number, and a number that wants looking at: a firmer edge, no hue. */
-.accent { border-color: rgba(18,18,18,0.22); }
-.warn   { border-color: rgba(18,18,18,0.22); }
-.warn .figNote { color: var(--md-on-surface, #121212); }
+/* Today's number, a healthy one, and one that wants looking at. */
+.accent::before { background: linear-gradient(90deg, rgba(43, 92, 224, .65), rgba(110, 140, 245, .25)); }
+.good::before   { background: linear-gradient(90deg, rgba(15, 123, 79, .6), rgba(15, 123, 79, .15)); }
+.warn::before   { background: linear-gradient(90deg, rgba(180, 105, 14, .65), rgba(180, 105, 14, .18)); }
+.warn .figNote  { color: #8A5310; font-weight: var(--fw-label); }
+.good .figNote  { color: #0F7B4F; font-weight: var(--fw-label); }
 
 /* ── Cards ────────────────────────────────────────────────────────────── */
 .grid {
@@ -190,10 +235,15 @@
 
 .card {
   min-width: 0;
-  background: var(--md-surface-container-lowest, #fff);
-  border: 1px solid var(--md-outline-variant, rgba(0,0,0,0.08));
-  border-radius: 16px;
-  padding: 14px 16px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FCFDFF 62%, #F7FAFD 100%);
+  border: 0;
+  border-radius: 20px;
+  padding: 15px 16px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .9),
+    0 0 0 1px rgba(16, 32, 60, .05),
+    0 2px 5px rgba(16, 32, 60, .045),
+    0 20px 36px -28px rgba(16, 32, 60, .5);
 }
 /* The heading row stays inside the card's corner: the title gives way, the
    count never wraps. */

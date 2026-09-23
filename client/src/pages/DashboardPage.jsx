@@ -460,10 +460,10 @@ function OperationsView({ live = true, refreshTick = 0 }) {
         <Figure label="Total scans" value={t.scansOk ?? 0}
                 note={t.scansFail ? `${t.scansFail} failed` : null} />
         <Figure label="Success rate" value={t.successRate != null ? `${t.successRate}%` : '-'}
-                tone={t.successRate != null && t.successRate < 90 ? 'warn' : undefined} />
+                tone={t.successRate == null ? undefined : t.successRate < 90 ? 'warn' : 'good'} />
         <Figure label="Feedback accuracy" value={fb.accuracy != null ? `${fb.accuracy}%` : '-'}
                 note={feedback}
-                tone={fb.accuracy != null && fb.accuracy < 80 ? 'warn' : undefined} />
+                tone={fb.accuracy == null ? undefined : fb.accuracy < 80 ? 'warn' : 'good'} />
         <Figure label="Failures" value={t.totalFails ?? 0}
                 note={t.totalEvents ? `of ${t.totalEvents} events` : null}
                 tone={t.totalFails ? 'warn' : undefined} />

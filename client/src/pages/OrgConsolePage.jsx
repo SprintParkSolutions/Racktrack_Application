@@ -56,6 +56,10 @@ export default function OrgConsolePage() {
   const [activeOrg, setActiveOrg] = useState(null);   // {id, name, slug}
   const [sites, setSites] = useState([]);
   const [members, setMembers] = useState([]);
+  /* Both lists are paged, so the console is one screen whatever the size of
+     the organisation (the owner, 23 September 2026). */
+  const { shown: shownMembers, bar: membersBar } = usePaged(members, 4);
+  const { shown: shownSites, bar: sitesBar } = usePaged(sites, 3);
   const [dash, setDash] = useState(null);             // owner: {totals, recentScans}
   const [odash, setOdash] = useState(null);           // org:   {totals, recentScans}
   const [loading, setLoading] = useState(true);
@@ -422,7 +426,7 @@ export default function OrgConsolePage() {
               <div className={styles.empty}>No members yet.</div>
             ) : (
               <div className={styles.peopleGrid}>
-                {members.map(m => {
+                {shownMembers.map(m => {
                   const on = scanFilter?.type === 'user' && scanFilter.id === m.id;
                   const canManage = m.role !== 'owner' && !(m.role === 'org_admin' && !isOwner);
                   return (
@@ -468,6 +472,7 @@ export default function OrgConsolePage() {
                 })}
               </div>
             )}
+            {membersBar}
           </section>
 
           {/* Sites - click to see that site's scans */}
@@ -480,7 +485,7 @@ export default function OrgConsolePage() {
               <div className={styles.empty}>No sites yet.</div>
             ) : (
               <div className={styles.list}>
-                {sites.map(s => {
+                {shownSites.map(s => {
                   const on = scanFilter?.type === 'site' && scanFilter.name === s.name;
                   return (
                     <div key={s.id} className={`${styles.row} ${on ? styles.rowActive : ''}`}>
@@ -505,6 +510,7 @@ export default function OrgConsolePage() {
                 })}
               </div>
             )}
+            {sitesBar}
           </section>
 
           {/* Scans - thumbnails, filtered by the selected person / site */}
@@ -644,6 +650,33 @@ function fmtDate(s) {
     if (isNaN(d)) return s;
     return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   } catch { return s; }
+}
+
+/* A page of a list, and the way to the next of it.
+ *
+ * The owner asked on 23 September 2026 for this console to be compact and to
+ * fit the screen. An organisation with forty people used to print all forty,
+ * and the Sites under them were a thumb's worth of scrolling away. */
+function usePaged(items, per) {
+  const [page, setPage] = useState(0);
+  const all = items || [];
+  const pages = Math.max(1, Math.ceil(all.length / per));
+  const at = Math.min(page, pages - 1);
+  const shown = all.slice(at * per, at * per + per);
+  const bar = all.length > per ? (
+    <div className={styles.pager}>
+      <span className={styles.pagerN}>
+        {at * per + 1}-{Math.min(all.length, at * per + per)} of {all.length}
+      </span>
+      <span className={styles.pagerGo}>
+        <button type="button" className={styles.pagerBtn} disabled={at === 0}
+          onClick={() => setPage(at - 1)}>Back</button>
+        <button type="button" className={styles.pagerBtn} disabled={at >= pages - 1}
+          onClick={() => setPage(at + 1)}>Next</button>
+      </span>
+    </div>
+  ) : null;
+  return { shown, bar };
 }
 
 function StatRow({ items }) {
