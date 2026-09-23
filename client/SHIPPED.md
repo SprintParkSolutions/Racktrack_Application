@@ -20,6 +20,23 @@ on a successful upload. Add a row by hand only if you shipped by hand.
 | 2026-09-22 | android | 1.1 | 77 | Firebase App Distribution | - |
 | 2026-09-22 | ios | 1.1 | 3 | TestFlight | The last iOS build before the numbering was put right |
 
+## The iOS list under 1.1 reads 1, 2, 3, 82, 83
+
+The owner saw it in App Store Connect on 23 September 2026 and asked for the
+numbering to start again at 4. It cannot, and this is the reason:
+
+- **Apple.** Inside one version string, every build must be higher than every
+  build already uploaded for it. 83 is uploaded under 1.1, so 1.1 (4) is
+  refused at submission. Uploaded builds cannot be renumbered or deleted -
+  only expired, which hides them from testers but leaves the history.
+- **Android.** Firebase would accept a lower version code, but a phone running
+  82 refuses to install 4 over it. Every tester would have to delete the app
+  and install it again.
+
+So 1.1 keeps counting: the next builds are iOS 84 and Android 83. Starting
+again at a low number needs a new version string - 1.2 (1) - where the
+ordering rule starts over. That is a decision for the owner, not for a script.
+
 ## Two things this file exists to stop
 
 **Build 81 went out twice on 23 September 2026.** `ship-apk.sh` did not touch
