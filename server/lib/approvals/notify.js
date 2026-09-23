@@ -35,6 +35,7 @@
  * that happens is a row marked failed with a reason in it.
  */
 const store = require('./store');
+const { realName } = require('../rack_name');
 const bus = require('./bus');
 
 const CHANNELS = ['inapp', 'email'];
@@ -201,7 +202,7 @@ const where = (plan) => `rack ${plan.rackName || plan.rackId || plan.id}`;
  * by the hash of its photograph, which means nothing to the person reading: it
  * is "a rack that has not been identified yet", and the site says where.
  */
-const rackWords = (name) => (!name || /^RK-[0-9A-F]{6,}$/i.test(String(name))
+const rackWords = (name) => (!realName(name)
   ? 'a rack that has not been identified yet' : `rack ${name}`);
 
 /** One item to check, as somebody at the rack would say it. */

@@ -14,7 +14,10 @@
  *
  * The hash is never a name: a caller that gets null here says so in words.
  */
-const UNNAMED = /^RK-[0-9A-F]{6,}$/i;
+/* A scan's own id, in the shape lib/rack_access mints and accepts them. It is
+   matched here rather than the narrower hex-only pattern the screens use,
+   because the id is an id whatever letters fell out of the hash. */
+const UNNAMED = /^RK-[A-Za-z0-9]{4,32}$/;
 
 /** A name somebody would recognise, or null for a hash and for nothing. */
 function realName(name) {

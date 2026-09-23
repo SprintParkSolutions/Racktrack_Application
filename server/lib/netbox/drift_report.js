@@ -34,9 +34,14 @@ const shelfOf = (item) => {
   const m = String(item.uid || '').match(/:u(\d{1,2})$/i) || String(item.name || '').match(/\bU(\d{1,2})\b/);
   return m ? Number(m[1]) : null;
 };
-function plainName(name, rackName) {
+/* `marks` is what the rack is called in the names of the things in it: the
+   name a person gave it, and the scan's own id, which is what the device
+   names carry while nobody has identified the rack. */
+function plainName(name, ...marks) {
   let out = String(name || '');
-  if (rackName && out.endsWith(rackName)) out = out.slice(0, -rackName.length).trim();
+  for (const mark of marks.filter(Boolean)) {
+    if (out.endsWith(mark)) out = out.slice(0, -mark.length).trim();
+  }
   return out.replace(/\s+U\d{1,2}$/, '').trim() || String(name || '');
 }
 
@@ -77,13 +82,13 @@ function build(plan, { tickets = [], siteName = null, spaceName = null, generate
     const held = t ? `<div class="d">With ${esc(t.assignee || 'nobody yet')}${t.external && t.external.number && !t.external.planLevel ? ` - ${esc(t.external.number)}` : ''}${t.status ? ` - ${esc(String(t.status).replace(/_/g, ' '))}` : ''}</div>` : '';
     const found = t && t.finding ? `<div class="d ok">Finding: ${esc(t.finding)}</div>` : '';
     const sh = shelfOf(i);
-    return `<tr><td class="u">${sh != null ? `U${sh}` : ''}</td><td><b>${esc(plainName(i.name, rack))}</b><div class="m">${esc(i.type)}</div></td>
+    return `<tr><td class="u">${sh != null ? `U${sh}` : ''}</td><td><b>${esc(plainName(i.name, rack, plan.rackId))}</b><div class="m">${esc(i.type)}</div></td>
       <td><span class="chip warn">${esc(WORD[i.action] || i.action)}</span><div class="m">${esc(MEANS[i.action] || '')}</div>${lines}${held}${found}</td></tr>`;
   }).join('');
 
   const matchRows = g.matching.map(({ item, record }) => {
     const sh = shelfOf(item);
-    return `<tr><td class="u">${sh != null ? `U${sh}` : ''}</td><td><b>${esc(plainName(item.name, rack))}</b></td>
+    return `<tr><td class="u">${sh != null ? `U${sh}` : ''}</td><td><b>${esc(plainName(item.name, rack, plan.rackId))}</b></td>
       <td><span class="chip ok">Matches</span> <span class="m">${esc(record ? record.name : 'the record')}</span></td></tr>`;
   }).join('');
 

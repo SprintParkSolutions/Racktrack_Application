@@ -57,9 +57,16 @@ function nameOf(change, item, plan) {
   const record = item && item.modified && text(item.modified.recordName);
   if (record) return record;
   const name = text((item && item.name) || change.name);
-  const rack = text(plan && plan.rackName);
-  if (!name || !rack || name === rack) return name || null;
-  const trimmed = name.split(rack).join(' ').replace(/\s{2,}/g, ' ').replace(/^[\s\-:,]+|[\s\-:,]+$/g, '');
+  /* Both ways the rack appears inside a device's name: the name a person gave
+     it, and the scan's own id, which is what the device names carry while
+     nobody has identified the rack. The check's rackName used to BE that id,
+     so trimming the name alone was enough; it is a name or nothing now
+     (lib/rack_name.js), and the id has to be trimmed in its own right. */
+  const marks = [text(plan && plan.rackName), text(plan && plan.rackId)].filter(Boolean);
+  if (!name || !marks.length || marks.includes(name)) return name || null;
+  let trimmed = name;
+  for (const mark of marks) trimmed = trimmed.split(mark).join(' ');
+  trimmed = trimmed.replace(/\s{2,}/g, ' ').replace(/^[\s\-:,]+|[\s\-:,]+$/g, '');
   return trimmed || name;
 }
 
