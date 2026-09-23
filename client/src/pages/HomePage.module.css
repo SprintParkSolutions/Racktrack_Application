@@ -216,7 +216,7 @@
   -webkit-tap-highlight-color: transparent;
   transition: background var(--dur-fast, 150ms) var(--ease-out), color .15s, box-shadow .15s;
 }
-.viewTab:hover { color: #0B0B0C; }
+.viewTab:not(.viewOn):hover { color: #0B0B0C; }
 /* The one you are in: filled, in the app's blue, with a tick. */
 .viewOn {
   background: linear-gradient(180deg, #3566DF 0%, #2349C4 100%);
@@ -227,6 +227,7 @@
     0 1px 2px rgba(23, 50, 143, .35),
     0 8px 14px -10px rgba(23, 50, 143, .9);
 }
+.viewOn:hover, .viewOn:focus { color: #ffffff; }
 .viewOn::before {
   content: '✓';
   margin-right: 6px;

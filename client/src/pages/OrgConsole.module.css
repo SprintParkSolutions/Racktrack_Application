@@ -32,11 +32,17 @@
 }
 
 /* ── Header ── */
+/* Back, the name, and the account - in that order, with the account hard
+   against the right edge at every width. The title's block now takes the
+   space between them, so the account cannot drift into the middle of the row
+   when the name is short (the owner, 23 September 2026). */
 .head {
-  display: flex; align-items: flex-end; justify-content: space-between;
-  gap: 20px; padding-bottom: 14px; margin-bottom: 22px;
+  display: flex; align-items: center;
+  gap: 16px; padding-bottom: 14px; margin-bottom: 22px;
   border-bottom: 1px solid #eee;
 }
+.head > div:not([class]) { flex: 1 1 auto; min-width: 0; }
+.head > .acct { margin-left: auto; }
 /* .headBackBtn is gone: this header now renders the shared <BackButton>, like
    every other page. Its `align-self: center` was also why the control appeared
    CENTRED at the top of the org dashboard on a phone - below 640px .head
@@ -564,25 +570,21 @@
   .hero { margin-top: -46px; }
 }
 
-/* ── The pager under a list ──────────────────────────────────────────────
-   A console that fits the screen moves a page at a time. Added 23 September
-   2026, when the owner asked for this page to be compact. */
-.pager {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  margin-top: 10px; padding-top: 10px; border-top: 1px solid #F0F1F4;
-  font-size: var(--fs-sub); color: #6b6b6b;
-}
-.pagerN { font-variant-numeric: tabular-nums; }
-.pagerGo { margin-left: auto; display: inline-flex; gap: 8px; }
-.pagerBtn {
-  border: 0; border-radius: 11px; min-height: 34px; padding: 0 14px;
+/* The word that opens the rest of a list. Quiet, because reading all of
+   something is rarer than reading the first few of it. */
+.showAll {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 10px; padding: 8px 14px;
+  border: 0; border-radius: 12px;
   background: linear-gradient(180deg, #FFFFFF 0%, #F7FAFD 100%);
-  color: #0B0B0C; font-family: var(--font); font-size: var(--fs-sub);
-  font-weight: var(--fw-label); cursor: pointer;
+  color: #24408F;
+  font-family: var(--font); font-size: var(--fs-sub); font-weight: var(--fw-label);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, .9),
     0 0 0 1px rgba(16, 32, 60, .06),
     0 8px 16px -14px rgba(16, 32, 60, .7);
+  transition: transform .12s;
 }
-.pagerBtn:disabled { opacity: .45; cursor: default; }
-.pagerBtn:active:not(:disabled) { transform: scale(0.97); }
+.showAll:active { transform: scale(0.97); }
+.showAll:focus-visible { outline: 2px solid #0B0B0C; outline-offset: 2px; }

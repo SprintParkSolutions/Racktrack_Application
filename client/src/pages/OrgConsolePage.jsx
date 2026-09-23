@@ -725,27 +725,25 @@ function AccountMenu({ user, role, isOwner, onSettings, onConsole, onApp, onSign
   );
 }
 
+/* A few of a list, and a word that shows the rest.
+ *
+ * This was Back and Next, which is a pager - the shape for a list somebody
+ * walks through a page at a time. The people in an organisation and its sites
+ * are read at a glance and occasionally in full, so they show a few and open
+ * in place (the owner, 23 September 2026).
+ */
 function usePaged(items, per) {
-  const [page, setPage] = useState(0);
-  const all = items || [];
-  const pages = Math.max(1, Math.ceil(all.length / per));
-  const at = Math.min(page, pages - 1);
-  const shown = all.slice(at * per, at * per + per);
-  const bar = all.length > per ? (
-    <div className={styles.pager}>
-      <span className={styles.pagerN}>
-        {at * per + 1}-{Math.min(all.length, at * per + per)} of {all.length}
-      </span>
-      <span className={styles.pagerGo}>
-        <button type="button" className={styles.pagerBtn} disabled={at === 0}
-          onClick={() => setPage(at - 1)}>Back</button>
-        <button type="button" className={styles.pagerBtn} disabled={at >= pages - 1}
-          onClick={() => setPage(at + 1)}>Next</button>
-      </span>
-    </div>
+  const [all, setAll] = useState(false);
+  const list = items || [];
+  const shown = all ? list : list.slice(0, per);
+  const bar = list.length > per ? (
+    <button type="button" className={styles.showAll} onClick={() => setAll((o) => !o)}>
+      {all ? 'Show fewer' : `Show all ${list.length}`}
+    </button>
   ) : null;
   return { shown, bar };
 }
+
 
 function StatRow({ items }) {
   return (
