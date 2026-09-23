@@ -46,7 +46,6 @@ export default function ContactPage() {
   const [error, setError] = useState(null);
   const [files, setFiles] = useState([]);       // [{ file, url? }]
   const [fileError, setFileError] = useState(null);
-  const [dragging, setDragging] = useState(false);
   const fileInput = useRef(null);
 
   // Object URLs for the thumbnails are a manual allocation: without the revoke
@@ -120,11 +119,6 @@ export default function ContactPage() {
     setFileError(null);
   };
 
-  const onDrop = (e) => {
-    e.preventDefault();
-    setDragging(false);
-    addFiles(e.dataTransfer?.files);
-  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -169,7 +163,7 @@ export default function ContactPage() {
   const Intro = (
     <PageHeader
       title="Contact support"
-      sub="Tell us what you are running into. We reply within a few hours."
+      sub="We reply within a few hours."
       back={() => navigate(-1)}
     />
   );
@@ -202,6 +196,27 @@ export default function ContactPage() {
 
       <div className={styles.wrap}>
         <div className={styles.cols}>
+          {/* ── The two fast ways first. Most questions are answered by DOT
+              in the time it takes to type a subject line, and an email is
+              one press; the form is for what those cannot do. They stood
+              under the form, where a person reached them after writing a
+              message they might not have needed to (23 September 2026). */}
+          <nav className={styles.ways} aria-label="Other ways to reach us">
+            <button type="button" className={styles.way} onClick={() => navigate('/help')}>
+              <span className={styles.wayGlyph} aria-hidden="true"><Icon name="chat" /></span>
+              <span className={styles.wayText}>
+                <span className={styles.wayName}>Ask DOT</span>
+                <span className={styles.waySub}>Answers now, from the documentation</span>
+              </span>
+            </button>
+            <a className={styles.way} href={mailto}>
+              <span className={styles.wayGlyph} aria-hidden="true"><Icon name="mail" /></span>
+              <span className={styles.wayText}>
+                <span className={styles.wayName}>Email us</span>
+                <span className={styles.waySub}>{SUPPORT_EMAIL}</span>
+              </span>
+            </a>
+          </nav>
           {/* ── Form ── */}
           <form className={`${styles.block} ${styles.form}`} onSubmit={submit} noValidate>
             <h2 className={styles.blockH}>Send us a message</h2>
@@ -254,24 +269,14 @@ export default function ContactPage() {
                   the keyboard path is the same as the pointer path. */}
               <button
                 type="button"
-                className={`${styles.drop} ${dragging ? styles.dropOver : ''}`}
+                className={styles.attach}
                 onClick={() => fileInput.current?.click()}
-                onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-                onDragLeave={() => setDragging(false)}
-                onDrop={onDrop}
                 disabled={files.length >= MAX_FILES}
               >
-                <Icon name="paperclip" className={styles.dropIcon} />
-                <span className={styles.dropText}>
-                  <span className={styles.dropLead}>
-                    {files.length >= MAX_FILES
-                      ? `Maximum of ${MAX_FILES} files attached`
-                      : 'Attach screenshots, logs, or other files'}
-                  </span>
-                  <span className={styles.dropMeta}>
-                    Up to {MAX_FILES} files · {prettyBytes(MAX_FILE_BYTES)} each
-                  </span>
-                </span>
+                <Icon name="paperclip" />
+                {files.length >= MAX_FILES
+                  ? `${MAX_FILES} files is the most`
+                  : files.length ? 'Attach another file' : 'Attach a screenshot or a file'}
               </button>
 
               {files.length > 0 && (
@@ -321,51 +326,9 @@ export default function ContactPage() {
               <button type="submit" className={styles.send} disabled={!canSend}>
                 {status === 'sending' ? 'Sending' : 'Send message'}
               </button>
-              {!canSend && status !== 'sending' && (
-                <span className={styles.hint}>Add a message to send.</span>
-              )}
             </div>
           </form>
 
-          {/* ── Rail ── */}
-          <aside className={styles.rail}>
-            <section className={styles.block}>
-              <h2 className={styles.blockH}>Other ways to reach us</h2>
-              <div className={styles.options}>
-                {/* /help is the DOT assistant - see the route table in
-                    DesktopShell, which titles it "Ask DOT". A separate
-                    "Documentation" row was specified for this rail, but this
-                    build has no docs route and no external docs URL, and DOT
-                    answers from the same verified documentation. A third row
-                    pointing at /help would be the same destination wearing a
-                    different name; add it here when a docs URL exists. */}
-                <button type="button" className={styles.option} onClick={() => navigate('/help')}>
-                  <Icon name="chat" className={styles.optionIcon} />
-                  <span className={styles.optionText}>
-                    <span className={styles.optionName}>Ask DOT</span>
-                    <span className={styles.optionSub}>
-                      Answers from the RackTrack documentation
-                    </span>
-                  </span>
-                  <Icon name="chevron_right" className={styles.optionGo} />
-                </button>
-
-                <a className={styles.option} href={mailto}>
-                  <Icon name="mail" className={styles.optionIcon} />
-                  <span className={styles.optionText}>
-                    <span className={styles.optionName}>Email support</span>
-                    <span className={styles.optionSub}>{SUPPORT_EMAIL}</span>
-                    <span className={styles.optionSub}>Replies within a few hours</span>
-                  </span>
-                  <Icon name="chevron_right" className={styles.optionGo} />
-                </a>
-              </div>
-            </section>
-
-            {/* "What happens next?" in three numbered steps said only what the lede
-                already says: they tell us, we reply within a few hours. Numbering it
-                did not make it more information. */}
-          </aside>
         </div>
       </div>
 
