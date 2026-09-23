@@ -180,8 +180,11 @@ export function usePrimaryNav() {
        this is what they sent (the owner, 23 September 2026). */
     ...(employeeWork ? [{ group: 'work', to: '/my-incidents', label: 'Incidents you raised',
       icon: <InboxIcon />, end: false, hint: 'What you sent, and where it stands' }] : []),
-    ...(employeeWork ? [{ group: 'work', to: '/port-history', label: 'Port history',
-      icon: <PortsIcon />, end: false, hint: 'What changed on a port' }] : []),
+    /* Port history is not in anybody's navigation any more (the owner's
+       matrix, 23 September 2026). Looking a port up starts at the rack that
+       holds it, which is where the workflow already offers it; a second door
+       to it in the Menu was a list of ports with no rack in front of them.
+       The screen and its route are untouched. */
     // Approvals is its own application on its own address, so this entry
     // carries `href` instead of `to`: the bar, the Menu and the sidebar draw
     // it as a link that leaves the app (components/ExternalLink.jsx).
@@ -213,6 +216,12 @@ export function usePrimaryNav() {
     ...(isAdmin ? [{ group: 'org', to: '/connections', label: 'Data sources', icon: <DataSourcesIcon />, end: false,
       ...(runsTheEstate && !isSpoc ? { inBar: true, barLabel: 'Sources' } : {}),
       hint: 'NetBox and ServiceNow' }] : []),
+    /* The organization's own settings - its sites, their contacts and the
+       rules. It was reachable from Profile and from the organization console
+       only; the owner's matrix of 23 September 2026 puts it in the Menu
+       beside the rest of the estate. */
+    ...(isAdmin ? [{ group: 'org', to: '/setup', label: 'Organization settings', icon: <SetupIcon />, end: false,
+      hint: 'Sites, their contacts and the rules' }] : []),
     // Marketplace and Lab are not linked from anywhere for now, on the
     // owner's direction of 22 Sep 2026. Their routes and their screens are
     // untouched, so putting either back is one line here.

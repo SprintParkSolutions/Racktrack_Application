@@ -99,12 +99,14 @@ describe('the bar, per role', () => {
 describe('what each role may reach at all', () => {
   test('the employee has the rack work and none of the estate', () => {
     const to = goes(navFor('employee'));
-    for (const page of ['/scan', '/multi-rack/new', '/history', '/tasks', '/port-history',
+    for (const page of ['/scan', '/multi-rack/new', '/history', '/tasks',
       // What they raised, and what became of it: the other half of their own
       // work (23 September 2026).
       '/my-incidents']) {
       expect(to).toContain(page);
     }
+    // A port is looked up from the rack that holds it, not from the Menu.
+    expect(to).not.toContain('/port-history');
     for (const page of ['/organizations', '/connections', '/my-checks']) {
       expect(to).not.toContain(page);
     }
@@ -117,12 +119,15 @@ describe('what each role may reach at all', () => {
     for (const page of ['/scan', '/multi-rack/new', '/history', '/port-history', '/my-incidents']) {
       expect(to).not.toContain(page);
     }
+    expect(to).not.toContain('/setup');   // the estate's settings are an admin's
   });
 
   test('the admin has the estate and none of the rack work', () => {
     const to = goes(navFor('admin'));
     expect(to).toContain('/organizations');
     expect(to).toContain('/connections');
+    // The organization's own settings sit beside them (the owner's matrix).
+    expect(to).toContain('/setup');
     for (const page of ['/scan', '/multi-rack/new', '/history', '/tasks', '/port-history',
       '/my-incidents']) {
       expect(to).not.toContain(page);

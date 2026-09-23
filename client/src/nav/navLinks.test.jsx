@@ -108,10 +108,13 @@ describe('what is not linked', () => {
     }
   });
 
-  test('looking a port up stays for a technician, in the Menu', () => {
-    view.current = 'employee';
-    const ports = nav().find((l) => l.label === 'Port history');
-    expect(ports).toBeTruthy();
-    expect(ports.inBar).toBeUndefined();
+  test('looking a port up is in nobody\'s navigation', () => {
+    /* The owner's own matrix, 23 September 2026: a port is looked up from the
+       rack that holds it, which the rack's own workflow offers. The screen and
+       its route are untouched - only the Menu row is gone. */
+    for (const v of ['employee', 'estate']) {
+      view.current = v;
+      expect(nav().find((l) => l.label === 'Port history')).toBeUndefined();
+    }
   });
 });
