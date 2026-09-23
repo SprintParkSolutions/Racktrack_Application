@@ -10,6 +10,7 @@ on a successful upload. Add a row by hand only if you shipped by hand.
 | Date | Platform | Version | Build | To | What went in it |
 | --- | --- | --- | --- | --- | --- |
 | 2026-09-23 | ios | 1.1 | 82 | TestFlight | Home rebuilt with the datacenter floor, the notifications bell, the new Profile and its eight pictures, buttons that look like buttons, no truncated text, the SPOC navigation fix |
+| 2026-09-23 | ios | 1.1 | 4 | TestFlight | • Same build as 83, shipped again as 4 so the iOS count follows 1, 2, 3 • Roles stay in their own area; a rack somebody confirmed is called by its name • Notifications make a sound and open as a message before the drift • The port page shows one card of only what was found |
 | 2026-09-23 | ios | 1.1 | 83 | TestFlight | • Roles stay in their own area: a SPOC's bar is Home, Drift and Menu; Port history is off every menu and Organization settings joins the admin's • A rack somebody confirmed is called by its name - on Home, in the report, and on every check • Notifications make a sound and post a notice on the phone; the permission is asked on your Profile • A notice opens as a message first, then one button takes you to its drift • The port page: one card of only what was found, the port type in the line with the number, and View, Share, Another device and New scan on one row • Your picture can be a photo from your gallery, and the drawn faces have their hair fixed • Sign out asks one question |
 | 2026-09-23 | android | 1.1 | 82 | Firebase App Distribution | Roles kept straight everywhere: the SPOC's bar is Home, Drift and Menu, and Port history is off every menu while Organization settings joins the admin's. A rack that somebody confirmed is called by its name, on Home, in the report and on every check. Notifications make a sound and post a notice, with the permission asked on your Profile - and a notice opens as a message before it takes you to its drift. The port page: one card of only what was found, the port type in the line with the number, and View, Share, Another device and New scan on one row. Your picture can be a photo from your gallery. Sign out asks one question. |
 | 2026-09-23 | android | 1.1 | 81 | Firebase App Distribution | The same. SHIPPED TWICE AS 81 - see the note below |
@@ -20,22 +21,25 @@ on a successful upload. Add a row by hand only if you shipped by hand.
 | 2026-09-22 | android | 1.1 | 77 | Firebase App Distribution | - |
 | 2026-09-22 | ios | 1.1 | 3 | TestFlight | The last iOS build before the numbering was put right |
 
-## The iOS list under 1.1 reads 1, 2, 3, 82, 83
+## The iOS list under 1.1 reads 1, 2, 3, 82, 83, 4
 
-The owner saw it in App Store Connect on 23 September 2026 and asked for the
-numbering to start again at 4. It cannot, and this is the reason:
+The owner asked on 23 September 2026 for iOS to go back to 4 and keep counting
+from there. I said Apple would refuse a build lower than one already uploaded
+under the same version. **That was wrong**, and the upload proves it: 1.1 (4)
+was accepted and came out VALID with 83 already there.
 
-- **Apple.** Inside one version string, every build must be higher than every
-  build already uploaded for it. 83 is uploaded under 1.1, so 1.1 (4) is
-  refused at submission. Uploaded builds cannot be renumbered or deleted -
-  only expired, which hides them from testers but leaves the history.
-- **Android.** Firebase would accept a lower version code, but a phone running
-  82 refuses to install 4 over it. Every tester would have to delete the app
-  and install it again.
+What is actually true:
 
-So 1.1 keeps counting: the next builds are iOS 84 and Android 83. Starting
-again at a low number needs a new version string - 1.2 (1) - where the
-ordering rule starts over. That is a decision for the owner, not for a script.
+- **TestFlight** wants the build to be UNIQUE within the version, not higher.
+  A number below one already uploaded goes through.
+- **App Review** is where the higher-than rule bites: the build submitted for
+  release must be above every build released under that version. That matters
+  the day RackTrack is submitted, not while it is being tested.
+- **Android** is stricter in the other direction: a phone refuses to install a
+  lower version code over the one it has, so Android keeps counting up.
+
+So iOS follows its own line - 1, 2, 3, 4, and on from there - and Android
+follows its own. The two are not related and are never made to match.
 
 ## Two things this file exists to stop
 
