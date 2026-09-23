@@ -71,7 +71,10 @@ describe('the bar, per role', () => {
 describe('what each role may reach at all', () => {
   test('the employee has the rack work and none of the estate', () => {
     const to = goes(navFor('employee'));
-    for (const page of ['/scan', '/multi-rack/new', '/history', '/tasks', '/port-history']) {
+    for (const page of ['/scan', '/multi-rack/new', '/history', '/tasks', '/port-history',
+      // What they raised, and what became of it: the other half of their own
+      // work (23 September 2026).
+      '/my-incidents']) {
       expect(to).toContain(page);
     }
     for (const page of ['/organizations', '/connections', '/my-checks']) {
@@ -83,7 +86,7 @@ describe('what each role may reach at all', () => {
     const to = goes(navFor('spoc'));
     expect(to).toContain('/my-checks');
     expect(to).toContain('/tasks');
-    for (const page of ['/scan', '/multi-rack/new', '/history', '/port-history']) {
+    for (const page of ['/scan', '/multi-rack/new', '/history', '/port-history', '/my-incidents']) {
       expect(to).not.toContain(page);
     }
   });
@@ -92,7 +95,8 @@ describe('what each role may reach at all', () => {
     const to = goes(navFor('admin'));
     expect(to).toContain('/organizations');
     expect(to).toContain('/connections');
-    for (const page of ['/scan', '/multi-rack/new', '/history', '/tasks', '/port-history']) {
+    for (const page of ['/scan', '/multi-rack/new', '/history', '/tasks', '/port-history',
+      '/my-incidents']) {
       expect(to).not.toContain(page);
     }
   });
