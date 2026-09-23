@@ -1959,17 +1959,11 @@ function SwitchPicker({ switches, rackId }) {
   // OCR caught it, fall back to the short model, then to the index.
   const tabLabel = (sw, i) => {
     if (sw.position) return sw.position;
-    if (sw.model_number) {
-      const m = String(sw.model_number);
-      return m.length > 18 ? m.slice(0, 16) + '…' : m;
-    }
+    if (sw.model_number) return String(sw.model_number);
     return `Switch ${i + 1}`;
   };
   const tabSub = (sw) => {
-    if (sw.model_number) {
-      const m = String(sw.model_number);
-      return m.length > 18 ? m.slice(0, 16) + '…' : m;
-    }
+    if (sw.model_number) return String(sw.model_number);
     return sw.manufacturer || '';
   };
 
@@ -2090,8 +2084,7 @@ function SwitchPicker({ switches, rackId }) {
                     color: 'var(--md-on-surface, #121212)',
                     opacity: 0.6,
                     maxWidth: '100%',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
+                    overflowWrap: 'anywhere',
                   }}>
                     {tabSub(sw)}
                   </span>

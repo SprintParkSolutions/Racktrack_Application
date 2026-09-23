@@ -45,7 +45,7 @@
 .titleWrap { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .eyebrow { font-size: var(--fs-label); font-weight: var(--fw-label); letter-spacing: var(--ls-caps); text-transform: uppercase; color: var(--muted-2); }
 .titleRack { margin: 0; font-family: ui-monospace, Menlo, monospace; font-size: var(--fs-head); font-weight: var(--fw-title);
-             letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+             letter-spacing: -0.01em; overflow-wrap: anywhere; }
 
 .busy, .error { margin: 14px var(--gutter); font-size: var(--fs-item); }
 .busy { color: var(--muted-1); }
@@ -85,7 +85,7 @@
 .verdict { padding: 16px var(--gutter) 10px; }
 .verdict h2 { margin: 0 0 4px; font-size: var(--fs-page); font-weight: var(--fw-title); letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
 /* The answer sits a step under the rack's name, which is the headline. */
-.answer { font-size: var(--fs-section) !important; font-weight: var(--fw-label) !important; margin: 0 !important; }
+.answer { font-size: var(--fs-section) !important; font-weight: var(--fw-label) !important; margin: 0; }
 .verdict p { margin: 0; font-size: var(--fs-item); line-height: 1.5; color: var(--muted-1); }
 .tick { color: var(--good); font-size: var(--fs-head); line-height: 1; }
 
@@ -156,13 +156,9 @@
 .actionText b {
   font-size: var(--fs-item); font-weight: var(--fw-title);
   letter-spacing: -.01em;
-  color: var(--text, #1c1c1c);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
+  color: var(--text, #1c1c1c); overflow-wrap: anywhere; }
 .actionText small {
-  font-size: var(--fs-label); color: var(--muted-1, #5c646d);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
+  font-size: var(--fs-label); color: var(--muted-1, #5c646d); overflow-wrap: anywhere; }
 /* The arrow: small, quiet, and the thing that says these open something. */
 .actionGo {
   flex: 0 0 auto;

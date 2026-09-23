@@ -387,7 +387,7 @@ function TreeView({ tree, selectedId, onSelect }) {
                 <circle cx={-NODE_W / 2 + 10} cy={0} r="3.5" fill={dotColor} />
               )}
               <text className={styles.treeNodeText} textAnchor="middle" y="4">
-                {n.label.length > 16 ? n.label.slice(0, 15) + '…' : n.label}
+                {n.label}
               </text>
               {typeof n.count === 'number' && (
                 <text className={styles.treeNodeCount} textAnchor="middle" y="22">

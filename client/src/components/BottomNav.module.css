@@ -104,13 +104,9 @@
   letter-spacing: var(--ls-caps);
   color: inherit;
   text-transform: uppercase;
-  white-space: nowrap;
   /* The bar holds whatever the item list holds. If that list ever grows past
      five the labels truncate rather than running into each other. */
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
+  max-width: 100%; overflow-wrap: anywhere; }
 
 /* The active item: ink, and a step heavier in both the stroke and the label.
    Nothing is drawn behind it. */

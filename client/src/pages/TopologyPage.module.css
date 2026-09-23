@@ -107,9 +107,7 @@
   font-size: var(--fs-section); font-weight: var(--fw-title);
   background: linear-gradient(135deg, #a78bfa 0%, #60a5fa 70%, #6366f1 100%);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-  letter-spacing: 0.02em;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
+  letter-spacing: 0.02em; overflow-wrap: anywhere; }
 .rackBannerId {
   font-family: ui-monospace, Menlo, monospace;
   font-size: var(--fs-micro);
@@ -209,7 +207,7 @@
   font-size: var(--fs-label);
   color: #cffafe;
 }
-.traceHint { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.traceHint { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .traceHint code {
   background: transparent; padding: 0; color: #ececec;
   font-weight: var(--fw-title);
@@ -259,7 +257,7 @@
 }
 /* When zoomed in, AutoPanCursor sets cursor:grab on the canvas. Switch to
    grabbing while the user is actively dragging to pan. */
-.scene3dWrap canvas[style*="grab"]:active { cursor: grabbing !important; }
+.scene3dWrap canvas[style*="grab"]:active { cursor: grabbing; }
 
 /* Hover info card - pinned top-left of the canvas, fixed footprint, never
    covers devices. Updates as you move between devices. */
@@ -777,13 +775,13 @@
 .page,
 :global([data-theme='light']) .page {
   background: var(--md-background) !important;
-  color: var(--md-on-surface) !important;
+  color: var(--md-on-surface);
 }
 .page::before,
 :global([data-theme='light']) .page::before {
   background: none !important;
   content: none !important;
-  display: none !important;
+  display: none;
 }
 
 /* ── 2D / 3D view toggle - outlined group, active = solid white + bold black ── */
@@ -791,7 +789,7 @@
 :global([data-theme='light']) .viewToggle {
   background: var(--md-surface-container) !important;
   border: 1px solid var(--md-outline-variant) !important;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 .viewBtn,
 :global([data-theme='light']) .viewBtn {
@@ -837,7 +835,7 @@
   -webkit-backdrop-filter: none !important;
   border-radius: 12px;
 }
-.error { border-color: #ef4444 !important; color: #ef4444 !important; }
+.error { border-color: #ef4444 !important; color: #ef4444; }
 .errorHint,
 :global([data-theme='light']) .errorHint {
   color: var(--md-on-surface) !important;
@@ -859,7 +857,7 @@
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   box-shadow: none !important;
-  filter: none !important;
+  filter: none;
 }
 .rackBadge,
 :global([data-theme='light']) .rackBadge {
@@ -867,7 +865,7 @@
   border: 1px solid var(--md-on-surface) !important;
   color: var(--md-on-surface) !important;
   font-weight: var(--fw-title);
-  box-shadow: none !important;
+  box-shadow: none;
 }
 .rackBannerName,
 :global([data-theme='light']) .rackBannerName {
@@ -894,7 +892,7 @@
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   box-shadow: none !important;
-  filter: none !important;
+  filter: none;
 }
 
 /* Filter pills - outlined, active = solid white + black border + bold */
@@ -905,7 +903,7 @@
   color: var(--md-on-surface) !important;
   opacity: 0.65;
   box-shadow: none !important;
-  filter: none !important;
+  filter: none;
 }
 .filterPill:hover,
 :global([data-theme='light']) .filterPill:hover {
@@ -943,7 +941,7 @@
   color: var(--md-on-surface) !important;
   opacity: 0.7;
   box-shadow: none !important;
-  filter: none !important;
+  filter: none;
 }
 .heatmapBtn:hover,
 :global([data-theme='light']) .heatmapBtn:hover {
@@ -978,7 +976,7 @@
   border: 1px solid var(--md-outline-variant) !important;
   border-radius: 12px;
   color: var(--md-on-surface) !important;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 .traceHint code,
 :global([data-theme='light']) .traceHint code {
@@ -995,7 +993,7 @@
   border: 1px solid var(--md-outline-variant) !important;
   border-radius: 12px;
   box-shadow: none !important;
-  filter: none !important;
+  filter: none;
 }
 .scene3dWrap,
 :global([data-theme='light']) .scene3dWrap {
@@ -1003,7 +1001,7 @@
   border: 1px solid var(--md-outline-variant) !important;
   border-radius: 12px;
   box-shadow: none !important;
-  filter: none !important;
+  filter: none;
 }
 
 /* Hover card on 3D canvas - flat white tile */
@@ -1016,7 +1014,7 @@
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   box-shadow: none !important;
-  filter: none !important;
+  filter: none;
 }
 .hoverCardName { font-weight: var(--fw-title); }
 .hoverCardSub,
@@ -1032,7 +1030,7 @@
   opacity: 0.6;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 
 /* ── Bottom bar - flat white panel ── */
@@ -1044,7 +1042,7 @@
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   box-shadow: none !important;
-  filter: none !important;
+  filter: none;
 }
 
 /* Legend - section-label style */
@@ -1085,7 +1083,7 @@
 :global([data-theme='light']) .peerStrip,
 :global([data-theme='light']) .cableScroll,
 :global([data-theme='light']) .portsTableWrap {
-  border-top: 1px solid var(--md-outline-variant) !important;
+  border-top: 1px solid var(--md-outline-variant);
 }
 
 .peerChip,
@@ -1093,7 +1091,7 @@
   background: var(--md-surface-container-lowest) !important;
   border: 1px solid var(--md-outline-variant) !important;
   color: var(--md-on-surface) !important;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 .peerChip code,
 :global([data-theme='light']) .peerChip code {
@@ -1114,7 +1112,7 @@
   background: var(--md-surface-container) !important;
   border: 1px solid var(--md-outline-variant) !important;
   border-radius: 8px;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 .cableMini code,
 :global([data-theme='light']) .cableMini code {
@@ -1140,7 +1138,7 @@
   border: 1px solid var(--md-outline-variant) !important;
   color: var(--md-on-surface) !important;
   opacity: 0.7;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 .clearBtn:hover,
 :global([data-theme='light']) .clearBtn:hover {
@@ -1155,13 +1153,13 @@
   border: 1px solid var(--md-outline-variant) !important;
   border-radius: 12px;
   background: var(--md-surface-container-lowest);
-  box-shadow: none !important;
+  box-shadow: none;
 }
 .portsTable thead,
 :global([data-theme='light']) .portsTable thead {
   background: var(--md-surface-container) !important;
   backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+  -webkit-backdrop-filter: none;
 }
 .portsTable thead th,
 :global([data-theme='light']) .portsTable thead th {
@@ -1171,20 +1169,20 @@
   font-weight: var(--fw-title);
   letter-spacing: 0.10em;
   text-transform: uppercase;
-  border-bottom: 1px solid var(--md-outline-variant) !important;
+  border-bottom: 1px solid var(--md-outline-variant);
 }
 .portsTable tbody td,
 :global([data-theme='light']) .portsTable tbody td {
   border-bottom: 1px solid var(--md-outline-variant) !important;
-  color: var(--md-on-surface) !important;
+  color: var(--md-on-surface);
 }
 .rowConnected,
 :global([data-theme='light']) .rowConnected {
-  background: var(--md-surface-container-lowest) !important;
+  background: var(--md-surface-container-lowest);
 }
 .rowConnected:hover,
 :global([data-theme='light']) .rowConnected:hover {
-  background: var(--md-surface-container) !important;
+  background: var(--md-surface-container);
 }
 .rowFree,
 :global([data-theme='light']) .rowFree {
@@ -1193,7 +1191,7 @@
 }
 .rowFree:hover,
 :global([data-theme='light']) .rowFree:hover {
-  background: var(--md-surface-container) !important;
+  background: var(--md-surface-container);
 }
 
 .tdPort,
@@ -1227,7 +1225,7 @@
   font-weight: var(--fw-title);
   letter-spacing: 0.10em;
   text-transform: uppercase;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 .tagUplink,
 :global([data-theme='light']) .tagUplink {
@@ -1237,7 +1235,7 @@
   font-weight: var(--fw-title);
   letter-spacing: 0.10em;
   text-transform: uppercase;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 
 /* Status dots - use semantic accents, no glow */
@@ -1245,14 +1243,14 @@
 :global([data-theme='light']) .statusDotConnected {
   color: #22c55e !important;
   text-shadow: none !important;
-  filter: none !important;
+  filter: none;
 }
 .statusDotFree,
 :global([data-theme='light']) .statusDotFree {
   color: var(--md-on-surface) !important;
   opacity: 0.3;
   text-shadow: none !important;
-  filter: none !important;
+  filter: none;
 }
 
 /* ── Rack Elevation view ─────────────────────────────────────── */

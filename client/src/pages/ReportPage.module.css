@@ -258,8 +258,11 @@
    One filled control for the step a person takes next, and two quiet text
    controls for taking the report away. Nothing here is a card: three bordered
    boxes of equal weight made a file format look like a decision. */
+/* The row wraps rather than squeezing: three controls that do not fit on a
+   320px phone move onto a second line, and none of them is ever cut short.
+   Drift check came back reading "Drift ch..." (the owner, 23 Sep 2026). */
 .tools {
-  display: flex; align-items: center; gap: 6px;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px 6px;
   padding: 10px 16px 12px;
   border-bottom: 1px solid var(--border, rgba(0,0,0,.09));
 }
@@ -267,14 +270,16 @@
    its face - the same button Home leads with, so the product has one primary
    control and not two colours of it. */
 .check {
-  flex: 1 1 auto; min-width: 0;
+  /* No min-width: 0 here. That is what let a flex row shrink this button
+     below the words written on it. */
+  flex: 1 1 auto;
   min-height: 44px; padding: 0 16px;
   border: 0; border-radius: 12px;
   background: linear-gradient(180deg, #3566DF 0%, #2349C4 55%, #17328F 100%);
   color: #ffffff;
   font-family: var(--font); font-size: var(--fs-item); font-weight: var(--fw-title);
   cursor: pointer; -webkit-tap-highlight-color: transparent;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, .3),
     0 1px 2px rgba(23, 50, 143, .3),

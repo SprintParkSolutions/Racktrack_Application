@@ -9,11 +9,12 @@
 .top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .label { font-size: var(--fs-label); font-weight: var(--fw-label); letter-spacing: .08em; text-transform: uppercase; color: #1f4e79; }
 .more { font-size: var(--fs-sub); color: #8b939c; }
-.title { margin: 3px 0 3px; font-size: var(--fs-section); font-weight: var(--fw-title); letter-spacing: -0.01em; overflow-wrap: anywhere;
-         display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.title { margin: 3px 0 3px; font-size: var(--fs-section); font-weight: var(--fw-title); letter-spacing: -0.01em; overflow-wrap: anywhere; }
 .body { margin: 0; font-size: var(--fs-body); line-height: 1.45; color: #5c646d; white-space: pre-line; overflow-wrap: anywhere; }
-/* Closed, the one sentence keeps to two lines; Details shows all of it. */
-.short { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; white-space: normal; }
+/* Closed, the sentence is shown whole. It used to stop after two lines with
+   dots on the end; nothing in this app cuts words short now (the owner,
+   23 September 2026), and Details still opens the rest of the notice. */
+.short { white-space: normal; overflow-wrap: anywhere; }
 
 .toggle { display: inline-flex; align-items: center; margin-top: 4px; padding: 2px 0; border: 0; background: none;
           font: inherit; font-size: var(--fs-body); font-weight: var(--fw-label); color: #1f4e79; cursor: pointer; }

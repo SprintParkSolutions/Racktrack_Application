@@ -634,7 +634,7 @@ function SwitchInfoModal({
                     {Object.entries(specs.specs).slice(0, 12).map(([k, v]) => (
                       <div className={styles.siRow} key={k}>
                         <span>{k}</span>
-                        <span>{String(v).length > 80 ? String(v).slice(0, 77) + '…' : String(v)}</span>
+                        <span>{String(v)}</span>
                       </div>
                     ))}
                   </div>

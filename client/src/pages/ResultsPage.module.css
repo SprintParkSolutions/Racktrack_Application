@@ -56,7 +56,7 @@
     grid-template-columns: 1fr !important;
     grid-template-areas: "hero" "sheet" !important;
     height: auto !important;
-    overflow: visible !important;
+    overflow: visible;
   }
   .results[data-embedded='true'][data-tab='overview'] > .heroWrap {
     min-height: 46vh;
@@ -68,9 +68,9 @@
     max-height: none !important;
     overflow: visible !important;
     border-left: none !important;
-    background: transparent !important;
+    background: transparent;
   }
-  .results[data-embedded='true'] { min-height: 0 !important; }
+  .results[data-embedded='true'] { min-height: 0; }
   .results[data-tab='overview'] > .header { grid-area: header; }
   .results[data-tab='overview'] > .heroWrap {
     grid-area: hero;
@@ -104,7 +104,7 @@
     min-height: 60vh;
     overflow: visible;
     background: transparent;
-    visibility: visible !important;
+    visibility: visible;
   }
   /* .tabContent uses flex:1 + min-height:0 in mobile, which collapses
      to 0 height when the parent (.results) has height:auto. Override
@@ -188,7 +188,7 @@
   /* A rack id is a code, so it is set in the monospaced face and a little
      tighter than a word would be. */
   font-family: var(--mono); font-size: var(--fs-section); font-weight: var(--fw-title); letter-spacing: .02em;
-  max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 100%;
   color: #000000;
   /* Reset the previous gradient-text trick so the title renders as solid black */
   background: none;
@@ -196,18 +196,10 @@
   -webkit-text-fill-color: #000000;
   background-clip: initial;
   filter: none;
-  max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  max-width: 100%; overflow-wrap: anywhere; }
 .headerMono    {
   font-family: var(--mono); font-size: var(--fs-micro); color: #999999; letter-spacing: .08em;
-  max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  max-width: 100%; overflow-wrap: anywhere; }
 
 /* Confirm-rack button in the All Components header */
 .confirmBtn {
@@ -710,7 +702,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 .sheetOption:hover     { background: rgba(0,0,0,0.06); }
-.sheetOptionActive     { background: rgba(0,0,0,0.1) !important; }
+.sheetOptionActive     { background: rgba(0,0,0,0.1); }
 .sheetOptBar    { width: 3px; height: 32px; border-radius: 2px; flex-shrink: 0; opacity: 0.8; }
 .sheetOptInfo   { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .sheetOptCode   { font-family: var(--mono); font-size: var(--fs-body); font-weight: var(--fw-title); color: var(--t1); }
@@ -765,7 +757,7 @@
    that rule's !important on equal specificity. */
 .portCardTop.portCardTop {
   background-color: transparent !important;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 /* The name of a card, and the line under it. Each was written three times - a
    dark-theme base, then two light overrides, the second !important throughout - which is how one title ended up at three sizes and two weights depending
@@ -815,12 +807,12 @@
   font-family: var(--mono) !important;
   background: var(--md-surface-container-lowest, #ffffff) !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  color: var(--md-on-surface, #121212) !important;
+  color: var(--md-on-surface, #121212);
 }
 .portInput:focus {
   border-color: var(--md-on-surface, #121212) !important;
   box-shadow: none !important;
-  outline: none !important;
+  outline: none;
 }
 .portInput::placeholder {
   color: var(--md-on-surface, #121212);
@@ -1504,9 +1496,7 @@
 .infoVal {
   font-size: var(--fs-sub); font-weight: var(--fw-title); color: #ffffff;
   letter-spacing: -0.015em; line-height: 1.2;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  flex: 1; min-width: 0;
-}
+  flex: 1; min-width: 0; overflow-wrap: anywhere; }
 
 /* Status tile - special: dot with pulse */
 .statusDot {
@@ -1877,7 +1867,7 @@
 }
 .consoleTagRunning {
   display: inline-flex; align-items: center; gap: 5px;
-  color: #c6c6c6 !important;
+  color: #c6c6c6;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -2145,7 +2135,7 @@
   white-space: pre-wrap; word-break: break-word;
   max-height: 320px; overflow-y: auto;
 }
-.prCmdErr { color: #474747 !important; }
+.prCmdErr { color: #474747; }
 
 .consoleTerminal {
   flex: 1; min-height: 0;
@@ -2178,9 +2168,7 @@
   flex: 1;
   color: #ffffff;
   font-weight: var(--fw-title);
-  background: transparent;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
+  background: transparent; overflow-wrap: anywhere; }
 .consoleTag {
   padding: 2px 8px;
   border-radius: 999px;
@@ -2561,9 +2549,7 @@
   flex: 1; min-width: 0;
   font-size: var(--fs-section); font-weight: var(--fw-label);
   color: #ffffff;
-  letter-spacing: -0.005em;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
+  letter-spacing: -0.005em; overflow-wrap: anywhere; }
 .shareDialogClose {
   display: inline-flex; align-items: center; justify-content: center;
   width: 28px; height: 28px;
@@ -2630,7 +2616,7 @@
 .shareDialogTextarea::placeholder { color: rgba(0,0,0,0.55); }
 .shareDialogInputErr {
   border-color: rgba(0,0,0,0.55) !important;
-  box-shadow: 0 0 0 3px rgba(0,0,0,0.16) !important;
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.16);
 }
 .shareDialogFieldErr {
   margin-top: 6px;
@@ -2807,7 +2793,7 @@
   font-family: var(--mono) !important;
   color: #ffffff !important;
   background: rgba(0,0,0,0.55) !important;
-  border: 1px solid rgba(255,255,255,0.12) !important;
+  border: 1px solid rgba(255,255,255,0.12);
 }
 .fbInput:focus {
   border-color: var(--focus-color, rgba(0,0,0,0.6)) !important;
@@ -2938,7 +2924,7 @@
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
-  color: #ffffff !important;
+  color: #ffffff;
 }
 .pNextInput:focus {
   border: none !important;
@@ -2958,7 +2944,7 @@
     color-mix(in srgb, var(--btn-glow, #000000) 15%, rgba(0,0,0,0.6))
   ) !important;
   border: 1px solid color-mix(in srgb, var(--btn-glow, #000000) 50%, transparent) !important;
-  box-shadow: 0 0 16px color-mix(in srgb, var(--btn-glow, #000000) 25%, transparent) !important;
+  box-shadow: 0 0 16px color-mix(in srgb, var(--btn-glow, #000000) 25%, transparent);
 }
 .pNextBtn:disabled {
   opacity: 0.45;
@@ -3054,9 +3040,7 @@
 }
 .allCardLabel {
   font-family: var(--mono); font-size: var(--fs-body); font-weight: var(--fw-title);
-  letter-spacing: .03em;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
+  letter-spacing: .03em; overflow-wrap: anywhere; }
 .allCardType {
   font-size: var(--fs-sub); font-weight: var(--fw-label); color: rgba(255,255,255,0.45);
   flex-shrink: 0;
@@ -3146,7 +3130,7 @@
   flex: 1;
   padding: 12px 14px !important;
   border-radius: 14px !important;
-  font-size: var(--fs-sub) !important;
+  font-size: var(--fs-sub);
 }
 
 /* ── Actions ── */
@@ -3154,7 +3138,7 @@
   flex-shrink: 0;
   padding: 13px 20px !important;
   border-radius: 18px !important;
-  font-size: var(--fs-item) !important;
+  font-size: var(--fs-item);
 }
 
 /* ── Empty ── */
@@ -3266,11 +3250,11 @@
 .chipConnected {
   border-color: rgba(0,0,0,0.25) !important;
   background: rgba(0,0,0,0.06) !important;
-  color: #1c1c1c !important;
+  color: #1c1c1c;
 }
 .chipEmpty {
   border-color: rgba(255,255,255,0.1) !important;
-  color: rgba(255,255,255,0.35) !important;
+  color: rgba(255,255,255,0.35);
 }
 .statusDot {
   width: 6px; height: 6px; border-radius: 50%;
@@ -3589,11 +3573,7 @@
 .reportChipFile {
   font-family: var(--mono, 'SF Mono', Menlo, Consolas, monospace);
   font-size: var(--fs-label);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 180px;
-}
+  max-width: 180px; overflow-wrap: anywhere; }
 
 /* ── Intent picker bar at the top of the console sheet ── */
 .intentBar {
@@ -3708,7 +3688,7 @@
    Port-result redesign - minimalistic, glowy, app-native
    ───────────────────────────────────────────────────────────── */
 
-.prHidden { display: none !important; }
+.prHidden { display: none; }
 
 /* "Your correction" badge - marks a value that came from the user's own
    correction (active learning), so it isn't mistaken for a model result. */
@@ -3798,9 +3778,7 @@
 .pCellKey { font-size: var(--fs-label); color: #757575; white-space: nowrap; }
 .pCellVal {
   display: flex; align-items: center; gap: 5px; min-width: 0;
-  font-size: var(--fs-item); font-weight: var(--fw-label); color: #121212;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
+  font-size: var(--fs-item); font-weight: var(--fw-label); color: #121212; overflow-wrap: anywhere; }
 .pCellSwatch { flex: none; width: 10px; height: 10px; border-radius: 3px; border: 1px solid rgba(0,0,0,.15); }
 .pCellNote { margin: 0 0 8px; font-size: var(--fs-sub); color: #757575; }
 .pRow {
@@ -3964,7 +3942,7 @@
   padding: 11px 13px !important;
   border-radius: 10px !important;
   font-size: var(--fs-section) !important;
-  font-family: var(--mono) !important;
+  font-family: var(--mono);
 }
 .prFbSubmit {
   padding: 11px 16px;
@@ -4100,7 +4078,7 @@
   transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
 }
 .prAnother input:hover {
-  border-color: var(--md-on-surface, rgba(0,0,0,0.4)) !important;
+  border-color: var(--md-on-surface, rgba(0,0,0,0.4));
 }
 .prAnother input:focus {
   border-color: color-mix(in srgb, var(--ac, #000000) 60%, transparent) !important;
@@ -4113,7 +4091,7 @@
   padding: 0 12px !important;
   border-radius: var(--ctl-radius, 8px) !important;
   font-size: var(--fs-sub) !important;
-  font-weight: var(--fw-label) !important;
+  font-weight: var(--fw-label);
 }
 
 /* Bottom action bar - icon-only */
@@ -4323,7 +4301,7 @@
   background: rgba(0,0,0,0.06);
 }
 :global([data-theme='light']) .sheetOptionActive {
-  background: rgba(0,0,0,0.10) !important;
+  background: rgba(0,0,0,0.10);
 }
 :global([data-theme='light']) .sheetOptCode { color: #1c1c1c; }
 :global([data-theme='light']) .sheetOptType { color: #474747; }
@@ -4401,9 +4379,7 @@
 .devicePickerValueId {
   font-size: var(--fs-item);
   font-weight: var(--fw-label);
-  letter-spacing: -.01em;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
+  letter-spacing: -.01em; overflow-wrap: anywhere; }
 .devicePickerValueSub {
   font-size: var(--fs-sub); color: var(--md-on-surface); opacity: .55;
   white-space: nowrap;
@@ -4411,9 +4387,7 @@
 .devicePickerPlaceholder {
   font-size: var(--fs-item);
   color: var(--md-on-surface);
-  opacity: .5;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
+  opacity: .5; overflow-wrap: anywhere; }
 
 /* The list is a sheet portalled to <body>, not a dropdown anchored to the
    trigger: the picker sits inside .sheet, which scrolls, and an absolutely
@@ -4877,15 +4851,15 @@
 :global([data-theme='light']) .prAnother input {
   background: #ffffff !important;
   border: 1px solid #c6c6c6 !important;
-  color: #1c1c1c !important;
+  color: #1c1c1c;
 }
 :global([data-theme='light']) .prAnother input:hover {
-  border-color: #474747 !important;
+  border-color: #474747;
 }
 :global([data-theme='light']) .prAnother input:focus {
   border-color: color-mix(in srgb, var(--ac, #000000) 60%, #474747) !important;
   box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--ac, #000000) 16%, transparent) !important;
+    0 0 0 3px color-mix(in srgb, var(--ac, #000000) 16%, transparent);
 }
 
 /* Bottom action bar (icon-only) */
@@ -5033,7 +5007,7 @@
   border-left: 2px solid rgba(0,0,0,0.55);
 }
 :global([data-theme='light']) .consoleTagRunning {
-  color: #000000 !important;
+  color: #000000;
 }
 :global([data-theme='light']) .consoleEmpty {
   color: #474747;
@@ -5226,11 +5200,11 @@
 :global([data-theme='light']) .credsField input {
   background: #ffffff !important;
   border: 1px solid #c6c6c6 !important;
-  color: #1c1c1c !important;
+  color: #1c1c1c;
 }
 :global([data-theme='light']) .credsField input:focus {
   border-color: #474747 !important;
-  box-shadow: 0 0 0 3px rgba(0,0,0,0.18) !important;
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.18);
 }
 :global([data-theme='light']) .credsCancel {
   background: #ffffff;
@@ -5244,11 +5218,11 @@
 :global([data-theme='light']) .credsSubmit {
   background: #000000 !important;
   border: 1px solid #000000 !important;
-  color: #ffffff !important;
+  color: #ffffff;
 }
 :global([data-theme='light']) .credsSubmit:hover {
   background: #000000 !important;
-  border-color: #000000 !important;
+  border-color: #000000;
 }
 :global([data-theme='light']) .vendorStaticPill {
   background: rgba(0,0,0,0.10);
@@ -5454,7 +5428,7 @@
   box-shadow: none !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 10px !important;
+  gap: 10px;
 }
 :global([data-theme='light']) .fbPrompt {
   padding-left: 10px !important;
@@ -5464,19 +5438,19 @@
   line-height: 14px !important;
   text-transform: uppercase !important;
   color: var(--md-on-surface, #121212) !important;
-  opacity: 0.7 !important;
+  opacity: 0.7;
 }
 :global([data-theme='light']) .fbPrompt::before {
   width: 2px !important;
   top: 2px !important;
   bottom: 2px !important;
   background: var(--md-on-surface, #121212) !important;
-  border-radius: 1px !important;
+  border-radius: 1px;
 }
 :global([data-theme='light']) .fbBtnRow {
   display: grid !important;
   grid-template-columns: 1fr 1fr !important;
-  gap: 8px !important;
+  gap: 8px;
 }
 :global([data-theme='light']) .fbBtn,
 :global([data-theme='light']) .fbBtnYes,
@@ -5488,20 +5462,20 @@
   color: var(--md-on-surface, #121212) !important;
   font-size: var(--fs-item) !important;
   font-weight: var(--fw-label) !important;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 /* Yes button - green border signals the recommended/confirm action. */
 :global([data-theme='light']) .fbBtnYes {
   border: 1.5px solid #22c55e !important;
-  color: var(--md-on-surface, #121212) !important;
+  color: var(--md-on-surface, #121212);
 }
 :global([data-theme='light']) .fbBtnYes:hover:not(:disabled) {
   background: rgba(34, 197, 94, 0.06) !important;
-  border-color: #16a34a !important;
+  border-color: #16a34a;
 }
 :global([data-theme='light']) .fbBtnNo:hover:not(:disabled) {
   background: var(--md-surface-container, #ffffff) !important;
-  border-color: var(--md-on-surface, #121212) !important;
+  border-color: var(--md-on-surface, #121212);
 }
 
 /* v2 tablet/desktop skin rolled back - it forced page bg to white but

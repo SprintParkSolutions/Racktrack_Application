@@ -1596,9 +1596,7 @@ export default function ScanPage() {
               color:'#000000',
               lineHeight:1.3,
               textAlign:'center',
-              whiteSpace:'nowrap',
-              overflow:'hidden',
-              textOverflow:'ellipsis',
+              overflowWrap:'anywhere',
               padding:'0 4px',
             }}>
               {headline}
@@ -1667,7 +1665,7 @@ export default function ScanPage() {
                     <span style={{fontSize:13,fontWeight:600}}>
                       {ticket.incident_number} · {ticket.target?.device}:{ticket.cmdb?.interface_alias || `port${ticket.target?.port}`}
                     </span>
-                    <span style={{fontSize:11,color:'var(--muted, #474747)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+                    <span style={{fontSize:11,color:'var(--muted, #474747)',overflowWrap:'anywhere'}}>
                       {ticket.priority} · {ticket.short_description}
                     </span>
                   </>

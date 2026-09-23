@@ -109,9 +109,7 @@
   font-family: var(--mono, ui-monospace, monospace);
   font-size: var(--fs-item);
   font-weight: var(--fw-title);
-  color: var(--text, #121212);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
+  color: var(--text, #121212); overflow-wrap: anywhere; }
 .quiet { color: var(--muted, #8a8f99); font-weight: var(--fw-label); }
 /* How long it has been waiting. The number a person scans the list for. */
 .age {
@@ -134,9 +132,7 @@
 .rack {
   min-width: 0;
   font-family: var(--mono, ui-monospace, monospace);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  color: var(--muted, #5c646d);
-}
+  color: var(--muted, #5c646d); overflow-wrap: anywhere; }
 .sep {
   flex: none;
   width: 3px; height: 3px;

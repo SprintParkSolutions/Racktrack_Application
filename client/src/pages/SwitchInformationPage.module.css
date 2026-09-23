@@ -16,7 +16,7 @@
      module (shared SpecificationsPage.module.css); the two have equal
      specificity, so without this the winner would depend on bundle order. */
   .header {
-    display: none !important;
+    display: none;
   }
   .main {
     /* The page root is a flex child of DesktopShell's .fluid (a column

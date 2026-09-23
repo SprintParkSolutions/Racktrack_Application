@@ -520,6 +520,4 @@
 }
 .pickHint {
   flex: 1; min-width: 0;
-  font-size: var(--fs-body); color: var(--text);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
+  font-size: var(--fs-body); color: var(--text); overflow-wrap: anywhere; }

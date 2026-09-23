@@ -55,9 +55,8 @@
   margin-top: 0;
   font-size: var(--fs-section); font-weight: var(--fw-title); letter-spacing: -.01em;
   color: #0c1420;
-  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  animation: rise 320ms cubic-bezier(.2,.8,.3,1) 60ms both;
-}
+  max-width: 100%;
+  animation: rise 320ms cubic-bezier(.2,.8,.3,1) 60ms both; overflow-wrap: anywhere; }
 :global([data-theme='dark']) .name { color: var(--text, #fff); }
 .role {
   margin-top: 0; flex: none;
@@ -71,9 +70,8 @@
 .mail {
   margin-top: 0;
   font-size: var(--fs-sub); color: #7b8794;
-  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  animation: rise 320ms cubic-bezier(.2,.8,.3,1) 140ms both;
-}
+  max-width: 100%;
+  animation: rise 320ms cubic-bezier(.2,.8,.3,1) 140ms both; overflow-wrap: anywhere; }
 .x {
   position: absolute; top: 14px; right: 12px;
   width: 34px; height: 34px;
@@ -154,9 +152,7 @@
 .text { display: flex; flex-direction: column; min-width: 0; }
 .label { font-size: var(--fs-section); font-weight: var(--fw-label); letter-spacing: -.005em; }
 .hint {
-  font-size: var(--fs-sub); color: #8a94a0; margin-top: 1px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
+  font-size: var(--fs-sub); color: #8a94a0; margin-top: 1px; overflow-wrap: anywhere; }
 
 /* Where you are: a filled row, not a tinted one - at a glance, from arm's
    length, in a bright room. */

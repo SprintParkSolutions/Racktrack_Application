@@ -60,14 +60,10 @@
 .rowTitle {
   font-size: var(--fs-body); font-weight: var(--fw-title); line-height: 1.3;
   color: var(--mkt-ink, #121212);
-  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-  min-width: 0;
-}
+  min-width: 0; overflow-wrap: anywhere; }
 .rowMeta {
   font-size: var(--fs-label); line-height: 1.4;
-  color: var(--mkt-muted, #717171);
-  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-}
+  color: var(--mkt-muted, #717171); overflow-wrap: anywhere; }
 
 .rowTotal {
   align-self: center;

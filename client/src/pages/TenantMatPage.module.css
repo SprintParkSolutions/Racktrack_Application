@@ -143,8 +143,7 @@
 }
 .treeIcon[data-type="rack"] { color: #000000; opacity: 0.9; }
 .treeLabel {
-  flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
+  flex: 1; overflow-wrap: anywhere; }
 .treeCount { font-size: var(--fs-label); opacity: 0.5; }
 
 /* ─── Canvas wrapper ───────────────────────────────────────────────── */

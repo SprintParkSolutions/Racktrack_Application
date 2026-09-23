@@ -95,14 +95,10 @@
   font-weight: var(--fw-label);
   letter-spacing: var(--ls-caps);
   text-transform: uppercase;
-  white-space: nowrap;
   /* The bar holds whatever the item list holds. If that list ever grows past
      five the labels truncate rather than running into each other. */
-  overflow: hidden;
-  text-overflow: ellipsis;
   max-width: 100%;
-  color: inherit;
-}
+  color: inherit; overflow-wrap: anywhere; }
 
 /* The active tab: ink, and a step heavier in both the stroke and the label.
    Nothing is drawn behind it. */

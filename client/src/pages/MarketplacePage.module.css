@@ -120,9 +120,7 @@
    because the text nodes were flex items rather than one text run. */
 .cardEyebrow {
   display: block;
-  margin: 0 0 1px;
-  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-}
+  margin: 0 0 1px; overflow-wrap: anywhere; }
 .cardEyebrowSep { opacity: 0.45; padding: 0 3px; }
 
 .cardTitle {
@@ -130,15 +128,12 @@
   font-size: var(--fs-body); font-weight: var(--fw-title); line-height: 1.3;
   letter-spacing: -0.005em;
   color: var(--mkt-ink, #121212);
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-  overflow: hidden;
+  overflow-wrap: anywhere;
 }
 
 .cardVendor {
   margin: 0; font-size: var(--fs-label); line-height: 1.35;
-  color: var(--mkt-muted, #717171);
-  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-}
+  color: var(--mkt-muted, #717171); overflow-wrap: anywhere; }
 
 .cardFoot {
   display: flex; align-items: baseline; justify-content: space-between;
@@ -152,9 +147,7 @@
 .cardAge { font-size: var(--fs-label); color: var(--mkt-muted, #717171); white-space: nowrap; }
 
 .cardSeller {
-  margin: 0; font-size: var(--fs-label); color: var(--mkt-muted, #717171);
-  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-}
+  margin: 0; font-size: var(--fs-label); color: var(--mkt-muted, #717171); overflow-wrap: anywhere; }
 
 .cardBuy { position: relative; z-index: 2; margin-top: 9px; }
 
@@ -207,13 +200,9 @@
 .rowTitle {
   margin: 0; font-size: var(--fs-body); font-weight: var(--fw-title);
   color: var(--mkt-ink, #121212);
-  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-  min-width: 0;
-}
+  min-width: 0; overflow-wrap: anywhere; }
 .rowMeta {
-  margin: 0; font-size: var(--fs-label); color: var(--mkt-muted, #717171);
-  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-}
+  margin: 0; font-size: var(--fs-label); color: var(--mkt-muted, #717171); overflow-wrap: anywhere; }
 
 .rowPrice {
   grid-area: price; align-self: start;

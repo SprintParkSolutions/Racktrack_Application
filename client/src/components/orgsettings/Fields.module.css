@@ -33,7 +33,7 @@
 }
 .ctl::placeholder { color: #9ca3af; }
 .ctl:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']) {
-  border: 1px solid #c9d0d9; border-radius: 6px; background-color: #fff; box-shadow: none !important;
+  border: 1px solid #c9d0d9; border-radius: 6px; background-color: #fff; box-shadow: none;
 }
 .ctl:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']):hover:not(:disabled):not(:focus) { border-color: #9aa5b3; }
 .ctl:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color'])[readonly] { color: #4b5563; background-color: #f9fafb; }

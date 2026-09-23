@@ -32,11 +32,11 @@
   color: var(--md-primary) !important;
   box-shadow: none !important;
   flex: 0 0 auto;
-  justify-content: flex-start !important;
+  justify-content: flex-start;
 }
 .header > button:global(.btn):hover {
   background: rgba(0, 0, 0, 0.04) !important;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 
 .header > div[style] {
@@ -179,7 +179,7 @@
   color: var(--md-primary) !important;
   border-color: var(--md-primary) !important;
   font-weight: var(--fw-label) !important;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 
 /* ── SINGLE / MULTI / VIDEO - underline tab bar (mockup spec) ── */
@@ -391,7 +391,7 @@
   min-height: 600px;
   height: calc(100vh - 132px);
   max-height: none;
-  margin: 0 !important;
+  margin: 0;
 }
 
 /* The dropzone (or preview/camera) fills the tall media box - no gap inside. */
@@ -431,10 +431,10 @@
     grid-column: 1 !important;
     grid-row: auto !important;
     min-height: 320px !important;
-    max-height: 56vh !important;
+    max-height: 56vh;
   }
   .scanContentDesktop > *:not(.mediaBox) {
-    grid-column: 1 !important;
+    grid-column: 1;
   }
 }
 
@@ -570,9 +570,7 @@
 }
 .multiInfo { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
 .multiName {
-  font-size: var(--fs-sub); font-weight: var(--fw-title); color:#121212;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-}
+  font-size: var(--fs-sub); font-weight: var(--fw-title); color:#121212; overflow-wrap: anywhere; }
 .multiPos {
   font-size: var(--fs-micro); color:rgba(0,0,0,0.85);
   letter-spacing:.06em; text-transform:uppercase;
@@ -673,12 +671,12 @@
 .cta:hover {
   background: #121212 !important;
   opacity: 0.9;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 .cta:disabled {
   background: #121212 !important;
   opacity: 0.35;
-  color: #ffffff !important;
+  color: #ffffff;
 }
 
 /* ── Camera ── */
@@ -716,10 +714,7 @@
   letter-spacing:.02em;
   line-height:1;
   border-radius:5px 5px 0 0;
-  white-space:nowrap;
-  overflow:hidden; text-overflow:ellipsis;
-  box-shadow:0 1px 6px rgba(0,0,0,0.45);
-}
+  box-shadow:0 1px 6px rgba(0,0,0,0.45); overflow-wrap: anywhere; }
 .liveChipSub {
   font-weight: var(--fw-label);
   opacity:.8;
@@ -783,7 +778,7 @@
 .shutterRing { position:absolute; inset:0; border:2.5px solid rgba(255,255,255,.85); border-radius:50%; transition:border-color .18s, box-shadow .18s; }
 .shutterCore { width:52px; height:52px; background:#ffffff; border-radius:50%; transition:transform .12s, background .12s, box-shadow .18s; box-shadow:0 0 28px rgba(255,255,255,0.5); }
 .shutterBtn:active .shutterCore { transform:scale(.84); }
-.shutterDisabled { background:rgba(255,255,255,.18) !important; box-shadow:none !important; }
+.shutterDisabled { background:rgba(255,255,255,.18) !important; box-shadow:none; }
 
 .shutterReady .shutterRing { border-color:#1c1c1c; box-shadow:0 0 18px rgba(0,0,0,0.55); }
 .shutterReady .shutterCore { background:#1c1c1c; box-shadow:0 0 28px rgba(0,0,0,0.7); animation:shutterPulse 1.2s ease-in-out infinite; }
@@ -989,7 +984,7 @@
   border-top:1px solid rgba(255,255,255,0.07);
 }
 .previewReady { display:flex; align-items:center; gap:6px; font-size: var(--fs-sub); font-weight: var(--fw-title); color:var(--green); white-space:nowrap; }
-.previewFileName { flex:1; font-size: var(--fs-label); color:rgba(255,255,255,0.3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.previewFileName { flex:1; font-size: var(--fs-label); color:rgba(255,255,255,0.3); overflow-wrap: anywhere; }
 .clearBtn {
   width:26px; height:26px; flex-shrink:0;
   background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
@@ -1053,7 +1048,7 @@
 :global([data-theme='light']) .cta:disabled {
   background: rgba(0,0,0,.16) !important;
   color: #474747 !important;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 
 :global([data-theme='light']) .scanLabel { color: #717171; }
@@ -1094,7 +1089,7 @@
   border-color: rgba(255,255,255,.95) !important;
   box-shadow:
     inset 0 1px 1px rgba(255,255,255,1),
-    0 9px 18px -6px rgba(0,0,0,.42) !important;
+    0 9px 18px -6px rgba(0,0,0,.42);
 }
 :global([data-theme='light']) .uploadModeBtn {
   background: rgba(255,255,255,.46);
@@ -1216,7 +1211,7 @@
   box-shadow:
     inset 0 1px 1px rgba(255,255,255,.6),
     inset 0 -2px 6px rgba(0,0,0,.5),
-    0 30px 50px -16px rgba(0,0,0,.72) !important;
+    0 30px 50px -16px rgba(0,0,0,.72);
 }
 
 /* HUD on camera (overlays still on dark video, so left mostly dark - but the modeToggle, hudBadge can lighten subtly) */
@@ -1306,7 +1301,7 @@
   border-color: rgba(0,0,0,0.55) !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.12),
-    0 0 18px rgba(0,0,0,0.28) !important;
+    0 0 18px rgba(0,0,0,0.28);
 }
 :root:not([data-theme='light']) .iconWrap {
   background: linear-gradient(150deg, #000000 0%, #000000 100%);
@@ -1329,7 +1324,7 @@
   .scanContentDesktop {
     column-gap: clamp(40px, 5vw, 64px) !important;
     row-gap: 20px !important;
-    padding: 32px clamp(32px, 5vw, 64px) 64px !important;
+    padding: 32px clamp(32px, 5vw, 64px) 64px;
   }
   /* Push the right column down a touch so its first row doesn't share
      the dropzone's top edge - eliminates the visual collision. */
@@ -1340,7 +1335,7 @@
      consistent size, no overlap with whatever sits above/below. */
   .scanContentDesktop .uploadModes {
     margin-top: 12px !important;
-    margin-bottom: 4px !important;
+    margin-bottom: 4px;
   }
 }
 
@@ -1382,7 +1377,7 @@
   border: none !important;
   border-bottom: none !important;
   border-radius: 12px !important;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 .scanContentDesktop .uploadModeBtn {
   border: none !important;
@@ -1405,7 +1400,7 @@
   border: none !important;
   border-bottom: none !important;
   border-radius: 9px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.05);
 }
 
 /* --- CAPTURE METHOD: two equal cards (Upload / Camera) -------------- */
@@ -1416,7 +1411,7 @@
   border: none !important;
   box-shadow: none !important;
   backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+  -webkit-backdrop-filter: none;
 }
 .scanContentDesktop .tab {
   flex: 1;
@@ -1436,13 +1431,13 @@
 .scanContentDesktop .tab:hover {
   border-color: #111 !important;
   transform: translateY(-1px);
-  background: #fff !important;
+  background: #fff;
 }
 .scanContentDesktop .tabOn {
   background: #fff !important;
   color: #111 !important;
   border-color: #111 !important;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 
 /* --- INCIDENT LINK: dropdown + eyebrow'd label ---------------------- */
@@ -1450,11 +1445,11 @@
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace) !important;
   font-size: var(--fs-label) !important;
   letter-spacing: 0.13em !important;
-  color: #6b6b6b !important;
+  color: #6b6b6b;
 }
 .scanContentDesktop .incidentTrigger {
   border-radius: 12px !important;
-  font-size: var(--fs-section) !important;
+  font-size: var(--fs-section);
 }
 
 /* --- DROP ZONE: single large dashed box (strip the card frame) ------ */
@@ -1466,19 +1461,19 @@
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   min-height: 600px;
-  max-height: none !important;
+  max-height: none;
 }
 .scanContentDesktop .dropZone {
   margin: 0 !important;
   padding: 40px !important;
   border: 1.5px dashed #d4d4d4 !important;
   border-radius: 22px !important;
-  background: #ffffff !important;
+  background: #ffffff;
 }
 .scanContentDesktop .dropZone:hover,
 .scanContentDesktop .dragOver {
   border-color: #111 !important;
-  background: #f4f4f4 !important;
+  background: #f4f4f4;
 }
 /* 92px black circle, white viewfinder icon. */
 .scanContentDesktop .iconWrap {
@@ -1487,14 +1482,14 @@
   background: #111 !important;
   border: none !important;
   color: #fff !important;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 .scanContentDesktop .dropZone:hover .iconWrap,
 .scanContentDesktop .dragOver .iconWrap {
   background: #111 !important;
   color: #fff !important;
   transform: none !important;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 .scanContentDesktop .dropTitle {
   font-size: 24px !important;
@@ -1505,7 +1500,7 @@
 }
 /* The mobile sub ("tap to browse · JPG …") is replaced by the alt sub +
    format pills below on desktop. */
-.scanContentDesktop .dropSub { display: none !important; }
+.scanContentDesktop .dropSub { display: none; }
 
 /* Desktop-only dropzone extras - hidden everywhere by default, shown here. */
 .dropSubAlt,
@@ -1565,10 +1560,10 @@
   background: #111 !important;
   color: #fff !important;
   border: none !important;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 .scanContentDesktop .cta:hover { background: #111 !important; opacity: 0.92; }
-.scanContentDesktop .cta:disabled { opacity: 0.45 !important; color: #fff !important; }
+.scanContentDesktop .cta:disabled { opacity: 0.45 !important; color: #fff; }
 .scanContentDesktop .analyzeHelper {
   display: flex;
   align-items: center;
@@ -1601,7 +1596,7 @@
   .scanContentDesktop {
     grid-template-columns: minmax(0, 1fr) 400px !important;
     column-gap: 32px !important;
-    row-gap: 22px !important;
+    row-gap: 22px;
   }
   .scanContentDesktop .scanIntro     { order: 5; }
   .scanContentDesktop .eyebrowMode    { order: 10; }
@@ -1706,7 +1701,7 @@
 .scanContentDesktop .dragOver {
   border-color: #111 !important;
   border-style: solid !important;
-  background: #f2f2f2 !important;
+  background: #f2f2f2;
 }
 
 /* One hairline crossing the frame while a file is held over it. `::after`
@@ -1726,8 +1721,8 @@
 /* The mark answers the drag too - the desktop block above pinned it to
    `transform: none !important`, which is re-opened here rather than edited
    in place so the reference layout stays one readable block. */
-.scanContentDesktop .dropZone:hover .iconWrap { transform: scale(1.04) !important; }
-.scanContentDesktop .dragOver .iconWrap       { transform: scale(1.09) !important; }
+.scanContentDesktop .dropZone:hover .iconWrap { transform: scale(1.04); }
+.scanContentDesktop .dragOver .iconWrap       { transform: scale(1.09); }
 
 /* ── Controls answering ────────────────────────────────────────────────
    A press is the one piece of feedback a touch device cannot fake: the
@@ -1786,7 +1781,7 @@
   background: #ffffff !important;
   background-image: none !important;
   border: 1px solid #e4e4e4 !important;
-  color: #9b9b9b !important;
+  color: #9b9b9b;
 }
 /* The arrow goes with it - an arrow on a control that cannot advance is a
    promise the page can't keep. */
@@ -1877,7 +1872,7 @@
   letter-spacing: .1em !important;
   text-transform: uppercase;
   color: #8a8a8a !important;
-  border-color: #ececec !important;
+  border-color: #ececec;
 }
 
 /* ── The frame stops being a field ─────────────────────────────────────
@@ -1888,10 +1883,10 @@
    small one. */
 .scanContentDesktop .mediaBox {
   min-height: min(520px, 58vh) !important;
-  max-height: 68vh !important;
+  max-height: 68vh;
 }
 /* The title carries the zone now that the zone is smaller. */
-.scanContentDesktop .dropTitle { letter-spacing: -.022em !important; }
+.scanContentDesktop .dropTitle { letter-spacing: -.022em; }
 
 /* Placeholder for the lazy 3D rack on the analysing overlay. Fills the same
    150px box so the panel below never shifts when the real one loads. A slow

@@ -44,7 +44,7 @@
 }
 .find::placeholder { color: #9ca3af; }
 .find:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']) {
-  border: 1px solid #c9d0d9; border-radius: 8px; background-color: #fff; box-shadow: none !important;
+  border: 1px solid #c9d0d9; border-radius: 8px; background-color: #fff; box-shadow: none;
 }
 .find:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']):focus {
   border-color: #1f4ed8; box-shadow: 0 0 0 3px rgba(31, 78, 216, .16) !important; outline: none;

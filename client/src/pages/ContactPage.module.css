@@ -167,14 +167,14 @@
   transition: border-color .15s, box-shadow .15s;
 }
 .input::placeholder { color: var(--ct-ink-3); }
-.input:hover { border-color: #D6D8DE !important; }
+.input:hover { border-color: #D6D8DE; }
 /* A 3px ring rather than a heavier border: focus has to be obvious without
    shifting the control by a pixel. */
 .input:focus,
 .input:focus-visible {
   outline: none;
   border-color: var(--ct-accent) !important;
-  box-shadow: 0 0 0 3px var(--ct-accent-weak) !important;
+  box-shadow: 0 0 0 3px var(--ct-accent-weak);
 }
 .textarea { min-height: 168px; resize: vertical; }
 
@@ -220,7 +220,7 @@
 /* min-width:0 lets the filename ellipsis engage inside the flex row - without
    it a long name pushes the remove control off the edge on a phone. */
 .fileMeta { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
-.fileName { font-size: var(--fs-body); color: var(--ct-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fileName { font-size: var(--fs-body); color: var(--ct-ink); overflow-wrap: anywhere; }
 .fileSize { font-size: var(--fs-sub); color: var(--ct-ink-3); }
 .fileRemove {
   flex: none; width: 28px; height: 28px;

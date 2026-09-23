@@ -463,14 +463,14 @@
 }
 .uPortTarget::before {
   background: linear-gradient(180deg, #000000 0%, #000000 100%) !important;
-  box-shadow: inset 0 0 0 0.5px rgba(239, 68, 68, 0.55), inset 0 0 4px rgba(239, 68, 68, 0.55) !important;
+  box-shadow: inset 0 0 0 0.5px rgba(239, 68, 68, 0.55), inset 0 0 4px rgba(239, 68, 68, 0.55);
 }
 .uPortTarget::after {
   background: #EF4444 !important;
   box-shadow: 0 0 5px #EF4444, 0 0 10px rgba(239, 68, 68, 0.85) !important;
   width: 2px !important;
   height: 2px !important;
-  animation: portBlink 1s ease-in-out infinite !important;
+  animation: portBlink 1s ease-in-out infinite;
 }
 @keyframes portTargetPulse {
   0%, 100% { filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.85)) drop-shadow(0 0 14px rgba(239, 68, 68, 0.55)); }
@@ -672,11 +672,7 @@
   font-size: 1.4rem;
   line-height: 1.05;
   letter-spacing: -0.025em;
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  margin: 0; overflow-wrap: anywhere; }
 .greetLight { font-weight: 300; opacity: 0.55; color: var(--t2); }
 .greetBold  { font-weight: 800; color: var(--t1); }
 
@@ -1045,7 +1041,7 @@
    the home incident chip and the alert-view list. */
 .arChipTarget {
   border-color: rgba(239, 68, 68, 0.70) !important;
-  box-shadow: 0 0 18px rgba(239, 68, 68, 0.60) !important;
+  box-shadow: 0 0 18px rgba(239, 68, 68, 0.60);
 }
 .arChipDotTarget {
   background: #EF4444 !important;
@@ -2579,8 +2575,8 @@
   color: rgba(255, 255, 255, 0.55);
   margin-top: 2px;
 }
-.netStripWarn strong { color: #FCA5A5 !important; }
-.netStripWarn span   { color: rgba(252, 165, 165, 0.85) !important; }
+.netStripWarn strong { color: #FCA5A5; }
+.netStripWarn span   { color: rgba(252, 165, 165, 0.85); }
 
 .alertCardBell {
   position: relative;
@@ -2713,6 +2709,6 @@
   .homeView, .avatarStatus, .rackCardCueDot, .tileBellDot,
   .alertCardBellDot {
     transition-duration: 0.001s !important;
-    animation: none !important;
+    animation: none;
   }
 }

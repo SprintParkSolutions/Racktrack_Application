@@ -119,7 +119,7 @@
   margin: 6px 0 0;
   font-size: var(--fs-body); color: var(--pf-ink-2); min-width: 0;
 }
-.emailText { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.emailText { overflow-wrap: anywhere; }
 .copyBtn {
   flex: none; width: 24px; height: 24px;
   display: grid; place-items: center;
@@ -188,14 +188,10 @@
 
 .rowMain { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .rowTitle {
-  font-size: var(--fs-item); font-weight: var(--fw-label); line-height: 1.35; color: var(--pf-ink);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
+  font-size: var(--fs-item); font-weight: var(--fw-label); line-height: 1.35; color: var(--pf-ink); overflow-wrap: anywhere; }
 .rowTitleMono { font-variant-numeric: tabular-nums; letter-spacing: -.005em; }
 .rowMeta {
-  font-size: var(--fs-sub); line-height: 1.4; color: var(--pf-ink-2);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
+  font-size: var(--fs-sub); line-height: 1.4; color: var(--pf-ink-2); overflow-wrap: anywhere; }
 .ok { color: #067647; }
 
 .rowEnd { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }

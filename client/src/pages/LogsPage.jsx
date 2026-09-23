@@ -84,8 +84,11 @@ function LogRow({ row, expanded, onToggle }) {
   );
 }
 
-function shorten(url = '', max = 48) {
-  return url.length > max ? url.slice(0, max) + '…' : url;
+/* An address is shown whole and wraps if it has to. It used to be cut at
+   48 characters with dots on the end, which is the one thing nothing in this
+   app does now (the owner, 23 September 2026). */
+function shorten(url = '') {
+  return url;
 }
 
 // Lazily fetch the full JSON line only when a row is expanded.

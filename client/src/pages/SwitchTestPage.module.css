@@ -172,13 +172,9 @@
 .pickCard[data-state='bad'] .pickDot  { background: #c0392b; }
 .pickCard[data-state='busy'] .pickDot { background: #b26a00; }
 .pickName {
-  font-size: var(--fs-section); font-weight: var(--fw-title); color: var(--text);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
+  font-size: var(--fs-section); font-weight: var(--fw-title); color: var(--text); overflow-wrap: anywhere; }
 .pickWhat {
-  font-size: var(--fs-sub); color: var(--text);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
+  font-size: var(--fs-sub); color: var(--text); overflow-wrap: anywhere; }
 .pickWhen { font-size: var(--fs-label); color: var(--muted); overflow-wrap: anywhere; }
 
 /* The card's own way to read a switch that has not been read. A span with a
@@ -369,7 +365,7 @@
   text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 .menu button:active { background: var(--bg2, rgba(0,0,0,.05)); }
-.menuBad { color: #c0392b !important; }
+.menuBad { color: #c0392b; }
 
 /* ── What the switch actually said ── */
 .data { display: flex; flex-direction: column; }
@@ -434,7 +430,7 @@
 /* ── It did not answer ── */
 .bad { display: flex; flex-direction: column; gap: 5px; }
 .bad p { margin: 0; font-size: var(--fs-body); line-height: 1.5; color: #c0392b; }
-.hint { color: var(--muted) !important; font-size: var(--fs-sub) !important; }
+.hint { color: var(--muted) !important; font-size: var(--fs-sub); }
 
 /* ── Working ── */
 .working {
@@ -468,7 +464,7 @@
 /* ── Nothing here yet ── */
 .empty { padding: 44px 16px; text-align: center; }
 .empty p { margin: 0 0 6px; font-size: var(--fs-section); font-weight: var(--fw-label); color: var(--text); }
-.emptySub { font-weight: var(--fw-body) !important; font-size: var(--fs-body) !important; color: var(--muted) !important; margin-bottom: 18px !important; }
+.emptySub { font-weight: var(--fw-body) !important; font-size: var(--fs-body) !important; color: var(--muted) !important; margin-bottom: 18px; }
 
 /* ── Buttons ── */
 .actions { display: flex; gap: 10px; flex-wrap: wrap; }

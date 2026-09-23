@@ -607,7 +607,7 @@ export default function SfpAdvisor({ rackId, position, vendor: vendorProp, model
                       fontFamily: 'var(--mono, ui-monospace, monospace)',
                       fontSize: 'var(--fs-label)', fontWeight: 'var(--fw-title)',
                       color: 'var(--t1, #c6c6c6)',
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      overflowWrap: 'anywhere',
                     }}>
                       {c.partNumber}
                     </span>

@@ -37,9 +37,7 @@
 }
 .title {
   margin: 0; min-width: 0;
-  font-size: var(--fs-head); font-weight: var(--fw-title); letter-spacing: -0.01em;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
+  font-size: var(--fs-head); font-weight: var(--fw-title); letter-spacing: -0.01em; overflow-wrap: anywhere; }
 
 .busy { margin: 14px var(--gutter); font-size: var(--fs-item); color: var(--muted-1); }
 .error { margin: 14px var(--gutter); font-size: var(--fs-item); color: var(--bad); }

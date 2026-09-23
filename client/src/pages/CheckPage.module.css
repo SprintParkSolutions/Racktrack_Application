@@ -149,16 +149,12 @@
   font-size: var(--fs-section);
   font-weight: var(--fw-title);
   letter-spacing: -0.01em;
-  color: var(--text, #121212);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
+  color: var(--text, #121212); overflow-wrap: anywhere; }
 .mono { font-family: var(--mono, ui-monospace, monospace); font-size: var(--fs-item); }
 .factSub {
   font-family: var(--font);
   font-size: var(--fs-label);
-  color: var(--muted, #8a8f99);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
+  color: var(--muted, #8a8f99); overflow-wrap: anywhere; }
 
 /* The note the sender wrote, in their own words. */
 .note {

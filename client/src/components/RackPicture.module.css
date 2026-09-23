@@ -88,9 +88,7 @@ button.box { cursor: pointer; }
 
 .name {
   flex: 1; min-width: 0;
-  font-weight: var(--fw-title);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
+  font-weight: var(--fw-title); overflow-wrap: anywhere; }
 .ports { flex: none; opacity: .75; font-variant-numeric: tabular-nums; }
 
 /* The one device being talked about. An outline and a marker down the left

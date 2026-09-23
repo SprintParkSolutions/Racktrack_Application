@@ -161,7 +161,7 @@
 }
 
 .cta {
-  margin-top: 6px !important;
+  margin-top: 6px;
 }
 
 .errBanner {
@@ -235,7 +235,7 @@
   flex: 1 1 auto;
   min-width: 140px;
   font-size: var(--fs-item) !important;
-  padding: 10px 14px !important;
+  padding: 10px 14px;
 }
 
 .result {
@@ -319,7 +319,7 @@
 .amb2 {
   display: none !important;
   background: none !important;
-  filter: none !important;
+  filter: none;
 }
 
 /* Intro / eyebrow / sub - hierarchy via weight + opacity, no grey ramp. */
@@ -361,7 +361,7 @@
 .input:focus {
   border-color: var(--md-on-surface, #121212) !important;
   box-shadow: none !important;
-  outline: none !important;
+  outline: none;
 }
 
 /* Suggestion list - flat white, hairline, no blur. */
@@ -396,7 +396,7 @@
   font-size: var(--fs-label) !important;
   font-weight: var(--fw-title) !important;
   letter-spacing: 0.10em !important;
-  text-transform: uppercase !important;
+  text-transform: uppercase;
 }
 
 /* Spec values + highlight values - primary text, mono identifiers slightly muted. */
@@ -432,7 +432,7 @@
   box-shadow: none !important;
   filter: none !important;
   backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+  -webkit-backdrop-filter: none;
 }
 
 /* Subtle step container for highlight rows - white, hairline, flat. */
@@ -441,20 +441,20 @@
   background-image: none !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
   border-radius: 10px !important;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 .highlightRow,
 .specRow {
-  border-bottom: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  border-bottom: 1px solid var(--md-outline-variant, #E0E0E0);
 }
 .highlightRow:last-child,
 .specRow:last-child {
-  border-bottom: none !important;
+  border-bottom: none;
 }
 
 /* Result head divider - hairline. */
 .resultHead {
-  border-bottom: 1px solid var(--md-outline-variant, #E0E0E0) !important;
+  border-bottom: 1px solid var(--md-outline-variant, #E0E0E0);
 }
 
 /* Source link pill - outlined, no fill on idle. */
@@ -465,12 +465,12 @@
   color: var(--md-on-surface, #121212) !important;
   font-weight: var(--fw-label);
   box-shadow: none !important;
-  filter: none !important;
+  filter: none;
 }
 .sourceLink:hover {
   background: var(--md-surface-container, #ffffff) !important;
   border-color: var(--md-on-surface, #121212) !important;
-  color: var(--md-on-surface, #121212) !important;
+  color: var(--md-on-surface, #121212);
 }
 
 /* CTA / summary buttons - outlined pill, active = solid black border + bold. */
@@ -485,7 +485,7 @@
   filter: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  border-radius: 10px !important;
+  border-radius: 10px;
 }
 .cta:hover,
 .summaryBtn:hover,
@@ -494,7 +494,7 @@
   border-color: var(--md-on-surface, #121212) !important;
   font-weight: var(--fw-title) !important;
   box-shadow: none !important;
-  outline: none !important;
+  outline: none;
 }
 
 /* ── SwitchInformationPage - SwitchCard renders via inline styles, so we
@@ -512,7 +512,7 @@
   filter: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  color: var(--md-on-surface, #121212) !important;
+  color: var(--md-on-surface, #121212);
 }
 
 /* Everything nested inside switch cards - strip shadows, blurs, gradients. */
@@ -523,19 +523,19 @@
   text-shadow: none !important;
   filter: none !important;
   backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+  -webkit-backdrop-filter: none;
 }
 
 /* Header button inside switch card - flat, no fill on hover. */
 .specs article > button {
   background: transparent !important;
   background-image: none !important;
-  color: var(--md-on-surface, #121212) !important;
+  color: var(--md-on-surface, #121212);
 }
 
 /* Fields grid + tiles inside expanded card - #ffffff tiles on white card. */
 .specs article div[style*="grid"] > div {
-  background-image: none !important;
+  background-image: none;
 }
 .specs article a {
   color: var(--md-on-surface, #121212) !important;
@@ -557,17 +557,17 @@
 [data-status="healthy"],
 [data-status="active"] {
   color: #22c55e !important;
-  border-color: #22c55e !important;
+  border-color: #22c55e;
 }
 [data-status="critical"],
 [data-status="down"] {
   color: #ef4444 !important;
-  border-color: #ef4444 !important;
+  border-color: #ef4444;
 }
 [data-status="warn"],
 [data-status="warning"] {
   color: #f59e0b !important;
-  border-color: #f59e0b !important;
+  border-color: #f59e0b;
 }
 
 /* ── Generic chip / pill / tag fallbacks inside the Switches page. ── */
@@ -587,7 +587,7 @@
   filter: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  border-radius: 999px !important;
+  border-radius: 999px;
 }
 .specs [class*="chip"][aria-pressed="true"],
 .specs [class*="pill"][aria-pressed="true"],
@@ -596,7 +596,7 @@
 .specs [aria-selected="true"][class*="pill"],
 .specs [aria-selected="true"][class*="tag"] {
   border-color: var(--md-on-surface, #121212) !important;
-  font-weight: var(--fw-title) !important;
+  font-weight: var(--fw-title);
 }
 
 /* ── Generic card / tile / panel / row / header fallbacks. ── */
@@ -614,7 +614,7 @@
   text-shadow: none !important;
   filter: none !important;
   backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+  -webkit-backdrop-filter: none;
 }
 .specs [class*="card"],
 .specs [class*="Card"],
@@ -626,7 +626,7 @@
   background-image: none !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
   border-radius: 12px !important;
-  color: var(--md-on-surface, #121212) !important;
+  color: var(--md-on-surface, #121212);
 }
 
 /* Scrollable areas - neutral white bg, hairline only. */
@@ -646,7 +646,7 @@
   margin: 0;
   background: transparent !important;
   border: 0 !important;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 .specs article ul > li,
 .specs article ol > li {
@@ -655,7 +655,7 @@
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
   border-radius: 10px !important;
   box-shadow: none !important;
-  color: var(--md-on-surface, #121212) !important;
+  color: var(--md-on-surface, #121212);
 }
 
 /* Empty / loading / error state blocks - white card, hairline, no glow. */
@@ -664,7 +664,7 @@
   background: transparent !important;
   background-image: none !important;
   box-shadow: none !important;
-  color: var(--md-on-surface, #121212) !important;
+  color: var(--md-on-surface, #121212);
 }
 .specs p {
   color: var(--md-on-surface, #121212);

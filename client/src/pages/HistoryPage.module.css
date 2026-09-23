@@ -110,11 +110,7 @@
   letter-spacing: -0.035em;
   font-variant-numeric: tabular-nums;
   color: #121212;
-  line-height: 1.05;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  line-height: 1.05; overflow-wrap: anywhere; }
 /* "just now" / "3w ago" is a word, not a figure - one step down so it sits on
    the same optical weight as the numerals beside it. */
 .statValueWord { font-size: clamp(13px, 3.7vw, 20px); letter-spacing: -0.02em; }
@@ -465,11 +461,7 @@
   letter-spacing: -0.015em;
   text-transform: uppercase;
   color: #121212;
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  margin: 0; overflow-wrap: anywhere; }
 .stamp {
   display: flex;
   align-items: baseline;
@@ -482,11 +474,7 @@
   color: #6b6b6b;
   min-width: 0;
 }
-.stampDay {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+.stampDay { overflow-wrap: anywhere; }
 .stampTime {
   flex: 0 0 auto;
   color: #9a9a9a;

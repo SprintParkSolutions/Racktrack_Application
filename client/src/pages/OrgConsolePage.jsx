@@ -833,6 +833,10 @@ function RecentScans({ scans, showOrg = false }) {
 function ScanGrid({ scans, filterLabel, onClear }) {
   const navigate = useNavigate();
   const open = (rackId) => navigate(`/results/${rackId}`);
+  /* Two, and the rest a page away. This console is read to see how the
+     organisation stands, not to scroll through every photograph anybody has
+     taken (the owner, 23 September 2026). */
+  const shown = scans.slice(0, RECENT_SHOWN);
   return (
     <section className={styles.block}>
       <div className={styles.sectionHead}>
@@ -840,13 +844,17 @@ function ScanGrid({ scans, filterLabel, onClear }) {
           {filterLabel ? `Scans · ${filterLabel}` : 'Recent scans'}
           <span className={styles.count}>{scans.length}</span>
         </SecTitle>
-        {filterLabel && <button className={styles.smallBtn} onClick={onClear}>Show all</button>}
+        {filterLabel
+          ? <button className={styles.smallBtn} onClick={onClear}>Show all</button>
+          : (scans.length > RECENT_SHOWN
+            ? <button type="button" className={styles.seeAll} onClick={() => navigate('/history')}>See all</button>
+            : null)}
       </div>
       {scans.length === 0 ? (
         <div className={styles.empty}>{filterLabel ? 'No scans for this selection yet.' : 'No scans yet.'}</div>
       ) : (
         <div className={styles.scanGrid}>
-          {scans.map((s, i) => (
+          {shown.map((s, i) => (
             <button key={s.rack_id + '_' + i} className={styles.scanCard} onClick={() => open(s.rack_id)}>
               <span className={styles.scanThumb}>
                 {s.image

@@ -99,9 +99,7 @@
 .recentTitle {
   font-size: var(--fs-body); font-weight: var(--fw-label);
   color: var(--mkt-ink, #121212);
-  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-  min-width: 0;
-}
+  min-width: 0; overflow-wrap: anywhere; }
 
 .recentPrice {
   font-size: var(--fs-body); font-weight: var(--fw-title); white-space: nowrap;

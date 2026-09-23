@@ -186,43 +186,54 @@
 /* ── The view toggle ────────────────────────────────────────────────
    An admin or a single point of contact can be at a desk this morning and at
    a rack this afternoon. This is where they say which, and it is the first
-   thing on the screen because it changes everything under it. Built from the
-   same parts as the page's containers: white, a hairline, light down the
-   fill - a segmented control, not a row of pills. */
+   thing on the screen because it changes everything under it.
+
+   Drawn as a real toggle: a sunken track, and the view you are in as a filled
+   blue thumb with a mark on it. It used to be a white pill on a white card
+   and the owner could not tell which side they were on (23 September 2026). */
 .views {
   display: inline-flex;
   align-self: flex-start;
-  gap: 2px;
-  margin: 0 0 12px;
-  padding: 3px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, .72);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .9),
-    0 0 0 1px rgba(16, 32, 60, .06),
-    0 8px 16px -14px rgba(16, 32, 60, .7);
+  gap: 3px;
+  margin: 0 0 13px;
+  padding: 4px;
+  border-radius: 14px;
+  background: rgba(14, 26, 48, .07);
+  box-shadow: inset 0 1px 2px rgba(14, 26, 48, .10);
 }
 .viewTab {
+  position: relative;
   border: 0;
-  border-radius: 9px;
-  padding: 6px 14px;
+  border-radius: 11px;
+  padding: 7px 16px;
   background: transparent;
-  color: var(--hm-ink-2);
+  color: #4A5160;
   font-family: var(--font);
   font-size: var(--fs-label);
   font-weight: var(--fw-label);
   letter-spacing: -0.005em;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background var(--dur-fast, 150ms) var(--ease-out), color .15s;
+  transition: background var(--dur-fast, 150ms) var(--ease-out), color .15s, box-shadow .15s;
 }
+.viewTab:hover { color: #0B0B0C; }
+/* The one you are in: filled, in the app's blue, with a tick. */
 .viewOn {
-  background: #ffffff;
-  color: var(--hm-ink);
+  background: linear-gradient(180deg, #3566DF 0%, #2349C4 100%);
+  color: #ffffff;
   font-weight: var(--fw-title);
-  box-shadow: 0 1px 2px rgba(16, 32, 60, .12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .28),
+    0 1px 2px rgba(23, 50, 143, .35),
+    0 8px 14px -10px rgba(23, 50, 143, .9);
 }
-.viewTab:focus-visible { outline: 2px solid var(--hm-ink); outline-offset: 2px; }
+.viewOn::before {
+  content: '✓';
+  margin-right: 6px;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-title);
+}
+.viewTab:focus-visible { outline: 2px solid var(--hm-ink); outline-offset: 3px; }
 
 .hour {
   margin: 0;
@@ -254,11 +265,7 @@
   line-height: var(--lh-sub);
   color: var(--hm-ink-2);
   /* One line. Three facts wrapped onto two under the name, which is what made
-     the head of the page feel cramped. */
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+     the head of the page feel cramped. */; overflow-wrap: anywhere; }
 /* ── The banner ─────────────────────────────────────────────────────
    No box. The words and the drawing sit on the page, the drawing running out
    into the right gutter, so the head of the page reads as a spread rather
@@ -544,11 +551,7 @@
   font-family: var(--mono, ui-monospace, monospace);
   font-size: var(--fs-item);
   font-weight: var(--fw-label);
-  color: var(--hm-ink);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+  color: var(--hm-ink); overflow-wrap: anywhere; }
 .inc {
   font-family: var(--mono, ui-monospace, monospace);
   font-size: var(--fs-item);
@@ -566,7 +569,7 @@
 }
 /* The Site gives way first: how long ago a rack was read is short and always
    worth the room, a Site's name is neither. */
-.metaGives { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.metaGives { min-width: 0; overflow-wrap: anywhere; }
 .metaKeeps { flex: none; }
 .sep {
   flex: none;

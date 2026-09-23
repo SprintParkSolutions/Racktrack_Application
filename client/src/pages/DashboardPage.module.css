@@ -198,21 +198,13 @@
   font-weight: var(--fw-label);
   letter-spacing: var(--ls-caps);
   text-transform: uppercase;
-  color: var(--md-on-surface-variant, #6b6b6b);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  color: var(--md-on-surface-variant, #6b6b6b); overflow-wrap: anywhere; }
 .figNote {
   margin-top: 5px;
   min-height: calc(var(--fs-sub) * var(--lh-sub));
   font-size: var(--fs-sub);
   line-height: var(--lh-sub);
-  color: var(--muted, #828282);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  color: var(--muted, #828282); overflow-wrap: anywhere; }
 /* Today's number, a healthy one, and one that wants looking at. */
 .accent::before { background: linear-gradient(90deg, rgba(43, 92, 224, .65), rgba(110, 140, 245, .25)); }
 .good::before   { background: linear-gradient(90deg, rgba(15, 123, 79, .6), rgba(15, 123, 79, .15)); }
@@ -261,11 +253,7 @@
   font-size: var(--fs-section);
   line-height: var(--lh-section);
   font-weight: var(--fw-title);
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  letter-spacing: -0.01em; overflow-wrap: anywhere; }
 .cardMeta {
   flex: none;
   font-size: var(--fs-label);
@@ -293,11 +281,7 @@
 .row:last-child { border-bottom: none; }
 .rowLine {
   grid-column: 1;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  min-width: 0; overflow-wrap: anywhere; }
 .rowWho {
   font-size: var(--fs-item);
   line-height: var(--lh-item);
@@ -339,11 +323,7 @@
   margin-top: 2px;
   min-width: 0;
   font-size: var(--fs-sub);
-  line-height: var(--lh-sub);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  line-height: var(--lh-sub); overflow-wrap: anywhere; }
 .rowFail  { color: #c0392b; }
 .rowWhere { color: var(--muted, #828282); }
 .failTag {
@@ -394,11 +374,7 @@
 .rankName {
   font-size: var(--fs-body);
   line-height: var(--lh-body);
-  font-weight: var(--fw-label);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+  font-weight: var(--fw-label); overflow-wrap: anywhere; }
 .rankBarWrap {
   background: var(--md-surface-container-high, rgba(0,0,0,0.05));
   border-radius: 999px;

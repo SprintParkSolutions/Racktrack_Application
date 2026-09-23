@@ -72,11 +72,19 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.05);
 }
 
-/* ── Two rack slots ── */
+/* ── Two rack slots ──
+   Side by side, on a phone as well. Two racks are one job: the point of the
+   screen is that you are holding them against each other, and stacking them
+   one above the other made the second one a scroll away from the first (the
+   owner, 23 September 2026). Under 340px they stack, because two columns of
+   that width hold nothing. */
 .slots {
   display: grid;
-  grid-template-columns: 1fr;   /* stacked on mobile */
-  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(8px, 3vw, 16px);
+}
+@media (max-width: 340px) {
+  .slots { grid-template-columns: 1fr; }
 }
 .slot { display: flex; flex-direction: column; gap: 10px; }
 .slotLabel {
@@ -267,7 +275,7 @@
 
   /* Two slots side by side, full-width. */
   .slots {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 24px;
     align-items: start;
   }

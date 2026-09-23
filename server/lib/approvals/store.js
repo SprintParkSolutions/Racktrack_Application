@@ -478,10 +478,23 @@ const flag = (v) => (v ? 1 : 0);
 function nameOf(r) {
   if (r.rack_name) return r.rack_name;
   if (r.rack_id == null) return null;
+  // Whoever confirmed which rack the photograph is of.
   try {
     const bound = require('../rack_identity').confirmedRack(r.tenant_id, r.rack_id);
-    return (bound && (bound.name || bound.facilityId)) || null;
-  } catch { return null; }
+    const named = bound && bound.rack ? (bound.rack.name || bound.rack.facility_id) : null;
+    if (named) return named;
+  } catch { /* the main database is not this module's, and may be shut */ }
+  // And the rack itself, which carries the scan's own id once the two have
+  // been tied together - a drift page headed "Unidentified rack" whose every
+  // device was named after the rack is what sent me looking (the owner,
+  // 23 September 2026). A confirmation row is not the only way a rack gets
+  // its name: a scan bound to a known rack writes the id on the rack.
+  try {
+    const rack = require('../estate').getRackByRackId(r.tenant_id, r.rack_id);
+    const named = rack && (rack.name || rack.facility_id);
+    if (named) return named;
+  } catch { /* same */ }
+  return null;
 }
 
 function planOf(r, { heavy = true } = {}) {

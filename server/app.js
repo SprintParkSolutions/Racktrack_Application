@@ -7478,6 +7478,51 @@ app.get('/api/scan/:rackId', auth.requireAuth, async (req, res) => {
   }
 });
 
+/**
+ * What the ticket claims, and what this photograph shows.
+ *
+ * The second workflow's last mile (the owner, 23 September 2026): a ticket
+ * named a rack and said something about it, the technician photographed that
+ * rack, and this answers the one against the other in a sentence they can
+ * read standing in front of it.
+ *
+ * It answers only what a photograph can settle - which shelf a thing is on,
+ * whether the thing named is in the rack at all - and says so plainly when it
+ * cannot, rather than guessing. The reading itself is in
+ * lib/approvals/claim.js, with its own tests.
+ */
+app.get('/api/scan/:rackId/ticket-answer', auth.requireAuth, async (req, res) => {
+  const { rackId } = req.params;
+  const raw = String(req.query.task || '');
+  const [planIdRaw, ...rest] = raw.split(':');
+  const planId = Number(planIdRaw);
+  const uid = rest.join(':');
+  if (!planId || !uid) return res.status(400).json({ error: 'Name the ticket as planId:uid.' });
+
+  let ticket = null;
+  try {
+    ticket = require('./lib/approvals/store').getTicket(planId, uid);
+  } catch { ticket = null; }
+  if (!ticket) return res.status(404).json({ error: 'No such ticket.' });
+  // The ticket is answered for the person it was given to, and for an admin.
+  const mine = ticket.assigneeUserId != null && Number(ticket.assigneeUserId) === Number(req.user && req.user.id);
+  const isAdmin = ['owner', 'org_admin'].includes(String(req.user && req.user.role));
+  if (!mine && !isAdmin) return res.status(403).json({ error: 'This ticket is not yours.' });
+
+  const { decode, answer } = require('./lib/approvals/claim');
+  const claim = decode([ticket.summary || ticket.question || '', ticket.note || ''].join(' '));
+
+  let scan = null;
+  try {
+    if (fs.existsSync(path.join(outputsDir, rackId, 'device_unit_map.json'))) {
+      await healPortDataIfMissing(rackId);
+      scan = buildResponse(rackId, true);
+    }
+  } catch { scan = null; }
+
+  return res.json({ ok: true, claim, ...answer(claim, scan || { devices: [] }) });
+});
+
 app.get('/api/scan/:rackId/result', auth.requireAuth, async (req, res) => {
   const { rackId } = req.params;
   res.setHeader('Cache-Control', 'no-store');

@@ -44,9 +44,7 @@
   flex: 1; min-width: 0;
   margin: 0; font-size: var(--fs-section); font-weight: var(--fw-title);
   letter-spacing: -0.01em;
-  color: var(--mkt-ink, #121212);
-  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-}
+  color: var(--mkt-ink, #121212); overflow-wrap: anywhere; }
 
 .cardDesc {
   margin: 0; font-size: var(--fs-sub); line-height: 1.5;

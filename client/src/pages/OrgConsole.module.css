@@ -49,7 +49,9 @@
   margin: 0; font-size: 1.7rem; font-weight: var(--fw-title); letter-spacing: -0.035em;
   line-height: 1.04;
 }
-.headActions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; flex-wrap: wrap; }
+/* Hard right. It sat where the title's block ended, which on a short title
+   left it stranded in the middle of the row (the owner, 23 September 2026). */
+.headActions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; flex-wrap: wrap; margin-left: auto; }
 /* What this person is here, not something to press. A black pill among four
    buttons read as the loudest control on the page (the owner, 23 Sep 2026). */
 .roleBadge {
@@ -221,9 +223,7 @@
 /* One line, in words rather than shouted capitals: "Organizations" fitted
    nowhere at four across and was clipped to "Organization". */
 .statLabel {
-  margin-top: 4px; font-size: var(--fs-sub); font-weight: var(--fw-body); color: #6b6b6b;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
+  margin-top: 4px; font-size: var(--fs-sub); font-weight: var(--fw-body); color: #6b6b6b; overflow-wrap: anywhere; }
 
 /* ── Org cards grid ── */
 .grid {
@@ -385,8 +385,8 @@
 .personMain { flex: 1; display: flex; align-items: center; gap: 11px; background: none; border: none; padding: 0; cursor: pointer; text-align: left; min-width: 0; }
 .avatar { position: relative; flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: #000000; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: var(--fw-title); font-size: var(--fs-item); letter-spacing: -0.01em; }
 .personText { min-width: 0; flex: 1; display: flex; flex-direction: column; }
-.personName { font-weight: var(--fw-title); font-size: var(--fs-item); letter-spacing: -0.01em; color: #000000; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; display: flex; align-items: center; gap: 6px; }
-.personSub { font-size: var(--fs-label); color: #6b6b6b; margin-top: 3px; font-weight: var(--fw-label); text-transform: capitalize; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.personName { font-weight: var(--fw-title); font-size: var(--fs-item); letter-spacing: -0.01em; color: #000000; max-width: 100%; display: flex; align-items: center; gap: 6px; overflow-wrap: anywhere; }
+.personSub { font-size: var(--fs-label); color: #6b6b6b; margin-top: 3px; font-weight: var(--fw-label); text-transform: capitalize; overflow-wrap: anywhere; }
 .tally { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 0 4px; min-width: 42px; }
 .tallyNum { font-size: var(--fs-head); font-weight: var(--fw-title); color: #000000; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .tallyLbl { font-size: 9px; font-weight: var(--fw-title); color: #6b6b6b; text-transform: uppercase; letter-spacing: .06em; }
@@ -424,7 +424,7 @@
 .scanBadge { position: absolute; top: 8px; right: 8px; background: rgba(0, 0, 0,.82); color: #fff; font-size: var(--fs-micro); font-weight: var(--fw-title); padding: 3px 7px; border-radius: 999px; }
 .scanInfo { display: flex; flex-direction: column; gap: 2px; padding: 9px 11px 11px; }
 .scanId { font-size: var(--fs-sub); font-weight: var(--fw-title); color: #000000; }
-.scanSub { font-size: var(--fs-label); color: #6b6b6b; font-weight: var(--fw-label); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scanSub { font-size: var(--fs-label); color: #6b6b6b; font-weight: var(--fw-label); overflow-wrap: anywhere; }
 .scanDate { font-size: var(--fs-label); color: #6b6b6b; margin-top: 1px; }
 
 /* ── Inside the sidebar shell (≥768px) ────────────────────────────────
@@ -474,9 +474,7 @@
    this one. */
 .heroTitle {
   margin: 0; font-weight: var(--fw-title); font-size: clamp(22px, 3vw, 26px);
-  letter-spacing: -0.02em; line-height: 1.05;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
+  letter-spacing: -0.02em; line-height: 1.05; overflow-wrap: anywhere; }
 .ownerPill {
   flex: none; background: #000000; color: #fff;
   font: 11px var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
