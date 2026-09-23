@@ -67,6 +67,11 @@ describe('the phone bar', () => {
     expect(inBar()).toEqual(['Home', 'Drift']);
     expect(labels()).toContain('Your checks');
     expect(labels()).not.toContain('Scan a rack');
+    // Nor anything else the employee's app is made of. Looking a port up is
+    // what somebody does standing at a rack they have just read; a single
+    // point of contact never took the photograph (the owner, 23 Sep 2026).
+    expect(labels()).not.toContain('Port history');
+    expect(labels()).not.toContain('Tickets for you');
   });
 
   test('an admin who shifts to Employee gets the whole employee app back', () => {

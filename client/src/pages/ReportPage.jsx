@@ -9,6 +9,7 @@ import ExportSheet from '../components/ExportSheet.jsx';
 import ShareSheet from '../components/ShareSheet.jsx';
 import ReportViewer from '../components/ReportViewer.jsx';
 import { downloadExport, saveBlob } from '../utils/exportApi';
+import { driftReportUrl } from '../utils/approvals.js';
 import { setCached } from '../utils/scanPrefetch';
 import { getJSON } from '../utils/safeStorage';
 import { matchIsTrusted, serverReportsConfirmations } from '../utils/matchEvidence';
@@ -319,6 +320,31 @@ export default function ReportPage() {
     }
   };
 
+  /* The drift report: this rack against the record.
+   *
+   * One of the product's three reports, and the only one that was not on this
+   * screen - a single point of contact photographed a rack, opened the report
+   * and found no way to the drift report from it (the owner, 23 September
+   * 2026). The server picks the check when none is named, and says in a
+   * sentence when the rack has never been compared. */
+  const saveDrift = async () => {
+    setFileBusy('drift'); setNote(null);
+    try {
+      const at = await driftReportUrl(rackId, null);
+      const file = await fetch(`${at}${at.includes('?') ? '&' : '?'}download=1`);
+      if (file.status === 404) {
+        throw new Error('This rack has not been compared with the record yet. Run the drift check first.');
+      }
+      if (!file.ok) throw new Error('The drift report could not be made.');
+      const blob = await file.blob();
+      setNote(await saveBlob(blob, `${String(rackId).replace(/[^A-Za-z0-9_-]/g, '_')}-drift-report.html`, 'html'));
+    } catch (e) {
+      setNote({ tone: 'bad', text: e.message || 'The drift report could not be downloaded.' });
+    } finally {
+      setFileBusy(null);
+    }
+  };
+
   const getFile = async (kind) => {
     setFileBusy(kind); setNote(null);
     try { setNote(await downloadExport(scanId, rackId, kind)); }
@@ -445,6 +471,19 @@ export default function ReportPage() {
           <IconDownload />
           {fileBusy === 'report' ? 'Preparing' : 'Download'}
         </button>
+        {/* And the drift report, which is a different document about the same
+            rack: what differs from the record. */}
+        {flow !== PORT && (
+          <button
+            type="button"
+            className={styles.quiet}
+            disabled={!doc || fileBusy === 'drift'}
+            onClick={saveDrift}
+          >
+            <IconDownload />
+            {fileBusy === 'drift' ? 'Preparing' : 'Drift report'}
+          </button>
+        )}
         {[
           ['netbox', 'NetBox files', <IconExport key="i" />, [
             ['CSV for NetBox', () => getFile('csv'), fileBusy === 'csv'],

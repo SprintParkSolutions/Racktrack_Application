@@ -916,7 +916,12 @@ label[class*="Card"], small[class*="Card"], strong[class*="Card"], em[class*="Ca
 [class*="btn"],    [class*="Btn"],
 [class*="button"], [class*="Button"],
 [class*="cta"],    [class*="Cta"] {
-  box-shadow: none !important;
+  /* box-shadow is NOT flattened here any more. It was, and that is why every
+     light control in the app read as a patch of text: a button could not
+     carry an edge. The depth repaint above only reaches card / panel / tile /
+     surface / glass, so nothing needs protecting from it here, and the
+     control layer at the foot of this file gives a button its own shadow
+     without touching one that already has a better idea. */
   text-shadow: none !important;
   filter: none !important;
   -webkit-backdrop-filter: none !important;
@@ -1093,3 +1098,85 @@ select:focus, textarea:focus,
   pointer-events: auto !important;
   opacity: 1 !important;
 }
+
+/* ══ Every button looks like a button ═════════════════════════════════════
+   The owner, 23 September 2026: "most of the buttons don't even look like
+   buttons but like some random cards and some text. Every button throughout
+   the application should look like a button, with some animation or style or
+   highlight, something different and consistent."
+
+   So this is one layer for the whole app, written last so it wins, in three
+   parts.
+
+   ONE. Feedback on every button there is, whatever it is styled like: it
+   sinks a little when pressed and it shows a ring when a keyboard reaches
+   it. A row in a list and a tab in a bar are buttons too, and they get the
+   press but keep their own shape - a list that looked like a row of buttons
+   would be the opposite mistake.
+
+   TWO. The controls NAMED as actions - btn, button, cta, action - get the
+   product's own control surface: white with light down the fill, a hairline
+   ring and a shadow with reach. That is the same object the phone's account
+   mark, the Desk's quiet controls and Home's feature marks are built from,
+   so a control reads the same wherever it is met.
+
+   THREE. A filled control keeps its fill. Anything carrying its own
+   background image (the app's blue, the black pill) is left alone, because
+   the surface below would flatten it.
+
+   Class names are matched as substrings because CSS modules keep the source
+   name inside the hashed one - the same way the rest of this file works. */
+
+/* ── One: the press, and the ring ─────────────────────────────────────── */
+button,
+[role='button'] {
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--dur-fast) var(--ease-spring),
+    box-shadow var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out);
+}
+button:active:not(:disabled),
+[role='button']:active {
+  transform: scale(0.972);
+}
+button:focus-visible,
+[role='button']:focus-visible {
+  outline: 2px solid var(--md-on-surface, #121212);
+  outline-offset: 2px;
+}
+button:disabled { cursor: default; }
+@media (prefers-reduced-motion: reduce) {
+  button, [role='button'] { transition: none; }
+  button:active:not(:disabled), [role='button']:active { transform: none; }
+}
+
+/* ── Two: a control named as an action is a control ───────────────────────
+   Wrapped in :where(), so this weighs nothing. Any screen that paints its own
+   control - the app's blue, the black pill, a red outline - wins on
+   specificity without having to say so, and this reaches only the buttons
+   whose own stylesheet gives them nothing. That is what "looks like some text"
+   was: a button with no surface at all.
+
+   Nothing here is a size. A control keeps whatever width, padding and radius
+   its own screen gave it; what it gains is the surface. */
+:where(button[class*="btn"], button[class*="Btn"],
+       button[class*="button"], button[class*="Button"],
+       button[class*="cta"], button[class*="Cta"],
+       button[class*="action"], button[class*="Action"]) {
+  background-color: var(--md-surface-container-lowest, #ffffff);
+  color: var(--md-on-surface, #121212);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .9),
+    0 0 0 1px rgba(16, 32, 60, .08),
+    0 10px 20px -14px rgba(16, 32, 60, .75);
+}
+:where(button[class*="btn"], button[class*="Btn"],
+       button[class*="button"], button[class*="Button"],
+       button[class*="cta"], button[class*="action"]):hover:not(:disabled) {
+  background-color: #fbfcfe;
+}
+:where(button[class*="btn"], button[class*="Btn"],
+       button[class*="button"], button[class*="Button"],
+       button[class*="action"]):disabled { opacity: .45; }

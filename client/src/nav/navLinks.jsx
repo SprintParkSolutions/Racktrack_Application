@@ -110,6 +110,24 @@ export function usePrimaryNav() {
   const isSpoc = Boolean(can && can.spoc) && !asEmployee;
   const runsTheEstate = (isAdmin || Boolean(can && can.spoc)) && !asEmployee;
 
+  /* Whether we yet KNOW which app this person gets.
+     `can` is null until GET /api/approvals/me answers, and a technician who
+     is a Site's contact is only a SPOC because that answer says so. Treating
+     "not answered yet" as "not a SPOC" gave a single point of contact the
+     employee's navigation - Scan a rack, Two racks, Scan history, Tickets,
+     Port history - until the request landed, and left it there for good if
+     the request failed. The owner saw Port history in a SPOC's sidebar on
+     23 September 2026, and that is what it was.
+
+     Two people do not have to wait: an admin is an admin by their own role,
+     and anybody who has shifted the toggle to Employee has said which app
+     they want. Everybody else gets the entries that belong to no role until
+     the server has answered, and never the wrong ones. */
+  const settled = can !== null || isAdmin || asEmployee;
+  /* The employee's own work: only when we know this person is not running
+     the estate. */
+  const employeeWork = settled && !runsTheEstate;
+
   return [
     // ── Rack work. Home is first: "/" is the app's landing screen again, so
     // the bar needs a way back to it. `end` is true because every other route
@@ -121,7 +139,7 @@ export function usePrimaryNav() {
       inBar: true, barLabel: 'Home' },
     // Scan is the bar's raised centre action (BottomNav), so it takes no slot
     // in the row of four beside it.
-    ...(runsTheEstate ? [] : [{ group: 'work', to: '/scan', label: 'Scan a rack', icon: <ScanIcon />, end: false }]),
+    ...(employeeWork ? [{ group: 'work', to: '/scan', label: 'Scan a rack', icon: <ScanIcon />, end: false }] : []),
     // The bar carries four tabs around the raised Scan: two on each side. An
     // odd number leaves the centre off-centre, which is what a technician had
     // once the Desk came off their bar - the owner's words on 22 Sep 2026,
@@ -134,20 +152,20 @@ export function usePrimaryNav() {
     // Two racks as one job, and the history of what this person scanned, are
     // both the employee's work. Neither is offered to somebody running the
     // estate: they did not take those photographs.
-    ...(runsTheEstate ? [] : [{ group: 'work', to: '/multi-rack/new', label: 'Two racks',
+    ...(employeeWork ? [{ group: 'work', to: '/multi-rack/new', label: 'Two racks',
       icon: <TwoRackIcon />, end: false, inBar: true, barLabel: '2 Racks',
-      hint: 'Two racks as one job' }]),
-    ...(runsTheEstate ? [] : [{ group: 'work', to: '/history', label: 'Scan history',
-      icon: <HistoryIcon />, end: false, inBar: true, barLabel: 'Racks' }]),
+      hint: 'Two racks as one job' }] : []),
+    ...(employeeWork ? [{ group: 'work', to: '/history', label: 'Scan history',
+      icon: <HistoryIcon />, end: false, inBar: true, barLabel: 'Racks' }] : []),
     /* What somebody has asked this person to go and look at. The second
        workflow starts here rather than at a rack (23 September 2026). */
-    ...(runsTheEstate ? [] : [{ group: 'work', to: '/tasks', label: 'Tickets for you',
-      icon: <InboxIcon />, end: false, hint: 'What you have been asked to look at' }]),
+    ...(employeeWork ? [{ group: 'work', to: '/tasks', label: 'Tickets for you',
+      icon: <InboxIcon />, end: false, hint: 'What you have been asked to look at' }] : []),
     // The technician's fourth tab. A person who has just checked a rack looks
     // a port up next more often than they do anything else, and for somebody
     // who decides that slot is the Desk instead.
-    ...(runsTheEstate ? [] : [{ group: 'work', to: '/port-history', label: 'Port history',
-      icon: <PortsIcon />, end: false, hint: 'What changed on a port' }]),
+    ...(employeeWork ? [{ group: 'work', to: '/port-history', label: 'Port history',
+      icon: <PortsIcon />, end: false, hint: 'What changed on a port' }] : []),
     // Approvals is its own application on its own address, so this entry
     // carries `href` instead of `to`: the bar, the Menu and the sidebar draw
     // it as a link that leaves the app (components/ExternalLink.jsx).

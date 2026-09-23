@@ -527,8 +527,12 @@ export default function HomePage() {
   const racks = useMemo(() => (scans || []).map((s) => {
     const place = places.get(String(s.rackId)) || {};
     const plan = byRack.get(s.rackId) || null;
+    /* The estate's own name first, then the check's, then the scan's - which
+       the server now resolves from whoever confirmed the rack, so a rack a
+       person identified is called by its name here too (23 September 2026). */
     const named = place.name
-      || (plan && plan.rackName && !UNNAMED.test(plan.rackName) ? String(plan.rackName) : null);
+      || (plan && plan.rackName && !UNNAMED.test(plan.rackName) ? String(plan.rackName) : null)
+      || (s.rackName && !UNNAMED.test(s.rackName) ? String(s.rackName) : null);
     return {
       rackId: s.rackId,
       name: named,
