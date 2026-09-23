@@ -5678,3 +5678,98 @@
 .pickRackNote { margin: 0; font-size: var(--fs-sub); color: var(--muted, #5c646d); line-height: 1.45; }
 .pickRackError { margin: 0; font-size: var(--fs-sub); color: #c0392b; }
 
+
+/* ── The port, found ─────────────────────────────────────────────────────
+   What a person sees when RackTrack has located the port an incident is
+   about: the port as the title, the photograph it was found in, the facts
+   about it, what the switch says now, and one line of what to do. Written in
+   the app's own kit on 23 September 2026, replacing a panel of inline styles
+   and a monospace dump the owner rightly called the worst screen in the
+   application. */
+.portFound {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+  background: rgba(11, 21, 36, .55);
+  backdrop-filter: blur(2px);
+}
+.portFoundCard {
+  width: min(560px, 100%); max-height: 90vh; overflow: auto;
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 20px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FCFDFF 60%, #F7FAFD 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .9),
+    0 0 0 1px rgba(16, 32, 60, .06),
+    0 30px 70px -30px rgba(11, 21, 36, .55);
+}
+.portFoundHead { display: flex; align-items: flex-start; gap: 12px; }
+.portFoundTitleWrap { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.portFoundEyebrow {
+  margin: 0; font-family: var(--font); font-size: var(--fs-label); font-weight: var(--fw-label);
+  letter-spacing: var(--ls-caps); text-transform: uppercase; color: #5B6270;
+}
+.portFoundTitle {
+  margin: 0; font-family: var(--font); font-size: var(--fs-head); font-weight: var(--fw-title);
+  letter-spacing: -0.022em; line-height: 1.15; color: #0B0B0C; overflow-wrap: anywhere;
+}
+.portFoundSub { margin: 0; font-family: var(--font); font-size: var(--fs-body); color: #4A5160; }
+.portFoundClose {
+  margin-left: auto; flex: none;
+  width: 34px; height: 34px; border: 0; border-radius: 11px;
+  background: #F2F5F9; color: #4A5160; font-size: var(--fs-head); line-height: 1;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.portFoundShot {
+  width: 100%; max-height: 260px; object-fit: contain;
+  border-radius: 14px; background: #F2F5F9;
+  box-shadow: inset 0 0 0 1px rgba(16, 32, 60, .06);
+}
+.portFoundAsked {
+  margin: 0; font-family: var(--font); font-size: var(--fs-body); line-height: 1.5; color: #22283A;
+}
+/* The facts, as a list rather than a row of labels in small capitals. */
+.portFoundFacts { margin: 0; display: grid; grid-template-columns: 1fr; gap: 0; }
+.portFoundFacts > div {
+  display: flex; align-items: baseline; gap: 12px;
+  padding: 9px 0; border-bottom: 1px solid #EEF1F5;
+}
+.portFoundFacts > div:last-child { border-bottom: 0; }
+.portFoundFacts dt {
+  flex: 0 0 116px; font-family: var(--font); font-size: var(--fs-sub); color: #6B7280;
+}
+.portFoundFacts dd {
+  margin: 0; min-width: 0; font-family: var(--font); font-size: var(--fs-body);
+  font-weight: var(--fw-label); color: #0B0B0C; overflow-wrap: anywhere;
+}
+.portFoundMono { font-family: var(--mono, ui-monospace, monospace); font-size: var(--fs-sub); }
+
+.portFoundNow {
+  padding: 12px 14px; border-radius: 14px;
+  background: #F6F8FB; box-shadow: inset 0 0 0 1px rgba(16, 32, 60, .05);
+}
+.portFoundNowHead {
+  margin: 0 0 8px; font-family: var(--font); font-size: var(--fs-label);
+  font-weight: var(--fw-title); letter-spacing: var(--ls-caps);
+  text-transform: uppercase; color: #5B6270;
+}
+.portFoundNowList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.portFoundNowList li {
+  display: flex; align-items: baseline; gap: 10px;
+  font-family: var(--font); font-size: var(--fs-body);
+}
+.portFoundNowList li span { flex: 0 0 116px; color: #6B7280; font-size: var(--fs-sub); }
+.portFoundNowList li b { min-width: 0; font-weight: var(--fw-label); color: #0B0B0C; overflow-wrap: anywhere; }
+.portFoundUp { color: #0F5E3D !important; }
+.portFoundIdle { color: #8A5310 !important; }
+.portFoundNowNone { margin: 0; font-family: var(--font); font-size: var(--fs-body); color: #4A5160; }
+
+/* What to do about it, in one sentence. */
+.portFoundSay {
+  margin: 0; padding: 12px 14px; border-radius: 14px;
+  background: linear-gradient(180deg, #F4F7FE 0%, #EDF2FC 100%);
+  box-shadow: inset 0 0 0 1px rgba(35, 73, 196, .14);
+  font-family: var(--font); font-size: var(--fs-body); font-weight: var(--fw-label);
+  line-height: 1.5; color: #16224A;
+}

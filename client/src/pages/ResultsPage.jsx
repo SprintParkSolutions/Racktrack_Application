@@ -4610,97 +4610,76 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
           </div>
         )}
 
-        {/* Ticket-mode simplified report modal - just the essentials */}
+        {/* The port, found.
+            This panel was written in inline styles with uppercase micro-labels
+            and a block of monospace output that read like a terminal - "the
+            worst of the entire application", and the owner was right (23
+            September 2026). It is the app's own kit now: a sheet, the port as
+            its title, the photograph with it, the facts as a list, what the
+            switch says in words, and one line of what to do about it. */}
         {ticketReportOpen && ticketMode && ticket && (
-          <div
-            onClick={() => setTicketReportOpen(false)}
-            style={{
-              position:'fixed', inset:0, zIndex:9999,
-              background:'rgba(0,0,0,0.75)',
-              display:'flex', alignItems:'center', justifyContent:'center',
-              padding:16,
-            }}>
-            <div
-              onClick={e => e.stopPropagation()}
-              style={{
-                width:'min(560px, 100%)',
-                maxHeight:'90vh',
-                overflow:'auto',
-                background:'#ffffff',
-                border:'1px solid rgba(0,0,0,0.12)',
-                borderRadius:14,
-                padding:18,
-                color:'#1c1c1c',
-              }}>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:12}}>
-                <div>
-                  <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.08em',color:'#000000',textTransform:'uppercase'}}>Incident Report</div>
-                  <div style={{fontSize:18,fontWeight:600,marginTop:2}}>{ticket.incident_number}</div>
+          <div className={styles.portFound} onClick={() => setTicketReportOpen(false)}>
+            <div className={styles.portFoundCard} role="dialog" aria-modal="true"
+              aria-label="The port, found" onClick={(e) => e.stopPropagation()}>
+              <div className={styles.portFoundHead}>
+                <div className={styles.portFoundTitleWrap}>
+                  <p className={styles.portFoundEyebrow}>Incident {ticket.incident_number}</p>
+                  <h2 className={styles.portFoundTitle}>
+                    {ticket.cmdb?.interface_alias || `Port ${ticket.target?.port}`}
+                  </h2>
+                  <p className={styles.portFoundSub}>
+                    {[ticket.target?.device, ticket.cmdb?.rack_name].filter(Boolean).join(' · ')}
+                  </p>
                 </div>
-                <button onClick={() => setTicketReportOpen(false)} style={{background:'none',border:'none',color:'var(--muted, #474747)',cursor:'pointer',fontSize:20,lineHeight:1}}>×</button>
+                <button type="button" className={styles.portFoundClose}
+                  onClick={() => setTicketReportOpen(false)} aria-label="Close">×</button>
               </div>
 
-              {/* Incident */}
-              <div style={{marginBottom:14}}>
-                <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.06em',color:'var(--muted, #474747)',textTransform:'uppercase',marginBottom:4}}>Incident</div>
-                <div style={{fontSize:14,lineHeight:1.4}}>{ticket.short_description}</div>
-                <div style={{fontSize:12,color:'var(--muted, #474747)',marginTop:4}}>
-                  {ticket.priority} · opened {ticket.opened_at || '?'}
-                </div>
-              </div>
+              {rackImg || resultImg ? (
+                <AssetImg src={rackImg || resultImg} alt="The rack, with the port marked"
+                  className={styles.portFoundShot} />
+              ) : null}
 
-              {/* Image */}
-              <div style={{marginBottom:14}}>
-                <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.06em',color:'var(--muted, #474747)',textTransform:'uppercase',marginBottom:4}}>Image</div>
-                {rackImg || resultImg ? (
-                  <AssetImg src={rackImg || resultImg} alt="Located port" style={{width:'100%',maxHeight:280,objectFit:'contain',borderRadius:8,border:'1px solid rgba(255,255,255,0.08)'}}/>
-                ) : <div style={{fontSize:12,color:'var(--muted, #474747)'}}>not available</div>}
-              </div>
+              <p className={styles.portFoundAsked}>{ticket.short_description}</p>
 
-              {/* Port located */}
-              <div style={{marginBottom:14}}>
-                <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.06em',color:'var(--muted, #474747)',textTransform:'uppercase',marginBottom:4}}>Port Located</div>
-                <div style={{fontSize:14}}>
-                  <strong>{ticket.target?.device}</strong> @ <strong>{ticket.cmdb?.interface_alias || `port ${ticket.target?.port}`}</strong>
-                </div>
-                <div style={{fontSize:12,color:'var(--muted, #474747)',marginTop:2}}>
-                  {ticket.cmdb?.rack_name} · {ticket.cmdb?.model || '?'} · mgmt {ticket.cmdb?.mgmt_ip || '?'}
-                </div>
-              </div>
+              <dl className={styles.portFoundFacts}>
+                <div><dt>Device</dt><dd>{ticket.target?.device || 'not named'}</dd></div>
+                <div><dt>Model</dt><dd>{ticket.cmdb?.model || 'not in the records'}</dd></div>
+                <div><dt>Management</dt><dd className={styles.portFoundMono}>{ticket.cmdb?.mgmt_ip || 'not in the records'}</dd></div>
+                <div><dt>Raised</dt><dd>{ticket.priority}{ticket.opened_at ? ` · ${ticket.opened_at}` : ''}</dd></div>
+              </dl>
 
-              {/* Output */}
-              <div style={{marginBottom:14}}>
-                <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.06em',color:'var(--muted, #474747)',textTransform:'uppercase',marginBottom:4}}>Output</div>
+              {/* What the switch says about it, in words rather than a dump. */}
+              <div className={styles.portFoundNow}>
+                <p className={styles.portFoundNowHead}>What the switch says now</p>
                 {liveSnapshot?.ok ? (
-                  <div style={{fontSize:13,lineHeight:1.6,fontFamily:'ui-monospace, monospace',background:'#ffffff',border:'1px solid rgba(0,0,0,0.08)',color:'#1c1c1c',padding:10,borderRadius:6}}>
-                    <div>link        : <strong style={{color: liveSnapshot.link_active ? '#1c1c1c' : '#474747'}}>{liveSnapshot.link_active ? 'active' : 'idle'}</strong></div>
-                    <div>neighbor    : {liveSnapshot.has_neighbor ? (liveSnapshot.neighbor?.sysname || 'present') : 'none'}</div>
-                    {liveSnapshot.neighbor?.port_id && <div>remote port : {liveSnapshot.neighbor.port_id}</div>}
-                    {liveSnapshot.neighbor?.mgmt_ip && <div>remote mgmt : {liveSnapshot.neighbor.mgmt_ip}</div>}
-                    <div>macs        : {liveSnapshot.mac_count}{liveSnapshot.first_mac ? ` (${liveSnapshot.first_mac})` : ''}</div>
-                    <div>method      : {liveSnapshot.neighbor_method}</div>
-                    <div>as of       : {new Date(liveSnapshot.as_of).toLocaleTimeString()}</div>
-                  </div>
+                  <ul className={styles.portFoundNowList}>
+                    <li><span>Link</span><b className={liveSnapshot.link_active ? styles.portFoundUp : styles.portFoundIdle}>
+                      {liveSnapshot.link_active ? 'passing traffic' : 'idle'}</b></li>
+                    <li><span>Neighbour</span><b>{liveSnapshot.has_neighbor
+                      ? (liveSnapshot.neighbor?.sysname || 'one, unnamed') : 'none'}</b></li>
+                    {liveSnapshot.neighbor?.port_id
+                      ? <li><span>Far end</span><b className={styles.portFoundMono}>{liveSnapshot.neighbor.port_id}</b></li> : null}
+                    <li><span>Addresses seen</span><b>{liveSnapshot.mac_count}{liveSnapshot.first_mac ? ` · ${liveSnapshot.first_mac}` : ''}</b></li>
+                    <li><span>Read at</span><b>{new Date(liveSnapshot.as_of).toLocaleTimeString()}</b></li>
+                  </ul>
                 ) : liveSnapshot ? (
-                  <div style={{fontSize:12,color:'#474747'}}>Live sample failed: {liveSnapshot.error}</div>
+                  <p className={styles.portFoundNowNone}>The switch could not be read: {liveSnapshot.error}</p>
                 ) : (
-                  <div style={{fontSize:12,color:'var(--muted, #474747)'}}>no live sample yet</div>
+                  <p className={styles.portFoundNowNone}>The switch has not been read yet.</p>
                 )}
               </div>
 
-              {/* Suggestions */}
-              <div>
-                <div style={{fontSize:10,fontWeight:600,letterSpacing:'0.06em',color:'var(--muted, #474747)',textTransform:'uppercase',marginBottom:4}}>Suggestions</div>
-                <div style={{fontSize:13,lineHeight:1.5}}>
-                  {(() => {
-                    if (liveResolvedAt) return <span style={{color:'#1c1c1c'}}>✓ Port is active now - cable was attached at {new Date(liveResolvedAt).toLocaleTimeString()}. Incident likely resolved; verify with monitoring, then close the ticket.</span>;
-                    if (liveSnapshot?.link_active) return <span style={{color:'#1c1c1c'}}>Port is currently active. Issue may be intermittent - watch for re-flaps over the next few minutes.</span>;
-                    if (liveSnapshot?.ok && !liveSnapshot.link_active) return <span>No traffic on this port right now. Verify the cable is plugged in on both ends, check the far-end device power/NIC status, then re-monitor.</span>;
-                    if (liveSnapshot && !liveSnapshot.ok) return <span>Cannot reach the switch over SSH to verify. Check mgmt connectivity to {ticket.cmdb?.mgmt_ip || 'the switch'}.</span>;
-                    return <span style={{color:'var(--muted, #474747)'}}>Waiting for first live sample.</span>;
-                  })()}
-                </div>
-              </div>
+              {/* One line of what to do about it. */}
+              <p className={styles.portFoundSay}>
+                {(() => {
+                  if (liveResolvedAt) return `The port is passing traffic now - the cable went in at ${new Date(liveResolvedAt).toLocaleTimeString()}. The incident is likely finished; check your monitoring and close it.`;
+                  if (liveSnapshot?.link_active) return 'The port is passing traffic now. If the fault was intermittent, watch it for a few minutes before closing anything.';
+                  if (liveSnapshot?.ok && !liveSnapshot.link_active) return 'Nothing is passing on this port. Check the cable at both ends, then the far-end device, then read it again.';
+                  if (liveSnapshot && !liveSnapshot.ok) return `The switch would not answer, so nothing here is confirmed. Check you can reach ${ticket.cmdb?.mgmt_ip || 'it'} first.`;
+                  return 'Waiting for the first reading from the switch.';
+                })()}
+              </p>
             </div>
           </div>
         )}
