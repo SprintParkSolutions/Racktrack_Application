@@ -121,7 +121,7 @@
   /* !important because the row's display now comes from PageHeader's own
      module. The two selectors have equal specificity, so without this the
      winner would depend on bundle order. */
-  .headerTop { display: none; }
+  .headerTop { display: none !important; }
   /* Drop the mobile safe-area inset (meaningless on desktop; it would push
      the nav down and make it read as detached). Keep position: sticky. */
   .header { padding-top: 0; }

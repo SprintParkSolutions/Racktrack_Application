@@ -82,7 +82,7 @@
 /* Not "panelHead": index.css turns any class whose name contains "panel" into
    a raised card, which drew a second white box around every heading. */
 .bandWho { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.bandSub { font-size: var(--fs-sub); color: var(--muted); overflow-wrap: anywhere; }
+.bandSub { font-size: var(--fs-sub) !important; color: var(--muted); overflow-wrap: anywhere; }
 .bandHead { display: flex; align-items: center; gap: 10px; }
 .bandHead h2 {
   flex: 1; margin: 0;
@@ -365,7 +365,7 @@
   text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 .menu button:active { background: var(--bg2, rgba(0,0,0,.05)); }
-.menuBad { color: #c0392b; }
+.menuBad { color: #c0392b !important; }
 
 /* ── What the switch actually said ── */
 .data { display: flex; flex-direction: column; }
@@ -464,7 +464,7 @@
 /* ── Nothing here yet ── */
 .empty { padding: 44px 16px; text-align: center; }
 .empty p { margin: 0 0 6px; font-size: var(--fs-section); font-weight: var(--fw-label); color: var(--text); }
-.emptySub { font-weight: var(--fw-body) !important; font-size: var(--fs-body) !important; color: var(--muted) !important; margin-bottom: 18px; }
+.emptySub { font-weight: var(--fw-body) !important; font-size: var(--fs-body) !important; color: var(--muted) !important; margin-bottom: 18px !important; }
 
 /* ── Buttons ── */
 .actions { display: flex; gap: 10px; flex-wrap: wrap; }

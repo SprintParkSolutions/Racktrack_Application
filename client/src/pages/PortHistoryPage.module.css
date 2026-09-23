@@ -887,12 +887,12 @@
 :global([data-theme='light']) .portCell.up {
   background: rgba(34, 197, 94, 0.12) !important;
   border-color: rgba(34, 197, 94, 0.55) !important;
-  color: #15803d;
+  color: #15803d !important;
 }
 :global([data-theme='light']) .portCell.down {
   background: rgba(239, 68, 68, 0.12) !important;
   border-color: rgba(239, 68, 68, 0.55) !important;
-  color: #b91c1c;
+  color: #b91c1c !important;
 }
 :global([data-theme='light']) .portCell.unknown {
   background: var(--md-surface-container, #ffffff);
@@ -1168,14 +1168,14 @@
   gap: 12px !important;
   padding-bottom: 12px !important;
   margin-bottom: 10px !important;
-  border-bottom: 1px solid var(--md-outline-variant, #E0E0E0);
+  border-bottom: 1px solid var(--md-outline-variant, #E0E0E0) !important;
 }
 .detailHeadTitle {
   display: flex !important;
   align-items: center !important;
   gap: 10px !important;
   min-width: 0 !important;
-  flex-wrap: wrap;
+  flex-wrap: wrap !important;
 }
 .detailClose {
   width: 32px !important;
@@ -1194,11 +1194,11 @@
   cursor: pointer !important;
   padding: 0 !important;
   transition: background-color 0.14s, border-color 0.14s !important;
-  -webkit-tap-highlight-color: transparent;
+  -webkit-tap-highlight-color: transparent !important;
 }
 .detailClose:hover {
   background: var(--md-surface-container, #ffffff) !important;
-  border-color: var(--md-on-surface, #121212);
+  border-color: var(--md-on-surface, #121212) !important;
 }
 
 /* ── In-panel tab strip - Specs / Timeline / History ─────────── */
@@ -1209,7 +1209,7 @@
   padding: 0 !important;
   border-bottom: 1px solid var(--md-outline-variant, #E0E0E0) !important;
   background: transparent !important;
-  position: relative;
+  position: relative !important;
 }
 .detailTab {
   flex: 1 1 0 !important;
@@ -1229,17 +1229,17 @@
   white-space: nowrap !important;
   transition: opacity 0.15s, border-color 0.15s !important;
   -webkit-tap-highlight-color: transparent !important;
-  margin-bottom: -1px;
+  margin-bottom: -1px !important;
 }
-.detailTab:hover { opacity: 0.85; }
+.detailTab:hover { opacity: 0.85 !important; }
 .detailTabActive {
   opacity: 1 !important;
   font-weight: var(--fw-title) !important;
-  border-bottom-color: var(--md-on-surface, #121212);
+  border-bottom-color: var(--md-on-surface, #121212) !important;
 }
-:global([data-theme='light']) .detailTab { color: var(--md-on-surface, #121212); }
+:global([data-theme='light']) .detailTab { color: var(--md-on-surface, #121212) !important; }
 :global([data-theme='light']) .detailTabActive {
-  border-bottom-color: var(--md-on-surface, #121212);
+  border-bottom-color: var(--md-on-surface, #121212) !important;
 }
 
 /* Status block head when inside the Timeline tab - drop the heading,
@@ -1251,7 +1251,7 @@
   line-height: 14px !important;
   text-transform: uppercase !important;
   color: var(--md-on-surface, #121212) !important;
-  opacity: 0.55;
+  opacity: 0.55 !important;
 }
 
 /* ── Port tile redesign - white tile + number + small status peg ── */
@@ -1261,7 +1261,7 @@
      always lays out in exactly 2 rows regardless of port count. */
   gap: 4px !important;
   background: transparent !important;
-  width: 100%;
+  width: 100% !important;
 }
 .portCell {
   position: relative !important;
@@ -1277,12 +1277,12 @@
   min-width: 0 !important;
   cursor: pointer !important;
   transition: border-color 0.14s, background-color 0.14s, transform 80ms !important;
-  box-shadow: none;
+  box-shadow: none !important;
 }
 .portCell:hover {
   border-color: var(--md-on-surface, #121212) !important;
   background: var(--md-surface-container, #ffffff) !important;
-  transform: translateY(-1px);
+  transform: translateY(-1px) !important;
 }
 .portCell .portName {
   font-family: var(--font, inherit) !important;
@@ -1290,13 +1290,13 @@
   font-weight: var(--fw-title) !important;
   line-height: 1 !important;
   color: var(--md-on-surface, #121212) !important;
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: tabular-nums !important;
 }
 /* Status line - coloured strip flush against the tile's bottom edge so
    it reads as the tile's bottom border, not a floating bar. */
 .portCell {
   padding-bottom: 0 !important;
-  overflow: hidden;
+  overflow: hidden !important;
 }
 .portCell::after {
   content: '' !important;
@@ -1308,14 +1308,14 @@
   border-radius: 0 !important;
   background: var(--md-outline-variant, #E0E0E0) !important;
   transition: background-color 0.14s !important;
-  box-shadow: none;
+  box-shadow: none !important;
 }
 .portCell.up::after,
-:global([data-theme='light']) .portCell.up::after  { background: #22c55e; }
+:global([data-theme='light']) .portCell.up::after  { background: #22c55e !important; }
 .portCell.down::after,
-:global([data-theme='light']) .portCell.down::after { background: #ef4444; }
+:global([data-theme='light']) .portCell.down::after { background: #ef4444 !important; }
 .portCell.unknown::after,
-:global([data-theme='light']) .portCell.unknown::after { background: var(--md-outline-variant, #E0E0E0); }
+:global([data-theme='light']) .portCell.unknown::after { background: var(--md-outline-variant, #E0E0E0) !important; }
 
 /* Light/up/down/unknown tile backgrounds - flat white only, the peg
    carries the colour. Defends against earlier rules that re-tinted the
@@ -1328,7 +1328,7 @@
 :global([data-theme='light']) .portCell.unknown {
   background: var(--md-surface-container-lowest, #FFFFFF) !important;
   border-color: var(--md-outline-variant, #E0E0E0) !important;
-  color: var(--md-on-surface, #121212);
+  color: var(--md-on-surface, #121212) !important;
 }
 
 /* Active (currently-selected) tile - solid black outline */
@@ -1336,12 +1336,12 @@
 :global([data-theme='light']) .portCellActive {
   outline: 2px solid var(--md-on-surface, #121212) !important;
   outline-offset: -1px !important;
-  background: var(--md-surface-container, #ffffff);
+  background: var(--md-surface-container, #ffffff) !important;
 }
 .portDisabled,
 :global([data-theme='light']) .portDisabled {
   opacity: 0.35 !important;
-  filter: none;
+  filter: none !important;
 }
 
 /* Legend dots stay green/red - always single row, no wrap */
@@ -1360,10 +1360,10 @@
   white-space: nowrap !important;
   overflow-x: auto !important;
   -ms-overflow-style: none !important;
-  scrollbar-width: none;
+  scrollbar-width: none !important;
 }
-.legend::-webkit-scrollbar { display: none; }
-.legend > * { flex: 0 0 auto; }
+.legend::-webkit-scrollbar { display: none !important; }
+.legend > * { flex: 0 0 auto !important; }
 
 /* ══════════════════════════════════════════════════════════════════════
    Desktop / tablet (≥768px) - the DesktopShell already renders a sidebar
@@ -1417,7 +1417,7 @@
 .counts > div { display: flex; align-items: baseline; gap: 5px; }
 .counts b { font-size: var(--fs-head); font-weight: var(--fw-title); letter-spacing: -.02em; color: #0c1420; font-variant-numeric: tabular-nums; }
 .counts span { font-size: var(--fs-micro); letter-spacing: .06em; text-transform: uppercase; color: #6b6b6b; font-weight: var(--fw-label); }
-.upNum { color: #0f7b4f; }
+.upNum { color: #0f7b4f !important; }
 
 .key { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; font-size: var(--fs-sub); color: #6b6b6b; }
 .key i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-left: 8px; }

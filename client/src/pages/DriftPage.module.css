@@ -39,7 +39,7 @@
 }
 .back { flex: none; width: 44px; height: 44px; margin-left: -12px; display: grid; place-items: center;
         border: none; background: none; color: inherit; cursor: pointer; }
-.title { margin: 0; font-size: var(--fs-head); font-weight: var(--fw-title); letter-spacing: -0.01em; }
+.title { margin: 0 !important; font-size: var(--fs-head); font-weight: var(--fw-title); letter-spacing: -0.01em; }
 /* The rack is what this page is about, so it is the title; "Drift check" is
    the small line above it, the way the results page names its own screens. */
 .titleWrap { display: flex; flex-direction: column; gap: 1px; min-width: 0; }

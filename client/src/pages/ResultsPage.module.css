@@ -56,7 +56,7 @@
     grid-template-columns: 1fr !important;
     grid-template-areas: "hero" "sheet" !important;
     height: auto !important;
-    overflow: visible;
+    overflow: visible !important;
   }
   .results[data-embedded='true'][data-tab='overview'] > .heroWrap {
     min-height: 46vh;
@@ -68,9 +68,9 @@
     max-height: none !important;
     overflow: visible !important;
     border-left: none !important;
-    background: transparent;
+    background: transparent !important;
   }
-  .results[data-embedded='true'] { min-height: 0; }
+  .results[data-embedded='true'] { min-height: 0 !important; }
   .results[data-tab='overview'] > .header { grid-area: header; }
   .results[data-tab='overview'] > .heroWrap {
     grid-area: hero;
@@ -104,7 +104,7 @@
     min-height: 60vh;
     overflow: visible;
     background: transparent;
-    visibility: visible;
+    visibility: visible !important;
   }
   /* .tabContent uses flex:1 + min-height:0 in mobile, which collapses
      to 0 height when the parent (.results) has height:auto. Override
@@ -702,7 +702,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 .sheetOption:hover     { background: rgba(0,0,0,0.06); }
-.sheetOptionActive     { background: rgba(0,0,0,0.1); }
+.sheetOptionActive     { background: rgba(0,0,0,0.1) !important; }
 .sheetOptBar    { width: 3px; height: 32px; border-radius: 2px; flex-shrink: 0; opacity: 0.8; }
 .sheetOptInfo   { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .sheetOptCode   { font-family: var(--mono); font-size: var(--fs-body); font-weight: var(--fw-title); color: var(--t1); }
@@ -757,7 +757,7 @@
    that rule's !important on equal specificity. */
 .portCardTop.portCardTop {
   background-color: transparent !important;
-  box-shadow: none;
+  box-shadow: none !important;
 }
 /* The name of a card, and the line under it. Each was written three times - a
    dark-theme base, then two light overrides, the second !important throughout - which is how one title ended up at three sizes and two weights depending
@@ -807,12 +807,12 @@
   font-family: var(--mono) !important;
   background: var(--md-surface-container-lowest, #ffffff) !important;
   border: 1px solid var(--md-outline-variant, #E0E0E0) !important;
-  color: var(--md-on-surface, #121212);
+  color: var(--md-on-surface, #121212) !important;
 }
 .portInput:focus {
   border-color: var(--md-on-surface, #121212) !important;
   box-shadow: none !important;
-  outline: none;
+  outline: none !important;
 }
 .portInput::placeholder {
   color: var(--md-on-surface, #121212);
@@ -1867,7 +1867,7 @@
 }
 .consoleTagRunning {
   display: inline-flex; align-items: center; gap: 5px;
-  color: #c6c6c6;
+  color: #c6c6c6 !important;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -2135,7 +2135,7 @@
   white-space: pre-wrap; word-break: break-word;
   max-height: 320px; overflow-y: auto;
 }
-.prCmdErr { color: #474747; }
+.prCmdErr { color: #474747 !important; }
 
 .consoleTerminal {
   flex: 1; min-height: 0;
@@ -2616,7 +2616,7 @@
 .shareDialogTextarea::placeholder { color: rgba(0,0,0,0.55); }
 .shareDialogInputErr {
   border-color: rgba(0,0,0,0.55) !important;
-  box-shadow: 0 0 0 3px rgba(0,0,0,0.16);
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.16) !important;
 }
 .shareDialogFieldErr {
   margin-top: 6px;
@@ -2793,7 +2793,7 @@
   font-family: var(--mono) !important;
   color: #ffffff !important;
   background: rgba(0,0,0,0.55) !important;
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.12) !important;
 }
 .fbInput:focus {
   border-color: var(--focus-color, rgba(0,0,0,0.6)) !important;
@@ -2924,7 +2924,7 @@
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
-  color: #ffffff;
+  color: #ffffff !important;
 }
 .pNextInput:focus {
   border: none !important;
@@ -2944,7 +2944,7 @@
     color-mix(in srgb, var(--btn-glow, #000000) 15%, rgba(0,0,0,0.6))
   ) !important;
   border: 1px solid color-mix(in srgb, var(--btn-glow, #000000) 50%, transparent) !important;
-  box-shadow: 0 0 16px color-mix(in srgb, var(--btn-glow, #000000) 25%, transparent);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--btn-glow, #000000) 25%, transparent) !important;
 }
 .pNextBtn:disabled {
   opacity: 0.45;
@@ -3130,7 +3130,7 @@
   flex: 1;
   padding: 12px 14px !important;
   border-radius: 14px !important;
-  font-size: var(--fs-sub);
+  font-size: var(--fs-sub) !important;
 }
 
 /* ── Actions ── */
@@ -3138,7 +3138,7 @@
   flex-shrink: 0;
   padding: 13px 20px !important;
   border-radius: 18px !important;
-  font-size: var(--fs-item);
+  font-size: var(--fs-item) !important;
 }
 
 /* ── Empty ── */
@@ -3250,11 +3250,11 @@
 .chipConnected {
   border-color: rgba(0,0,0,0.25) !important;
   background: rgba(0,0,0,0.06) !important;
-  color: #1c1c1c;
+  color: #1c1c1c !important;
 }
 .chipEmpty {
   border-color: rgba(255,255,255,0.1) !important;
-  color: rgba(255,255,255,0.35);
+  color: rgba(255,255,255,0.35) !important;
 }
 .statusDot {
   width: 6px; height: 6px; border-radius: 50%;
@@ -3688,7 +3688,7 @@
    Port-result redesign - minimalistic, glowy, app-native
    ───────────────────────────────────────────────────────────── */
 
-.prHidden { display: none; }
+.prHidden { display: none !important; }
 
 /* "Your correction" badge - marks a value that came from the user's own
    correction (active learning), so it isn't mistaken for a model result. */
@@ -3942,7 +3942,7 @@
   padding: 11px 13px !important;
   border-radius: 10px !important;
   font-size: var(--fs-section) !important;
-  font-family: var(--mono);
+  font-family: var(--mono) !important;
 }
 .prFbSubmit {
   padding: 11px 16px;
@@ -4078,7 +4078,7 @@
   transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
 }
 .prAnother input:hover {
-  border-color: var(--md-on-surface, rgba(0,0,0,0.4));
+  border-color: var(--md-on-surface, rgba(0,0,0,0.4)) !important;
 }
 .prAnother input:focus {
   border-color: color-mix(in srgb, var(--ac, #000000) 60%, transparent) !important;
@@ -4091,7 +4091,7 @@
   padding: 0 12px !important;
   border-radius: var(--ctl-radius, 8px) !important;
   font-size: var(--fs-sub) !important;
-  font-weight: var(--fw-label);
+  font-weight: var(--fw-label) !important;
 }
 
 /* Bottom action bar - icon-only */
@@ -4301,7 +4301,7 @@
   background: rgba(0,0,0,0.06);
 }
 :global([data-theme='light']) .sheetOptionActive {
-  background: rgba(0,0,0,0.10);
+  background: rgba(0,0,0,0.10) !important;
 }
 :global([data-theme='light']) .sheetOptCode { color: #1c1c1c; }
 :global([data-theme='light']) .sheetOptType { color: #474747; }
@@ -4851,15 +4851,15 @@
 :global([data-theme='light']) .prAnother input {
   background: #ffffff !important;
   border: 1px solid #c6c6c6 !important;
-  color: #1c1c1c;
+  color: #1c1c1c !important;
 }
 :global([data-theme='light']) .prAnother input:hover {
-  border-color: #474747;
+  border-color: #474747 !important;
 }
 :global([data-theme='light']) .prAnother input:focus {
   border-color: color-mix(in srgb, var(--ac, #000000) 60%, #474747) !important;
   box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--ac, #000000) 16%, transparent);
+    0 0 0 3px color-mix(in srgb, var(--ac, #000000) 16%, transparent) !important;
 }
 
 /* Bottom action bar (icon-only) */
@@ -5007,7 +5007,7 @@
   border-left: 2px solid rgba(0,0,0,0.55);
 }
 :global([data-theme='light']) .consoleTagRunning {
-  color: #000000;
+  color: #000000 !important;
 }
 :global([data-theme='light']) .consoleEmpty {
   color: #474747;
@@ -5200,11 +5200,11 @@
 :global([data-theme='light']) .credsField input {
   background: #ffffff !important;
   border: 1px solid #c6c6c6 !important;
-  color: #1c1c1c;
+  color: #1c1c1c !important;
 }
 :global([data-theme='light']) .credsField input:focus {
   border-color: #474747 !important;
-  box-shadow: 0 0 0 3px rgba(0,0,0,0.18);
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.18) !important;
 }
 :global([data-theme='light']) .credsCancel {
   background: #ffffff;
@@ -5218,11 +5218,11 @@
 :global([data-theme='light']) .credsSubmit {
   background: #000000 !important;
   border: 1px solid #000000 !important;
-  color: #ffffff;
+  color: #ffffff !important;
 }
 :global([data-theme='light']) .credsSubmit:hover {
   background: #000000 !important;
-  border-color: #000000;
+  border-color: #000000 !important;
 }
 :global([data-theme='light']) .vendorStaticPill {
   background: rgba(0,0,0,0.10);
@@ -5428,7 +5428,7 @@
   box-shadow: none !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 10px;
+  gap: 10px !important;
 }
 :global([data-theme='light']) .fbPrompt {
   padding-left: 10px !important;
@@ -5438,19 +5438,19 @@
   line-height: 14px !important;
   text-transform: uppercase !important;
   color: var(--md-on-surface, #121212) !important;
-  opacity: 0.7;
+  opacity: 0.7 !important;
 }
 :global([data-theme='light']) .fbPrompt::before {
   width: 2px !important;
   top: 2px !important;
   bottom: 2px !important;
   background: var(--md-on-surface, #121212) !important;
-  border-radius: 1px;
+  border-radius: 1px !important;
 }
 :global([data-theme='light']) .fbBtnRow {
   display: grid !important;
   grid-template-columns: 1fr 1fr !important;
-  gap: 8px;
+  gap: 8px !important;
 }
 :global([data-theme='light']) .fbBtn,
 :global([data-theme='light']) .fbBtnYes,
@@ -5462,20 +5462,20 @@
   color: var(--md-on-surface, #121212) !important;
   font-size: var(--fs-item) !important;
   font-weight: var(--fw-label) !important;
-  box-shadow: none;
+  box-shadow: none !important;
 }
 /* Yes button - green border signals the recommended/confirm action. */
 :global([data-theme='light']) .fbBtnYes {
   border: 1.5px solid #22c55e !important;
-  color: var(--md-on-surface, #121212);
+  color: var(--md-on-surface, #121212) !important;
 }
 :global([data-theme='light']) .fbBtnYes:hover:not(:disabled) {
   background: rgba(34, 197, 94, 0.06) !important;
-  border-color: #16a34a;
+  border-color: #16a34a !important;
 }
 :global([data-theme='light']) .fbBtnNo:hover:not(:disabled) {
   background: var(--md-surface-container, #ffffff) !important;
-  border-color: var(--md-on-surface, #121212);
+  border-color: var(--md-on-surface, #121212) !important;
 }
 
 /* v2 tablet/desktop skin rolled back - it forced page bg to white but

@@ -52,7 +52,7 @@
   margin: 0; padding: 10px 16px 0;
   font-size: var(--fs-body); line-height: 1.5;
 }
-.note { color: var(--muted, #5c6878); }
+.note { color: var(--muted, #5c6878) !important; }
 .good { color: #0f7b4f; }
 .bad  { color: #c0392b; }
 
@@ -83,7 +83,7 @@
 }
 .verbs button:first-child { color: #0f7b4f; }
 .verbs button:disabled { opacity: .5; cursor: default; }
-.verbBad { color: #c0392b; }
+.verbBad { color: #c0392b !important; }
 
 /* ── Nothing yet ── */
 .empty { padding: 44px 16px 24px; text-align: center; }

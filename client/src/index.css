@@ -332,7 +332,7 @@
 html input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']),
 html textarea,
 html select {
-  font-size: max(var(--fs-field, 16px), 1em);
+  font-size: max(var(--fs-field, 16px), 1em) !important;
 }
 
 html {
@@ -525,7 +525,7 @@ svg { max-width: 100%; }
 }
 /* Pressing a raised control sinks it - the same shadows, inset. That swap
    is the whole feedback mechanism; no scale trick needed. */
-.btn:active { box-shadow: var(--press); }
+.btn:active { box-shadow: var(--press) !important; }
 
 /* Primary - machined black pill: subtle vertical fade + real elevation,
    lifts 1px on hover. The one element on screen allowed a strong shadow. */
@@ -797,11 +797,11 @@ select option:hover {
 html, #root,
 .page, .page-full {
   background-color: transparent !important;
-  background-image: none;
+  background-image: none !important;
 }
 /* html carries the canvas colour itself (overscroll areas), body carries
    the ambient wash; pages stay transparent so the wash shows through. */
-html { background-color: var(--md-background); }
+html { background-color: var(--md-background) !important; }
 
 body {
   color: var(--md-on-surface);
@@ -842,7 +842,7 @@ body {
 [class*="Bg"],
 [class*="surface"],
 [class*="Surface"] {
-  background-image: none;
+  background-image: none !important;
 }
 
 /* Flatten any background-clipped gradient text in legacy module CSS back
@@ -856,7 +856,7 @@ body {
 [class*="Heading"] {
   -webkit-text-fill-color: currentColor !important;
   background-clip: initial !important;
-  -webkit-background-clip: initial;
+  -webkit-background-clip: initial !important;
 }
 
 /* ── Depth repaint ─────────────────────────────────────────────────────
@@ -872,7 +872,7 @@ body {
   text-shadow: none !important;
   filter: none !important;
   -webkit-backdrop-filter: none !important;
-  backdrop-filter: none;
+  backdrop-filter: none !important;
 }
 
 /* …but a raised surface is a container, and this selector matches any class
@@ -895,7 +895,7 @@ h1[class*="Card"], h2[class*="Card"], h3[class*="Card"], h4[class*="Card"],
 h5[class*="Card"], h6[class*="Card"],
 label[class*="Card"], small[class*="Card"], strong[class*="Card"], em[class*="Card"] {
   background-color: transparent !important;
-  box-shadow: none;
+  box-shadow: none !important;
 }
 
 /* Overlays: real elevation so they visibly float above the page. */
@@ -906,7 +906,7 @@ label[class*="Card"], small[class*="Card"], strong[class*="Card"], em[class*="Ca
   text-shadow: none !important;
   filter: none !important;
   -webkit-backdrop-filter: none !important;
-  backdrop-filter: none;
+  backdrop-filter: none !important;
 }
 
 /* Buttons stay FLAT by default. --lift assumes a surface close in tone to
@@ -920,7 +920,7 @@ label[class*="Card"], small[class*="Card"], strong[class*="Card"], em[class*="Ca
   text-shadow: none !important;
   filter: none !important;
   -webkit-backdrop-filter: none !important;
-  backdrop-filter: none;
+  backdrop-filter: none !important;
 }
 
 /* Form controls SINK: --press, plus the sunken tone (darker than the page).
@@ -946,7 +946,7 @@ textarea {
   text-shadow: none !important;
   filter: none !important;
   -webkit-backdrop-filter: none !important;
-  backdrop-filter: none;
+  backdrop-filter: none !important;
 }
 /* Wrappers whose class name contains "field" or "input" keep the legacy
    flattening only - no fill, no inset, so they stay level with whatever
@@ -958,7 +958,7 @@ textarea {
   text-shadow: none !important;
   filter: none !important;
   -webkit-backdrop-filter: none !important;
-  backdrop-filter: none;
+  backdrop-filter: none !important;
 }
 
 /* Flat accessories: labels don't get depth. Chips, badges, pills, tabs,
@@ -974,7 +974,7 @@ textarea {
   text-shadow: none !important;
   filter: none !important;
   -webkit-backdrop-filter: none !important;
-  backdrop-filter: none;
+  backdrop-filter: none !important;
 }
 
 /* ── Post-enforcement re-assertions (same importance, later = wins) ── */
@@ -983,25 +983,25 @@ textarea {
   background: linear-gradient(180deg, #121212 30%, #545454 115%) !important;
   -webkit-background-clip: text !important;
   background-clip: text !important;
-  -webkit-text-fill-color: transparent;
+  -webkit-text-fill-color: transparent !important;
 }
 /* Primary CTA keeps its machined fade + real elevation. */
 .btn-primary {
   background-image: var(--grad-btn) !important;
-  box-shadow: var(--shadow-btn);
+  box-shadow: var(--shadow-btn) !important;
 }
 .btn-primary:hover {
-  box-shadow: var(--shadow-card-hover), var(--shadow-btn);
+  box-shadow: var(--shadow-card-hover), var(--shadow-btn) !important;
 }
 /* Raised controls lift; pressed / toggled-on controls sink. */
-.btn-secondary { box-shadow: var(--lift); }
-.btn-secondary:active { box-shadow: var(--press); }
-.btn-neu { box-shadow: var(--lift); }
-.btn-neu:active, .btn-neu[aria-pressed='true'] { box-shadow: var(--press); }
+.btn-secondary { box-shadow: var(--lift) !important; }
+.btn-secondary:active { box-shadow: var(--press) !important; }
+.btn-neu { box-shadow: var(--lift) !important; }
+.btn-neu:active, .btn-neu[aria-pressed='true'] { box-shadow: var(--press) !important; }
 
 /* Inputs sink. Focus stacks a HARD 2px ring on top of the soft shadows - a blurred focus indicator fails accessibility checks, so the ring must be
    solid. The --press shadows stay underneath it. */
-.input { box-shadow: var(--press); }
+.input { box-shadow: var(--press) !important; }
 input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']):focus,
 select:focus, textarea:focus,
 .input:focus, .input:focus-visible {
@@ -1052,7 +1052,7 @@ select:focus, textarea:focus,
 /* Frosted strips keep their blur. */
 .rt-frost {
   -webkit-backdrop-filter: saturate(150%) blur(14px) !important;
-  backdrop-filter: saturate(150%) blur(14px);
+  backdrop-filter: saturate(150%) blur(14px) !important;
 }
 
 /* ── Motion accessibility - the entire motion system collapses to a
@@ -1061,7 +1061,7 @@ select:focus, textarea:focus,
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms;
+    transition-duration: 0.01ms !important;
   }
 }
 
@@ -1091,5 +1091,5 @@ select:focus, textarea:focus,
 :root[data-tour-active] [data-tour-bypass],
 :root[data-tour-active] [data-tour-bypass] * {
   pointer-events: auto !important;
-  opacity: 1;
+  opacity: 1 !important;
 }

@@ -167,14 +167,14 @@
   transition: border-color .15s, box-shadow .15s;
 }
 .input::placeholder { color: var(--ct-ink-3); }
-.input:hover { border-color: #D6D8DE; }
+.input:hover { border-color: #D6D8DE !important; }
 /* A 3px ring rather than a heavier border: focus has to be obvious without
    shifting the control by a pixel. */
 .input:focus,
 .input:focus-visible {
   outline: none;
   border-color: var(--ct-accent) !important;
-  box-shadow: 0 0 0 3px var(--ct-accent-weak);
+  box-shadow: 0 0 0 3px var(--ct-accent-weak) !important;
 }
 .textarea { min-height: 168px; resize: vertical; }
 

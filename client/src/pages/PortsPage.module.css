@@ -2984,10 +2984,10 @@
 .ptVerdict { font-size: var(--fs-micro); text-transform:uppercase; letter-spacing:.06em; color:rgba(0,0,0,.38); }
 
 /* Up = green, Down = red (semantic link state) */
-.ptRailUp   { background:#16a34a; }
-.ptRailDown { background:#dc2626; }
-.ptUp   { color:#16a34a; }
-.ptDown { color:#dc2626; }
+.ptRailUp   { background:#16a34a !important; }
+.ptRailDown { background:#dc2626 !important; }
+.ptUp   { color:#16a34a !important; }
+.ptDown { color:#dc2626 !important; }
 
 /* ── Ports / Cables view toggle ─────────────────────────────── */
 .viewTabs { display:inline-flex; gap:4px; padding:3px; margin:0 0 14px;
