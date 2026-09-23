@@ -42,7 +42,7 @@ test('the page says which rack, where it stands, who holds it and what they foun
 
 test('a scan nobody has identified is not named by the hash of its photograph, and markup in a name is text', () => {
   const html = report.build({ ...PLAN, rackName: 'RK-58353344', items: [{ uid: 'dev:x:u1', type: 'Device', name: '<img src=x onerror=1>', action: 'create', decidable: true }], orphans: [] });
-  assert.ok(html.includes('Rack not identified yet'));
+  assert.ok(html.includes('Unidentified rack'));
   assert.ok(!html.includes('RK-58353344</h1>'));
   assert.ok(!html.includes('<img src=x'), 'a name is escaped');
 });

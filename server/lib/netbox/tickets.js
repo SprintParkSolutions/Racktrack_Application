@@ -490,7 +490,7 @@ function appUrlFor(planId) {
  */
 function toCheckIncident({ plan, items, rackName, siteName, holder, sender, note, appUrl }) {
   const named = norm(rackName) && !PHOTO_HASH.test(norm(rackName)) ? norm(rackName) : null;
-  const where = [named || 'Rack not identified yet', siteName].filter(Boolean).join(', ');
+  const where = [named || 'Unidentified rack', siteName].filter(Boolean).join(', ');
   // RackTrack putting its own tag on a record is housekeeping, not a difference.
   const sent = (items || []).filter((i) => !(i.action === 'rebind' && !i.fromUid));
   const planId = plan && plan.id;

@@ -58,7 +58,7 @@ function groups(plan) {
 
 function build(plan, { tickets = [], siteName = null, spaceName = null, generatedAt = new Date() } = {}) {
   const rack = plan.rackName && !/^RK-[0-9A-F]{6,}$/i.test(plan.rackName) ? plan.rackName : null;
-  const title = rack || 'Rack not identified yet';
+  const title = rack || 'Unidentified rack';
   const g = groups(plan);
   const state = STATE[plan.state] || STATE[plan.status] || String(plan.state || plan.status || '');
   // A check sent to the SPOC has one incident, and every ticket of it carries a

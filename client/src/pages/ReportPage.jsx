@@ -349,7 +349,7 @@ export default function ReportPage() {
   // The name, or plainly that there is not one yet. The hash of a photograph is
   // not a name, and the drift report already says so in words.
   const rackTitle = doc && doc.rackName && !UNNAMED_RACK.test(doc.rackName)
-    ? doc.rackName : 'Rack not identified yet';
+    ? doc.rackName : 'Unidentified rack';
   // What is in the rack, counted by kind. "12 devices" hides the two patch
   // panels and the power strip, and those are the rows a reader looks for and
   // cannot find. The record's own word for a box comes first; where the record

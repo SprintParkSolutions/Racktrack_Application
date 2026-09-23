@@ -57,7 +57,8 @@ vi.mock('../AuthContext.jsx', () => ({ useAuth: () => ({ user: user.current }) }
 
 import { forgetApprovalsCan } from '../hooks/useApprovalsCan.js';
 import HomePage, {
-  roleOf, actionsFor, bannerFor, waysFor,
+  roleOf, actionsFor, bannerFor, waysFor, moreWaysFor,
+  figuresFor, worthKnowing, JOURNEY,
   greetingAt, placeLine, stateOf,
 } from './HomePage.jsx';
 
@@ -187,10 +188,10 @@ describe('<HomePage> with work behind it', () => {
 
   test('every figure is one the server answered, and nothing is asked for twice', async () => {
     mount();
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Needs you' })).toBeTruthy());
-    // The one count on the page: how many checks are with this person, beside
-    // the name of the list that holds them.
-    const needs = within(screen.getByRole('heading', { name: 'Needs you' }).closest('section'));
+    // The section is always there, so waiting on its heading proves nothing:
+    // wait for the count, which only appears once the checks have arrived.
+    await waitFor(() => expect(screen.getByText('INC0012345')).toBeTruthy());
+    const needs = within(screen.getByRole('heading', { name: 'Waiting for you' }).closest('section'));
     expect(needs.getByText('4')).toBeTruthy();
 
     // The dashboard is not asked for at all now: the figure it fed came off
@@ -207,7 +208,7 @@ describe('<HomePage> with work behind it', () => {
     answers.current['/api/approvals/plans'] = 'refused';
     mount();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Your racks' })).toBeTruthy());
-    expect(screen.queryByRole('heading', { name: 'Needs you' })).toBeNull();
+    expect(screen.getByText('Nothing is waiting for you right now.')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Ready to scan a rack' })).toBeTruthy();
   });
 
@@ -221,7 +222,7 @@ describe('<HomePage> with work behind it', () => {
     expect(racks.getByText('SP-HYB-RM01-R01-R2')).toBeTruthy();
     // A rack named after its own hash has no name a person can read, and the
     // hash is never printed.
-    expect(racks.getByText('Rack not identified yet')).toBeTruthy();
+    expect(racks.getByText('Unidentified rack')).toBeTruthy();
     expect(screen.queryByText(/RK-0000AAAA/)).toBeNull();
     // The fifth scan is not on a landing screen; See all is.
     expect(screen.queryByText('RK-0000CCCC')).toBeNull();
@@ -247,12 +248,11 @@ describe('<HomePage> with work behind it', () => {
 
   test('what needs this person names the incident and the rack, and opens the check', async () => {
     mount();
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Needs you' })).toBeTruthy());
-    expect(screen.getByText('INC0012345')).toBeTruthy();
+    await waitFor(() => expect(screen.getByText('INC0012345')).toBeTruthy());
     expect(screen.getByText('INC0012346')).toBeTruthy();
     expect(screen.getByText('INC0012347')).toBeTruthy();
     // Four are with this person and three are shown.
-    expect(screen.getByText('and 1 more with you')).toBeTruthy();
+    expect(screen.getByText('and 1 more waiting')).toBeTruthy();
 
     // A technician follows their own check inside the app.
     fireEvent.click(screen.getByText('INC0012345').closest('button'));
@@ -274,7 +274,8 @@ describe('<HomePage> with work behind it', () => {
     mount();
     await waitFor(() => expect(screen.getByText('INC0012346')).toBeTruthy());
     const row = screen.getByText('INC0012346').parentElement;
-    expect(row.lastChild.textContent).toBe('Rack not identified yet');
+    // The rack, then why it is waiting. The hash is never printed.
+    expect(row.lastChild.textContent).toBe('Unidentified rackWith you');
     expect(screen.queryByText(/RK-0000CCCC/)).toBeNull();
   });
 
@@ -285,15 +286,20 @@ describe('<HomePage> with work behind it', () => {
     };
     mount();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Your racks' })).toBeTruthy());
-    expect(screen.queryByRole('heading', { name: 'Needs you' })).toBeNull();
+    // The section stays and says so: one that vanishes leaves a person
+    // wondering whether they missed it (the owner, 23 Sep 2026).
+    expect(screen.getByRole('heading', { name: 'Waiting for you' })).toBeTruthy();
+    expect(screen.getByText('Nothing is waiting for you right now.')).toBeTruthy();
   });
 
   test('a rack with no check of its own says it has not been checked', async () => {
     answers.current['/api/approvals/plans'] = { ok: true, plans: [] };
     mount();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Your racks' })).toBeTruthy());
-    expect(screen.getAllByText('Not checked')).toHaveLength(3);
-    expect(screen.queryByRole('heading', { name: 'Needs you' })).toBeNull();
+    // Three racks in the row, the floor's key, and the room label over a
+    // floor where nothing has been checked: the same words every time.
+    expect(screen.getAllByText('Not checked').length).toBeGreaterThanOrEqual(3);
+    expect(screen.getByText('Nothing is waiting for you right now.')).toBeTruthy();
   });
 });
 
@@ -322,20 +328,29 @@ describe('<HomePage> on a new account', () => {
     expect(screen.getByText(/^Good (morning|afternoon|evening)$/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /Scan a rack/ })).toBeTruthy();
 
-    // No sections and no zeroes.
+    // No list of racks that do not exist yet, nothing waiting, and above all
+    // no row of noughts: the three figures are not drawn until something has
+    // been read.
     expect(screen.queryByRole('heading', { name: 'Your racks' })).toBeNull();
-    expect(screen.queryByRole('heading', { name: 'Needs you' })).toBeNull();
+    expect(screen.getByText('Nothing is waiting for you right now.')).toBeTruthy();
+    expect(screen.queryByText('Racks read')).toBeNull();
+    expect(screen.queryByText('Match rate')).toBeNull();
     expect(screen.queryByText('0')).toBeNull();
     expect(screen.queryByText(/differences waiting/)).toBeNull();
 
-    // One thing to do, and the four ways on. Nothing else to press, and no
-    // list of racks that do not exist yet.
-    // The first is the profile button in the top corner, which carries a
-    // glyph and its label rather than words.
-    expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual([
-      '', 'Scan a rack', 'Switches', 'Ask DOT', 'Scan history', 'Your account',
+    // One thing to do, and the eight ways on. The words on the page's own
+    // controls, in order; the blank ones are the profile mark and the three
+    // controls on the floor, which carry a glyph and a label rather than
+    // words. A rack nobody has photographed is drawn on the floor but does
+    // not open: there is no page for it yet.
+    expect(screen.getAllByRole('button').map((b) => b.textContent).filter(Boolean)).toEqual([
+      'Scan a rack',
+      'Switches', 'Ask DOT', 'Scan history', 'Your account',
+      'Two racks', 'Your checks', 'Port history', 'Contact support',
+      'Ask DOT',
     ]);
     expect(screen.getByRole('button', { name: 'Your profile' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Move in' })).toBeTruthy();
   });
 
   test('a scan list that could not be loaded says so rather than claiming none', async () => {
@@ -479,12 +494,76 @@ describe('<HomePage> by role', () => {
    about the work. These are the parts that answer "how do things stand" and
    "what else can I do". */
 describe('<HomePage> beyond the racks', () => {
-  test('no row of counts on the way in', async () => {
+  /* The owner took a row of counts off the way in on 22 September 2026 and
+     asked for three back on 23 September, after the screen they showed that
+     leads with them. Every one is counted from what the server has already
+     answered, and none is a figure the page cannot back. */
+  test('the three figures are counted from what the server answered', async () => {
     mount();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Your racks' })).toBeTruthy());
-    for (const word of ['Sites', 'Site', 'Racks read', 'Rack read', 'Differences waiting']) {
-      expect(screen.queryByText(word)).toBeNull();
-    }
+    // Five scans came back.
+    expect(screen.getByText('Racks read')).toBeTruthy();
+    expect(screen.getByText('5')).toBeTruthy();
+    expect(screen.getByText('in your site')).toBeTruthy();
+    // The floor holds the Site's four racks and all four carry a check: one
+    // written and one that matches its records, so the rate is half.
+    expect(screen.getByText('Match rate')).toBeTruthy();
+    expect(screen.getByText('50%')).toBeTruthy();
+    expect(screen.getByText('of 4 racks checked')).toBeTruthy();
+    // And four checks are with this person.
+    expect(screen.getByText('Waiting')).toBeTruthy();
+    expect(screen.getByText('checks with you')).toBeTruthy();
+  });
+
+  test('the figures are the counting, not a number the page invented', () => {
+    expect(figuresFor({ racks: 5, checked: 4, matched: 3, waiting: 2, sites: 1 })
+      .map((f) => f.value)).toEqual(['5', '75%', '2']);
+    // Nothing checked is said in words, never as a nought per cent.
+    expect(figuresFor({ racks: 2, checked: 0, matched: 0, waiting: 0, sites: 1 })[1])
+      .toMatchObject({ value: 'None yet', meta: 'no rack checked yet' });
+    // An admin's third figure is their own part of the work.
+    expect(figuresFor({ racks: 5, checked: 5, matched: 5, triage: 2, role: 'admin' })[2])
+      .toMatchObject({ label: 'Unassigned', value: '2' });
+  });
+
+  /* The floor: every cabinet is a rack the server named, and one that has
+     been photographed opens its own page. */
+  test('the floor draws the site and a rack on it opens', async () => {
+    mount();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Your datacenter' })).toBeTruthy());
+    const floor = within(screen.getByRole('heading', { name: 'Your datacenter' }).closest('section'));
+    fireEvent.click(floor.getByRole('button', { name: /SP-HYB-RM01-R01-R2/ }));
+    expect(screen.getByTestId('where').textContent).toBe('/results/RK-A31AE2E7');
+  });
+
+  test('a rack set up but never photographed is drawn and does not open', async () => {
+    mount();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Your datacenter' })).toBeTruthy());
+    // RK-0000BBBB was scanned; the Site's fourth rack is the one with no scan
+    // behind it, and it is not offered as something to press.
+    expect(screen.queryByRole('button', { name: /never/ })).toBeNull();
+  });
+
+  /* Five legs, in the order they happen. Not knowing what comes after what
+     is what started the redesign. */
+  test('how a check travels is said once, on the way in', async () => {
+    mount();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'How a check travels' })).toBeTruthy());
+    expect(JOURNEY.map((j) => j.label)).toEqual(['Photo', 'Read', 'Compare', 'SPOC', 'Record']);
+  });
+
+  /* One true line, counted from what the page already holds. */
+  test('what is worth knowing is the most pressing true thing', () => {
+    expect(worthKnowing({ unmatched: 2, waiting: 1, unchecked: 3, racks: 6 }))
+      .toBe('2 racks have differences that nobody has sent yet.');
+    expect(worthKnowing({ unmatched: 0, waiting: 1, unchecked: 3, racks: 6 }))
+      .toBe('One check is with you to read.');
+    expect(worthKnowing({ unmatched: 0, waiting: 0, unchecked: 1, racks: 6 }))
+      .toBe('One rack has never been checked against your records.');
+    expect(worthKnowing({ unmatched: 0, waiting: 0, unchecked: 0, racks: 6 }))
+      .toBe('Every rack you have read matches your records.');
+    expect(worthKnowing({ racks: 0 }))
+      .toBe('Scan a rack and RackTrack reads what is mounted in it.');
   });
 
   /* Four tiles in one order for everybody, and only the first changes with
@@ -508,6 +587,32 @@ describe('<HomePage> beyond the racks', () => {
     for (const role of ['tech', 'admin', 'spoc']) {
       expect(waysFor(role).map((w) => w.to)).not.toContain('/scan');
       expect(waysFor(role)).toHaveLength(4);
+    }
+  });
+
+  /* Four more under them, so the grid is the eight things people press most
+     (the owner, 23 Sep 2026). Every one is a page this app already has, and
+     none is gated away from the role it is offered to. */
+  test('the four more ways on fit the role, and none of them is a closed door', () => {
+    expect(moreWaysFor('tech').map((w) => w.to))
+      .toEqual(['/multi-rack/new', '/my-checks', '/port-history', '/contact']);
+    expect(moreWaysFor('spoc').map((w) => w.to))
+      .toEqual(['/switch-info', '/port-history', '/marketplace', '/contact']);
+    expect(moreWaysFor('admin').map((w) => w.to))
+      .toEqual(['/dashboard', '/port-history', '/marketplace', '/contact']);
+    for (const role of ['tech', 'spoc', 'admin']) {
+      const all = [...waysFor(role), ...moreWaysFor(role)];
+      expect(all).toHaveLength(8);
+      // No page twice, and no glyph twice: eight marks in a grid have to read
+      // as eight things.
+      expect(new Set(all.map((w) => w.to)).size).toBe(8);
+      expect(new Set(all.map((w) => w.icon)).size).toBe(8);
+      // Nothing an employee would be refused at the door.
+      if (role === 'tech') {
+        for (const shut of ['/dashboard', '/connections']) {
+          expect(all.map((w) => w.to)).not.toContain(shut);
+        }
+      }
     }
   });
 

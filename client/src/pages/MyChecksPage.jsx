@@ -36,7 +36,7 @@ const OPEN = new Set([
 const DONE = new Set(['written', 'completed']);
 
 const UNNAMED = /^RK-[0-9A-F]{6,}$/i;
-const NO_NAME = 'Rack not identified yet';
+const NO_NAME = 'Unidentified rack';
 
 /** Where a check is, in one short phrase for a list. */
 export function shortState(status) {

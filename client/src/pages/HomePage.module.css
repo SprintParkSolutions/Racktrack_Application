@@ -700,3 +700,301 @@
   background: currentColor;
 }
 
+
+/* ── The three figures ──────────────────────────────────────────────
+   How much has been read, how much of it matches, what is still waiting.
+   The owner took a row of counts off the way in on 22 September 2026 and
+   asked for these three back on 23 September, after the screen they showed
+   that leads with exactly this shape. They sit inside the lead card, on the
+   one light ground the page allows, so they read as one strip rather than
+   three more containers.
+   Not drawn at all until something has been read: a new account gets the
+   drawn rack instead, never a row of noughts. */
+.figures {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+.figure {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 11px 10px 12px;
+  border-radius: 15px;
+  background: var(--hm-tray);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8), inset 0 0 0 1px rgba(16, 32, 60, .045);
+}
+.figureLabel {
+  margin: 0;
+  font-family: var(--font);
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-label);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--hm-ink-3);
+  /* It wraps rather than being cut: a label cut in the middle of a word is
+     what the first drawing of this did on a narrow phone. */
+  overflow-wrap: anywhere;
+}
+.figureValue {
+  margin: 1px 0 0;
+  font-family: var(--font);
+  font-size: clamp(19px, 5.6vw, 25px);
+  font-weight: var(--fw-title);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--hm-ink);
+}
+/* Colour carries state and nothing else, here as everywhere on the page. */
+.figureValue.good { color: #0F7B4F; }
+.figureValue.warn { color: #B4690E; }
+.figureMeta {
+  margin: 2px 0 0;
+  font-family: var(--font);
+  font-size: var(--fs-micro);
+  line-height: 1.3;
+  color: var(--hm-ink-3);
+  overflow-wrap: anywhere;
+}
+
+/* ── Which site's floor is drawn ────────────────────────────────────
+   Only when a person has more than one. The same segmented control as the
+   view toggle at the top of the page, so two choosers do not look like two
+   different ideas. */
+.sitePick {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 11px;
+  padding-bottom: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.sitePick::-webkit-scrollbar { display: none; }
+.siteOne {
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 11px;
+  padding: 7px 13px;
+  background: var(--hm-tray);
+  color: var(--hm-ink-2);
+  font-family: var(--font);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-label);
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.siteOn {
+  background: var(--hm-ink);
+  color: #ffffff;
+  font-weight: var(--fw-title);
+}
+.siteOne:focus-visible { outline: 2px solid var(--hm-ink); outline-offset: 2px; }
+
+/* ── How a check travels ────────────────────────────────────────────
+   Five legs, left to right, with the arrow between them. It is a drawing of
+   the workflow and not a control: nothing here is pressed, so nothing here
+   looks pressable. */
+.journey {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+.leg {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  position: relative;
+}
+.legGlyph {
+  width: clamp(34px, 10vw, 40px);
+  height: clamp(34px, 10vw, 40px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 13px;
+  background: var(--hm-tray);
+  color: var(--hm-ink-2);
+  font-size: var(--fs-item);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8), inset 0 0 0 1px rgba(16, 32, 60, .05);
+}
+.legLabel {
+  font-family: var(--font);
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-label);
+  color: var(--hm-ink-2);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+/* The arrow sits in the gap between two legs, on the line of the glyphs. */
+.legNext {
+  position: absolute;
+  top: clamp(9px, 2.8vw, 12px);
+  right: calc(-1 * clamp(5px, 1.6vw, 8px));
+  font-size: var(--fs-sub);
+  color: var(--hm-ink-4);
+}
+
+/* A section that has nothing in it says so, rather than disappearing. */
+.nothing {
+  margin: 0 0 12px;
+  font-family: var(--font);
+  font-size: var(--fs-body);
+  color: var(--hm-ink-3);
+}
+
+/* ── Your racks, as the photographs ─────────────────────────────────
+   A row pushed through sideways, each rack the size its photograph deserves
+   and its state written on the picture. The list of three rows this replaced
+   said the same things in a quarter of the space and none of them was the
+   thing a person recognises, which is the rack itself. */
+.reel {
+  display: flex;
+  gap: 12px;
+  margin: 0 -16px 2px;
+  padding: 2px 16px 12px;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.reel::-webkit-scrollbar { display: none; }
+.reelItem { flex: 0 0 auto; scroll-snap-align: start; }
+.shot {
+  width: clamp(190px, 56vw, 240px);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.shot:active { opacity: .78; }
+.shot:focus-visible { outline: 2px solid var(--hm-ink); outline-offset: 3px; border-radius: 18px; }
+.shotArt {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--hm-tray);
+  box-shadow:
+    inset 0 0 0 1px rgba(16, 32, 60, .06),
+    0 14px 26px -20px rgba(16, 32, 60, .85);
+}
+.shotArt .thumb,
+.shotArt .thumbNone {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  font-size: var(--fs-display, 30px);
+}
+/* The state, written on the picture the way a price is on a photograph. */
+.onArt {
+  position: absolute;
+  left: 9px;
+  bottom: 9px;
+  padding: 5px 9px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .94);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  box-shadow: 0 0 0 1px rgba(16, 32, 60, .07), 0 8px 16px -12px rgba(16, 32, 60, .8);
+  font-size: var(--fs-micro);
+}
+.shot .rackName { font-size: var(--fs-sub); }
+
+/* ── Worth knowing ──────────────────────────────────────────────────
+   One true line, counted from what is already on the page, and the assistant
+   beside it. No claim the page cannot back with a figure it holds. */
+.know {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+}
+.knowWords {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-family: var(--font);
+  font-size: var(--fs-body);
+  line-height: 1.4;
+  color: var(--hm-ink-2);
+  text-wrap: pretty;
+}
+.ask {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 13px;
+  background: var(--hm-tray);
+  color: var(--hm-ink);
+  font-family: var(--font);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-title);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8), inset 0 0 0 1px rgba(16, 32, 60, .05);
+}
+.ask:active { transform: scale(0.97); }
+.ask:focus-visible { outline: 2px solid var(--hm-ink); outline-offset: 2px; }
+.askGlyph { font-size: var(--fs-item); color: var(--hm-ink-2); }
+
+/* ── The grid of features, now eight ────────────────────────────────
+   Four across and two down, inside the section that names them. The four
+   tints repeat down the second row, so a column reads as one family. */
+.sect .ways {
+  gap: 9px;
+  padding: 0 0 12px;
+}
+.way:nth-child(4n+1) .wayGlyph {
+  background: linear-gradient(160deg, #E8F0FC 0%, #D7E5F9 100%);
+  color: #23548E;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8), 0 8px 14px -10px rgba(35, 84, 142, .8);
+}
+.way:nth-child(4n+2) .wayGlyph {
+  background: linear-gradient(160deg, #E4F2F5 0%, #CFE6EC 100%);
+  color: #16606F;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8), 0 8px 14px -10px rgba(22, 96, 111, .8);
+}
+.way:nth-child(4n+3) .wayGlyph {
+  background: linear-gradient(160deg, #F7EFE6 0%, #EFE1D1 100%);
+  color: #7C5528;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8), 0 8px 14px -10px rgba(124, 85, 40, .75);
+}
+.way:nth-child(4n+4) .wayGlyph {
+  background: linear-gradient(160deg, #F1EEFA 0%, #E3DEF4 100%);
+  color: #4C3F7C;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8), 0 8px 14px -10px rgba(76, 63, 124, .8);
+}
+
+/* A dot in the colour of a check's own state, at the head of its row. */
+.pip.matched   { color: #0F7B4F; }
+.pip.written   { color: #0F7B4F; }
+.pip.spoc      { color: #1F5FAE; }
+.pip.unmatched { color: #B4690E; }
+.pip.unchecked { color: var(--hm-ink-4); }
+
+/* The floor and the lists below it keep the page's air on a wider screen. */
+@media (min-width: 720px) {
+  .shot { width: 260px; }
+}

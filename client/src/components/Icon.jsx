@@ -158,6 +158,22 @@ const P = {
   </>,
 
   check: <path d="M20 6L9 17l-5-5" />,
+
+  /* Two racks in one job: the pair, not one cabinet. The single rack glyph
+     stood in for this and read as the same thing beside it. */
+  two_racks: <>
+    <rect x="3" y="3.5" width="7.2" height="17" rx="1.6" />
+    <rect x="13.8" y="3.5" width="7.2" height="17" rx="1.6" />
+    <path d="M5.2 8h2.8M5.2 12h2.8M16 8h2.8M16 12h2.8" />
+  </>,
+
+  /* The marketplace, where a spare part is bought. A basket, not a bag: a
+     bag is the same shape as the rack glyph at this size. */
+  shopping_cart: <>
+    <circle cx="9.5" cy="20" r="1.3" />
+    <circle cx="17.5" cy="20" r="1.3" />
+    <path d="M2.5 3.5h2.2l2.4 11.2a1.6 1.6 0 0 0 1.6 1.3h8.6a1.6 1.6 0 0 0 1.6-1.3L21 7.5H6" />
+  </>,
 };
 
 /** Names this set covers - used by the test that guards against typos. */

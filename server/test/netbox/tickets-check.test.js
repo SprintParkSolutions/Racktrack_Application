@@ -102,7 +102,7 @@ describe('the incident of a check', () => {
       items: [{ ...MOVED, name: 'Router U20 RK-5B81BE87' }] });
     const words = `${f.short_description}\n${f.description}`;
     assert.ok(!/racktrack_uid|recordId|RK-5B81BE87|dev:t32/.test(words), words);
-    assert.match(f.short_description, /^Rack not identified yet, Office-Sprintpark: 1 difference from NetBox/);
+    assert.match(f.short_description, /^Unidentified rack, Office-Sprintpark: 1 difference from NetBox/);
     assert.ok(!/[–—]/.test(words));
   });
 

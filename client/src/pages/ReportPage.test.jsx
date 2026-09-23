@@ -87,7 +87,7 @@ describe('ReportPage', () => {
     const { setRackFlow, PORT } = await import('../utils/rackFlow.js');
     setRackFlow('r1', PORT);
     draw();
-    await screen.findByRole('heading', { name: /Rack not identified yet|SP-/ });
+    await screen.findByRole('heading', { name: /Unidentified rack|SP-/ });
     expect(screen.queryByRole('button', { name: 'Drift check' })).toBeNull();
     setRackFlow('r1', null);
   });
@@ -207,7 +207,7 @@ describe('ReportPage', () => {
   test('a rack nothing has identified is said in words, never as the hash of its photograph', async () => {
     reply.doc = { ...doc(), rackName: 'RK-5B81BE87' };
     draw();
-    await screen.findByText('Rack not identified yet');
+    await screen.findByText('Unidentified rack');
     expect(document.body.textContent).not.toMatch(/RK-5B81BE87/);
   });
 

@@ -460,11 +460,35 @@ const json = (v) => (v === undefined || v === null ? null : JSON.stringify(v));
 const bool = (v) => Boolean(v);
 const flag = (v) => (v ? 1 : 0);
 
+/* The rack's name, as it stands NOW.
+ *
+ * A plan is filed the moment a comparison is made, which is often before
+ * anybody has said which rack the photograph is of - so `rack_name` on the
+ * row is null and every screen calls it an unidentified rack. When somebody
+ * confirms it afterwards, the confirmation is written to rack_identity and
+ * the plan's own column keeps its null: the owner saw a drift page headed
+ * "Rack not identified yet" whose devices were all named after the rack
+ * (23 September 2026).
+ *
+ * So the name is resolved on the way out, from the confirmation when the row
+ * itself has none. Required lazily because rack_identity reads the main
+ * database, which is not this module's. A failure here is not worth a plan:
+ * the caller gets the null it would have had.
+ */
+function nameOf(r) {
+  if (r.rack_name) return r.rack_name;
+  if (r.rack_id == null) return null;
+  try {
+    const bound = require('../rack_identity').confirmedRack(r.tenant_id, r.rack_id);
+    return (bound && (bound.name || bound.facilityId)) || null;
+  } catch { return null; }
+}
+
 function planOf(r, { heavy = true } = {}) {
   if (!r) return null;
   const out = {
     id: r.id, orgId: r.org_id, tenantId: r.tenant_id, scanId: r.scan_id,
-    rackId: r.rack_id, rackUid: r.rack_uid, rackName: r.rack_name, netboxUrl: r.netbox_url,
+    rackId: r.rack_id, rackUid: r.rack_uid, rackName: nameOf(r), netboxUrl: r.netbox_url,
     status: r.status, disposition: r.disposition, category: r.category,
     priority: r.priority, risk: r.risk,
     fingerprint: r.fingerprint, payloadHash: r.payload_hash, version: r.version,
