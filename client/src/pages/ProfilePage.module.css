@@ -105,7 +105,7 @@
   display: grid; place-items: center;
   background: #121212; color: #fff;
   border: 3px solid #fff;
-  font-size: 14px;
+  font-size: var(--fs-item);
 }
 
 .idText { min-width: 0; }
