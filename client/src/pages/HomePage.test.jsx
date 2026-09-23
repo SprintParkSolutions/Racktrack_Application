@@ -55,6 +55,7 @@ const USER = {
 const user = { current: USER };
 vi.mock('../AuthContext.jsx', () => ({ useAuth: () => ({ user: user.current }) }));
 
+import { forgetApprovalsCan } from '../hooks/useApprovalsCan.js';
 import HomePage, {
   roleOf, actionsFor, bannerFor, waysFor,
   greetingAt, placeLine, stateOf,
@@ -142,6 +143,12 @@ const mount = () => render(
 );
 
 beforeEach(() => {
+  // The view toggle is remembered on the device, and the server's answer about
+  // what an account may do is cached for the session. Both outlive a test, so
+  // both are cleared: otherwise one test's Employee view is the next test's
+  // starting point.
+  try { localStorage.clear(); } catch { /* no storage in this environment */ }
+  forgetApprovalsCan();
   answers.current = { ...FULL };
   user.current = USER;
   asked.paths.length = 0;
@@ -388,7 +395,10 @@ describe('<HomePage> by role', () => {
     expect(screen.getByTestId('where').textContent).toBe('/my-checks');
   });
 
-  test('an admin is told what has nobody, and is still sent to scan', async () => {
+  /* An admin runs the estate and is not asked to photograph a rack. If they
+     want the camera they shift the toggle to Employee, which is the whole
+     point of it (the owner, 23 Sep 2026). */
+  test('an admin is told what has nobody, and is sent to the organization, not the camera', async () => {
     answers.current['/api/approvals/me'] = { ok: true, can: { admin: true } };
     mount();
     await waitFor(() => expect(screen.getByText(/^Organization admin/)).toBeTruthy());
@@ -396,13 +406,40 @@ describe('<HomePage> by role', () => {
     expect(screen.getByRole('heading', { name: 'One check has nobody' })).toBeTruthy();
     // No console button on the way in: the owner took it off.
     expect(screen.queryByRole('button', { name: /console/i })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: /Scan a rack/ }));
-    expect(screen.getByTestId('where').textContent).toBe('/scan');
+    expect(screen.queryByRole('button', { name: /Scan a rack/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Open your organization/ }));
+    expect(screen.getByTestId('where').textContent).toBe('/organizations');
+  });
+
+  /* The toggle: an admin holds two ways of working and may shift between
+     them; an employee holds one and is offered nothing. */
+  test('an admin can shift to the employee view, and then the camera is theirs', async () => {
+    answers.current['/api/approvals/me'] = { ok: true, can: { admin: true } };
+    mount();
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Admin' })).toBeTruthy());
+    expect(screen.getByRole('tab', { name: 'Admin' }).getAttribute('aria-selected')).toBe('true');
+    fireEvent.click(screen.getByRole('tab', { name: 'Employee' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /Scan a rack/ })).toBeTruthy());
+    // The line under the name says which view they are in, beside the Site.
+    expect(screen.getByText('Employee · DC-007 Bengaluru')).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Employee' }).getAttribute('aria-selected')).toBe('true');
+  });
+
+  test('a technician is offered no toggle: there is nothing to shift to', async () => {
+    mount();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Your racks' })).toBeTruthy());
+    expect(screen.queryByRole('tab', { name: 'Employee' })).toBeNull();
+    expect(screen.queryByRole('tab', { name: 'Admin' })).toBeNull();
   });
 
   test('scanning is the one control, except for the person who does not scan', () => {
-    for (const role of ['admin', 'tech', 'manager']) {
-      expect(actionsFor({ role, waiting: 0 }).lead.text).toBe('Scan a rack');
+    // The employee's view is the one that carries the camera.
+    expect(actionsFor({ role: 'tech', waiting: 0 }).lead.text).toBe('Scan a rack');
+    expect(actionsFor({ role: 'tech', waiting: 0 }).alt).toBe(null);
+    // Neither an admin nor a site manager is asked to scan.
+    for (const role of ['admin', 'manager']) {
+      expect(actionsFor({ role, waiting: 0 }).lead)
+        .toEqual({ text: 'Open your organization', to: '/organizations' });
       expect(actionsFor({ role, waiting: 0 }).alt).toBe(null);
     }
     // A single point of contact gets their own list, and no scan at all.

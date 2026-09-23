@@ -1967,7 +1967,7 @@
         {
           "file": "/Volumes/Racktrack/dark_mobile/server/scripts/seed-orgs.js",
           "lines": "26",
-          "snippet": "const OWNER = { username: 'owner', email: 'racktrackteam@sprintpark.com', password: 'Owner@12345' };"
+          "snippet": "const OWNER = { username: 'owner', email: 'racktrackteam@sprintpark.com', password: process.env.SEED_OWNER_PASSWORD };"
         },
         {
           "file": "/Volumes/Racktrack/dark_mobile/server/auth.js",
@@ -2785,7 +2785,7 @@
       "rootCause": "iOS distribution is TestFlight-only. The IPA is exported with method app-store-connect and uploaded via altool/Transporter; there is no public App Store listing.",
       "evidence": [
         {
-          "file": "docs/notes/delivery/racktrack-install-guide.html",
+          "file": "docs/notes/delivery/iphone-install-guide-testflight.html",
           "lines": "100-150",
           "snippet": "RackTrack isn't in the App Store yet — it's a beta, so it arrives through Apple's testing app, <strong>TestFlight</strong>. ... Open the <strong>App Store</strong> on your iPhone, search <strong>TestFlight</strong>, and install it. ... Tap <strong>View in TestFlight</strong>."
         },
@@ -2827,12 +2827,12 @@
       "rootCause": "The itms-beta:// invite deep link has no handler until the TestFlight app is installed, and the link is device-scoped so it is inert in a desktop browser.",
       "evidence": [
         {
-          "file": "docs/notes/delivery/racktrack-install-guide.html",
+          "file": "docs/notes/delivery/iphone-install-guide-testflight.html",
           "lines": "218-219",
           "snippet": "<td>The invite link opens a webpage, not TestFlight</td>\n<td>TestFlight isn't installed yet, or you opened the email on a computer. Install TestFlight on the iPhone, then reopen the email there.</td>"
         },
         {
-          "file": "docs/notes/delivery/racktrack-install-guide.html",
+          "file": "docs/notes/delivery/iphone-install-guide-testflight.html",
           "lines": "133-144",
           "snippet": "Do this before tapping anything in the email. Tapping the invite without TestFlight installed just sends you to a webpage that tells you to go install TestFlight. ... open TestFlight yourself, tap <strong>Redeem</strong> in the top corner, and type the code from the email by hand."
         }
@@ -2860,12 +2860,12 @@
       "rootCause": "TestFlight matches the invitation against the Apple ID signed into the device. Internal testers additionally require an accepted App Store Connect user invite before they become selectable in the tester group — two separate invitations.",
       "evidence": [
         {
-          "file": "docs/notes/delivery/racktrack-install-guide.html",
+          "file": "docs/notes/delivery/iphone-install-guide-testflight.html",
           "lines": "163-166",
           "snippet": "TestFlight matches your invitation against the Apple ID signed into the phone. If your iPhone is signed into a personal Apple ID but the invite went to your work address, TestFlight won't find it — and the error it gives you won't say so."
         },
         {
-          "file": "docs/notes/delivery/racktrack-install-guide.html",
+          "file": "docs/notes/delivery/iphone-install-guide-testflight.html",
           "lines": "222-223",
           "snippet": "<td>&ldquo;This invitation is no longer valid&rdquo;</td>\n<td>The invite expired or is tied to a different Apple ID. Ask us to re-send to the right address.</td>"
         },
@@ -2898,7 +2898,7 @@
       "rootCause": "Apple expires TestFlight builds 90 days after upload; the installed binary refuses to launch and the only remedy is a newer uploaded build.",
       "evidence": [
         {
-          "file": "docs/notes/delivery/racktrack-install-guide.html",
+          "file": "docs/notes/delivery/iphone-install-guide-testflight.html",
           "lines": "193-196",
           "snippet": "Builds expire after 90 days. Apple's rule, not ours. When one lapses, RackTrack stops opening and TestFlight says the build has expired. Nothing is broken and you've lost nothing — open TestFlight and install the current build."
         },
@@ -2908,7 +2908,7 @@
           "snippet": "<tr><td>Build lifespan</td><td class=\"num\">90 days</td><td>The build expires and testers are locked out until you ship a new one.</td></tr>"
         },
         {
-          "file": "docs/notes/delivery/racktrack-install-guide.html",
+          "file": "docs/notes/delivery/iphone-install-guide-testflight.html",
           "lines": "226-227",
           "snippet": "<td>RackTrack won't open — build expired</td>\n<td>Open TestFlight and install the current build.</td>"
         }
@@ -2936,7 +2936,7 @@
       "rootCause": "TestFlight, not the App Store, is the update channel. The 'What to Test' text is set programmatically at upload time by ship-ipa.sh.",
       "evidence": [
         {
-          "file": "docs/notes/delivery/racktrack-install-guide.html",
+          "file": "docs/notes/delivery/iphone-install-guide-testflight.html",
           "lines": "169-189",
           "snippet": "RackTrack updates often, and beta apps don't update themselves through the App Store. New builds arrive through TestFlight instead. ... switch on <strong>Automatic Updates</strong> ... RackTrack shows an <strong>Update</strong> button"
         },
@@ -2983,7 +2983,7 @@
           "snippet": "<key>UIRequiredDeviceCapabilities</key>\n<array>\n\t<string>arm64</string>"
         },
         {
-          "file": "docs/notes/delivery/racktrack-install-guide.html",
+          "file": "docs/notes/delivery/iphone-install-guide-testflight.html",
           "lines": "108-109",
           "snippet": "<strong>An iPhone</strong> — RackTrack runs on iOS 13 and later. TestFlight itself needs a newer iOS than that, so if the App Store won't let you install TestFlight, that's the reason."
         }
@@ -3017,7 +3017,7 @@
           "snippet": "minSdkVersion = 24"
         },
         {
-          "file": "docs/notes/older-drafts/status-Android.html",
+          "file": "docs/notes/status-and-demo/android-status.html",
           "lines": "51-52",
           "snippet": "<span>APK <b>built</b> (~11 MB)</span><span>ID <b>com.racktrack.app</b></span><span>Android <b>7+</b></span>\n<span>Delivery <b>sideload</b></span>"
         },
@@ -3064,7 +3064,7 @@
           "snippet": "versionCode 17\nversionName \"1.0\""
         },
         {
-          "file": "docs/notes/older-drafts/status-Android.html",
+          "file": "docs/notes/status-and-demo/android-status.html",
           "lines": "71",
           "snippet": "Installed <b>Android Studio</b> and produced a working <b>APK</b> file (~11 MB) with the tunnel address baked in."
         }
@@ -3098,7 +3098,7 @@
           "snippet": "// In dev, VITE_API_BASE is empty → Vite's proxy routes /api, /outputs, /uploads.\n// In the APK build, we set VITE_API_BASE=https://<public-host> so the WebView\n// can reach the real backend instead of its own (non-existent) origin.\nlet API_BASE = import.meta.env.VITE_API_BASE || '';"
         },
         {
-          "file": "docs/notes/delivery/racktrack-install-guide.html",
+          "file": "docs/notes/delivery/iphone-install-guide-testflight.html",
           "lines": "230-231",
           "snippet": "<td>App opens, screens are blank or error</td>\n<td>Not your phone. RackTrack talks to a server on our side — tell us and we'll check it.</td>"
         },
@@ -3108,7 +3108,7 @@
           "snippet": "<td>App installs, then every screen fails</td>\n<td>Backend unreachable — not a TestFlight problem</td>\n<td>Check the Windows server and the tunnel URL baked into the build</td>"
         },
         {
-          "file": "MAC-IPA-SETUP.md",
+          "file": "docs/setup/mac-ipa-build-for-testflight.md",
           "lines": "172",
           "snippet": "**The Windows box must be on with `deploy/legacy-windows/start.ps1` running, or none of this works.**"
         }
@@ -3145,7 +3145,7 @@
           "snippet": "if (/trycloudflare\\.com/i.test(url)) {\n  console.warn(`\\n⚠ Warning: \"${url}\" is a TEMPORARY Cloudflare quick-tunnel.`);\n  console.warn('  Its URL changes on every restart — the shipped app will break and need a rebuild.');"
         },
         {
-          "file": "docs/notes/older-drafts/status-Android.html",
+          "file": "docs/notes/status-and-demo/android-status.html",
           "lines": "120-123",
           "snippet": "The APK has a web address baked in that points, through a Cloudflare tunnel, to the Mac's server. ... The address is random and changes if the Mac restarts — then the APK can't reach the server and we'd have to rebuild."
         }
@@ -3189,7 +3189,7 @@
           "snippet": "<uses-permission android:name=\"android.permission.CAMERA\" />"
         },
         {
-          "file": "docs/notes/delivery/racktrack-install-guide.html",
+          "file": "docs/notes/delivery/iphone-install-guide-testflight.html",
           "lines": "234-235",
           "snippet": "<td>Camera does nothing</td>\n<td>Settings &rarr; RackTrack &rarr; turn <strong>Camera</strong> on. Easy to decline on first launch.</td>"
         }
@@ -3407,7 +3407,7 @@
           "snippet": "# 3. Archive  (-allowProvisioningUpdates lets Xcode create the distribution\n#    cert + App Store profile automatically for this team)\nxcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release ... CODE_SIGN_STYLE=Automatic -allowProvisioningUpdates clean archive"
         },
         {
-          "file": "docs/notes/delivery/racktrack-install-guide.html",
+          "file": "docs/notes/delivery/iphone-install-guide-testflight.html",
           "lines": "100-102",
           "snippet": "RackTrack isn't in the App Store yet — it's a beta, so it arrives through Apple's testing app, <strong>TestFlight</strong>."
         }
@@ -3478,7 +3478,7 @@
       "rootCause": "Free ngrok serves an HTML browser-warning interstitial at HTTP 200 to browser-like user-agents. The header skip fixes fetch; only the Capacitor user-agent override fixes <img> loads.",
       "evidence": [
         {
-          "file": "MAC-IPA-SETUP.md",
+          "file": "docs/setup/mac-ipa-build-for-testflight.md",
           "lines": "184-198",
           "snippet": "Free ngrok serves a **2.8 KB HTML warning page** instead of the real response to any client whose user-agent looks like a browser — and a Capacitor WebView does. It returns **HTTP 200** ... The **user-agent override** (1a) is what fixes **images** — `<img>` tags *cannot send custom headers*"
         },
@@ -3523,7 +3523,7 @@
       "rootCause": "Release tooling enforces preconditions: check-api-base.mjs guards the API base, TestFlight rejects duplicate CURRENT_PROJECT_VERSION, ship-ipa.sh requires the App Store Connect .p8 key, ship-apk.sh requires the Firebase CLI and App ID.",
       "evidence": [
         {
-          "file": "MAC-IPA-SETUP.md",
+          "file": "docs/setup/mac-ipa-build-for-testflight.md",
           "lines": "119-131",
           "snippet": "TestFlight **rejects a duplicate build number outright.** You are on **1.0 (4)**, so the next one is **1.0 (5)**. In `client/ios/App/App.xcodeproj/project.pbxproj`, change **both** occurrences: CURRENT_PROJECT_VERSION = 4;   →   CURRENT_PROJECT_VERSION = 5;"
         },
@@ -3548,7 +3548,7 @@
           "snippet": "<p>Usually 5–30 minutes. You get an email when it clears. Until then it shows as processing and no one can install it.</p>"
         },
         {
-          "file": "WINDOWS-SERVER-SETUP.md",
+          "file": "docs/setup/windows-gpu-server-setup.md",
           "lines": "58",
           "snippet": "> **Important:** the Windows box replaces the **backend server** only. **Building the iOS app still requires the Mac** (Xcode only runs on macOS). Android APKs can be built on Windows."
         }
@@ -3582,12 +3582,12 @@
           "snippet": "Live Network Switch (Ports tab) Won't work — All of these need the server to SSH into a switch on a private LAN (192.168.1.x). A cloud-hosted backend cannot reach it. ... Cables view / Trace tab / Drift / Switch console / Network view (Netdisco) Won't work"
         },
         {
-          "file": "docs/notes/delivery/racktrack-install-guide.html",
+          "file": "docs/notes/delivery/iphone-install-guide-testflight.html",
           "lines": "238-240",
           "snippet": "RackTrack's photo scanning works anywhere you have internet. The live switch screens — ports, cables, trace — read your actual equipment through a server on our network. If those screens are empty while scanning works fine, it's our server, not your phone."
         },
         {
-          "file": "WINDOWS-SERVER-SETUP.md",
+          "file": "docs/setup/windows-gpu-server-setup.md",
           "lines": "48-54",
           "snippet": "Phone app  ──HTTPS──>  api.racktrack.ai  ──port-forward──>  Windows PC (always on, GPU)\n ... └── SSH ──> switch 192.168.1.33\n- Windows PC is **always on**, has a **GPU** (faster AI), and is on the **same office network as the switch**."
         }
@@ -10729,7 +10729,7 @@
           "snippet": "let API_BASE = import.meta.env.VITE_API_BASE || '';"
         },
         {
-          "file": "docs/notes/delivery/racktrack-install-guide.html",
+          "file": "docs/notes/delivery/iphone-install-guide-testflight.html",
           "lines": "176-183",
           "snippet": "Open <strong>TestFlight</strong> &rarr; tap <strong>RackTrack</strong> &rarr; switch on <strong>Automatic Updates</strong>. ... If a new build is waiting, RackTrack shows an <strong>Update</strong> button"
         }
@@ -10967,22 +10967,22 @@
     },
     {
       "question": "Is the marketplace report a report I can generate from the app?",
-      "answer": "No. `docs/features/marketplace-report.md` is an internal design document about the Marketplace feature — its three sell paths, its database tables and its endpoint list — not a report the product generates. It is dated 2026-07-16 and notes that Stripe, eBay and Amazon are env-gated stubs awaiting credentials.\n\nThere is no export feature in the Marketplace: `server/marketplace_routes.js` has no CSV, download, XLSX or PDF route anywhere in its ~37 endpoints. So there is no order export, no listing CSV and no downloadable seller statement.\n\nWhat does exist, and is usually what the customer actually wants, is the **Seller Dashboard** at `/marketplace/dashboard` (`GET /api/marketplace/dashboard`). It shows, for the signed-in user: listing counts (total / active / sold / closed), sales stats (total orders, completed orders, pending orders, and revenue from completed orders), purchase stats (total purchases and amount spent), and the 10 most recent listings. It is on-screen only — there is no download button.\n\nFull route coverage, for reference: listing CRUD, orders and checkout, per-order messaging, saved searches, alerts, partner accounts (eBay/Amazon/Discord), image uploads, partner-search redirect links, listing flag/moderate, the seller dashboard, and env-gated Stripe/eBay/Amazon integration endpoints.\n\nSo if a customer asks for \"the marketplace report\": they either mean this internal document (share the feature notes instead), or they want the Seller Dashboard (point them there), or they want a downloadable order/listing export, which does not exist yet.",
+      "answer": "No. `docs/features/marketplace-feature-report.md` is an internal design document about the Marketplace feature — its three sell paths, its database tables and its endpoint list — not a report the product generates. It is dated 2026-07-16 and notes that Stripe, eBay and Amazon are env-gated stubs awaiting credentials.\n\nThere is no export feature in the Marketplace: `server/marketplace_routes.js` has no CSV, download, XLSX or PDF route anywhere in its ~37 endpoints. So there is no order export, no listing CSV and no downloadable seller statement.\n\nWhat does exist, and is usually what the customer actually wants, is the **Seller Dashboard** at `/marketplace/dashboard` (`GET /api/marketplace/dashboard`). It shows, for the signed-in user: listing counts (total / active / sold / closed), sales stats (total orders, completed orders, pending orders, and revenue from completed orders), purchase stats (total purchases and amount spent), and the 10 most recent listings. It is on-screen only — there is no download button.\n\nFull route coverage, for reference: listing CRUD, orders and checkout, per-order messaging, saved searches, alerts, partner accounts (eBay/Amazon/Discord), image uploads, partner-search redirect links, listing flag/moderate, the seller dashboard, and env-gated Stripe/eBay/Amazon integration endpoints.\n\nSo if a customer asks for \"the marketplace report\": they either mean this internal document (share the feature notes instead), or they want the Seller Dashboard (point them there), or they want a downloadable order/listing export, which does not exist yet.",
       "symptoms": [
         "marketplace report",
         "export my listings",
         "download my orders",
         "seller statement"
       ],
-      "rootCause": "marketplace-report.md is a Markdown design write-up. Grepping marketplace_routes.js for csv/export/download/xlsx returns only the trailing `module.exports = router;` — there is no export route.",
+      "rootCause": "marketplace-feature-report.md is a Markdown design write-up. Grepping marketplace_routes.js for csv/export/download/xlsx returns only the trailing `module.exports = router;` — there is no export route.",
       "evidence": [
         {
-          "file": "docs/features/marketplace-report.md",
+          "file": "docs/features/marketplace-feature-report.md",
           "lines": "1-4",
           "snippet": "# RackTrack Marketplace — Feature Report\n\n**Date:** 2026-07-16\n**Status:** Active development — Stripe, eBay, and Amazon integrations are env-gated stubs awaiting credentials."
         },
         {
-          "file": "docs/features/marketplace-report.md",
+          "file": "docs/features/marketplace-feature-report.md",
           "lines": "22-32",
           "snippet": "| Table | Purpose |\n|---|---|\n| `marketplace_listings` | All for-sale and wanted listings (kind: sell/want) |\n| `marketplace_orders` | Purchase orders linking buyer, seller, listing |"
         },

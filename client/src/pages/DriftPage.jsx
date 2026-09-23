@@ -6,6 +6,7 @@ import { useApprovalsCan } from '../hooks/useApprovalsCan.js';
 import { useSmartBack } from '../hooks/useSmartBack';
 import ExternalLink from '../components/ExternalLink.jsx';
 import PortsCheck from '../components/PortsCheck.jsx';
+import { PortHistoryContent } from './PortHistoryPage.jsx';
 import ReportViewer from '../components/ReportViewer.jsx';
 import { driftCheckUrl, driftReportUrl } from '../utils/approvals.js';
 import styles from './DriftPage.module.css';
@@ -260,7 +261,19 @@ function Incident({ incident }) {
 }
 
 export default function DriftPage() {
+  /* Whether this rack has a switch. The history of what changed on its ports
+     used to be the other half of the Network page, behind a Switches/Timeline
+     segment. The owner asked on 22 September 2026 for the timeline to BE the
+     drift page: a difference and the change that caused it are the same
+     question, and a person looking at drift should not have to go to another
+     screen to see when a port last moved. Network is the switches now, and
+     nothing else.
+
+     It is only drawn once a switch exists - there is no history of ports
+     nobody has read. */
   const { rackId } = useParams();
+  // Does this rack hold a switch? Only then is there a history of its ports.
+  const [hasSwitch, setHasSwitch] = useState(false);
   // A notice about a check that was sent names it (?plan=). That check is shown
   // as it stands; comparing again would file a new draft beside a check that
   // was rejected or written, with a live send button under it.
@@ -760,6 +773,23 @@ export default function DriftPage() {
     </div>
   ) : null;
 
+  useEffect(() => {
+    if (!rackId) return undefined;
+    let dropped = false;
+    (async () => {
+      try {
+        const r = await authFetch(apiUrl(`/api/nb/switches?rackId=${encodeURIComponent(rackId)}`));
+        if (!r.ok) return;
+        const d = await r.json();
+        const list = Array.isArray(d) ? d : (d.switches || d.items || []);
+        if (!dropped) setHasSwitch(list.length > 0);
+      } catch {
+        /* no switches is the same as not knowing: the section stays away */
+      }
+    })();
+    return () => { dropped = true; };
+  }, [rackId]);
+
   return (
     <div className={styles.page}>
       {/* The header area: the title, and under it which rack this is - the rack's
@@ -1019,7 +1049,7 @@ export default function DriftPage() {
       {/* What needs no attention. It was three rows of the same shape stacked
           one under another, which read as a list of things to do; it is one
           line of three now, and only the one a person picks opens. */}
-      {plan && !busy && ((compared && (matching.length > 0 || notSeen.length > 0)) || ports) && (
+      {plan && !busy && ((compared && (matching.length > 0 || notSeen.length > 0)) || ports || hasSwitch) && (
         <div className={styles.quiet}>
           {/* The three counts were the last thing on the page with nothing
               saying what they counted. */}
@@ -1048,6 +1078,15 @@ export default function DriftPage() {
                 <i className={styles.quietChev} aria-hidden="true" />
               </button>
             )}
+            {hasSwitch && (
+              <button type="button" role="tab" aria-selected={rest === 'timeline'}
+                className={`${styles.quietTab} ${rest === 'timeline' ? styles.quietOn : ''}`}
+                onClick={() => setRest(rest === 'timeline' ? null : 'timeline')}>
+                <span className={styles.dotPort} aria-hidden="true" />
+                Timeline
+                <i className={styles.quietChev} aria-hidden="true" />
+              </button>
+            )}
             {ports && (
               <button type="button" role="tab" aria-selected={rest === 'ports'}
                 className={`${styles.quietTab} ${rest === 'ports' ? styles.quietOn : ''}`}
@@ -1059,6 +1098,11 @@ export default function DriftPage() {
             )}
           </div>
 
+          {rest === 'timeline' && (
+            <div className={styles.timeline}>
+              <PortHistoryContent rackId={rackId} />
+            </div>
+          )}
           {rest === 'matched' && (
             <ul className={styles.rows}>
               {matching.map(({ item, record }) => (

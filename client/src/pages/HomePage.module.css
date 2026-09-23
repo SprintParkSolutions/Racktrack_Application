@@ -183,6 +183,47 @@
 .profile:active { transform: scale(0.94); }
 .profile:focus-visible { outline: 2px solid var(--hm-ink); outline-offset: 3px; }
 
+/* ── The view toggle ────────────────────────────────────────────────
+   An admin or a single point of contact can be at a desk this morning and at
+   a rack this afternoon. This is where they say which, and it is the first
+   thing on the screen because it changes everything under it. Built from the
+   same parts as the page's containers: white, a hairline, light down the
+   fill - a segmented control, not a row of pills. */
+.views {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 2px;
+  margin: 0 0 12px;
+  padding: 3px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .72);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .9),
+    0 0 0 1px rgba(16, 32, 60, .06),
+    0 8px 16px -14px rgba(16, 32, 60, .7);
+}
+.viewTab {
+  border: 0;
+  border-radius: 9px;
+  padding: 6px 14px;
+  background: transparent;
+  color: var(--hm-ink-2);
+  font-family: var(--font);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-label);
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--dur-fast, 150ms) var(--ease-out), color .15s;
+}
+.viewOn {
+  background: #ffffff;
+  color: var(--hm-ink);
+  font-weight: var(--fw-title);
+  box-shadow: 0 1px 2px rgba(16, 32, 60, .12);
+}
+.viewTab:focus-visible { outline: 2px solid var(--hm-ink); outline-offset: 2px; }
+
 .hour {
   margin: 0;
   font-family: var(--font);

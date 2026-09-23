@@ -8,6 +8,9 @@ import MoreSheet from './MoreSheet.jsx';
 import ScanTabBar from './ScanTabBar.jsx';
 import { useRackFlow } from '../hooks/useRackFlow.js';
 import { setRackFlow, NETWORK, PORT } from '../utils/rackFlow.js';
+import { useAppView, roleOfUser } from '../hooks/useAppView.js';
+import { useApprovalsCan } from '../hooks/useApprovalsCan.js';
+import { canScanIn } from '../utils/appView.js';
 import ExternalLink from './ExternalLink.jsx';
 
 /* ──────────────────────────────────────────────────────────────────────
@@ -87,7 +90,13 @@ function RackTabs({ rackId, pathname, hash }) {
 export default function BottomNav() {
   const navigate = useNavigate();
   const { fn: shutterFn, canShoot } = useShutter();
-  const { isAuthed } = useAuth();
+  const { isAuthed, user } = useAuth();
+  /* The camera belongs to the employee's view. An admin or a single point of
+     contact is not asked to photograph a rack; if they mean to, they shift
+     the toggle on Home and the button comes back (the owner, 23 Sep 2026). */
+  const can = useApprovalsCan();
+  const { view } = useAppView(roleOfUser(user, can));
+  const mayScan = canScanIn(view);
   const links = usePrimaryNav();
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -188,18 +197,24 @@ export default function BottomNav() {
     <>
       <nav className={styles.nav}>
         <div className={styles.bar}>
-          {items.slice(0, half)}
-          <span className={styles.centreSlot}>
-            <button
-              type="button"
-              className={styles.centre}
-              onClick={takeScan}
-              aria-label={canShoot && typeof shutterFn === 'function' ? 'Take the photograph' : 'Scan a rack'}
-            >
-              <ScanIcon />
-            </button>
-          </span>
-          {items.slice(half)}
+          {/* With no camera there is no centre action, so the bar is an even
+              row of tabs rather than a ring around a hole. */}
+          {mayScan ? (
+            <>
+              {items.slice(0, half)}
+              <span className={styles.centreSlot}>
+                <button
+                  type="button"
+                  className={styles.centre}
+                  onClick={takeScan}
+                  aria-label={canShoot && typeof shutterFn === 'function' ? 'Take the photograph' : 'Scan a rack'}
+                >
+                  <ScanIcon />
+                </button>
+              </span>
+              {items.slice(half)}
+            </>
+          ) : items}
         </div>
       </nav>
 

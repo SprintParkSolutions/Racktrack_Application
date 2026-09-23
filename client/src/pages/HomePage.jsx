@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppView } from '../hooks/useAppView.js';
+import { VIEW_LABEL } from '../utils/appView.js';
 import { useAuth } from '../AuthContext.jsx';
 import { useScanSite } from '../hooks/useScanSite.js';
 import { apiUrl, authFetch } from '../utils/api';
@@ -196,6 +198,12 @@ export function actionsFor({ role, waiting = 0 }) {
       },
       alt: null,
     };
+  }
+  // An admin is not asked to photograph a rack either - they run the estate.
+  // If they want the camera they shift the toggle to Employee, and then this
+  // is called with 'tech' (utils/appView.js).
+  if (role === 'admin' || role === 'manager') {
+    return { lead: { text: 'Open your organization', to: '/organizations' }, alt: null };
   }
   return { lead: scan, alt: null };
 }
@@ -530,7 +538,18 @@ export default function HomePage() {
   const loading = scans === null;
   const org = user?.organization?.name || null;
   const where = user?.tenant?.name || null;
-  const role = useMemo(() => roleOf(user, can), [user, can]);
+  const held = useMemo(() => roleOf(user, can), [user, can]);
+  const { view, views, shift } = useAppView(held.key);
+  /* What this person is here TODAY. An admin or a SPOC who has shifted the
+     toggle to Employee gets the employee's page - the camera, their racks,
+     their own checks - because that is what they said they are doing. The
+     role they hold has not changed; only the view has. */
+  const role = useMemo(
+    () => (view === 'employee' && held.key !== 'tech'
+      ? { key: 'tech', word: 'Employee' }
+      : held),
+    [view, held],
+  );
   const greeting = useMemo(() => greetingAt(), []);
 
   const ways = waysFor(role.key);
@@ -556,6 +575,25 @@ export default function HomePage() {
             gone (the owner, 22 Sep 2026), and the words have the width. */}
         <header className={styles.line}>
           <div className={styles.lineText}>
+            {/* Which pair of eyes the app is in. Only drawn when there is
+               something to shift to: an employee holds one job and a row of
+               one is a label pretending to be a choice. */}
+            {views.length > 1 && (
+              <div className={styles.views} role="tablist" aria-label="How you are working today">
+                {views.map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    role="tab"
+                    aria-selected={view === v}
+                    className={`${styles.viewTab} ${view === v ? styles.viewOn : ''}`}
+                    onClick={() => shift(v)}
+                  >
+                    {VIEW_LABEL[v]}
+                  </button>
+                ))}
+              </div>
+            )}
             <p className={styles.hour}>{greeting}</p>
             <h1 className={styles.who}>{user?.username || 'there'}</h1>
             <p className={styles.place}>{placeLine(role, org, where)}</p>

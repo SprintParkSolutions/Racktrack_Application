@@ -70,6 +70,9 @@ import MyChecksPage from './pages/MyChecksPage.jsx';
 import MultiRackNewPage from './pages/MultiRackNewPage.jsx';
 import { ShutterProvider } from './ShutterContext.jsx';
 import { AuthProvider, useAuth } from './AuthContext.jsx';
+import { useApprovalsCan } from './hooks/useApprovalsCan.js';
+import { useAppView, roleOfUser } from './hooks/useAppView.js';
+import { canScanIn } from './utils/appView.js';
 import { getPendingScan, clearPendingScan, fetchScanJob } from './utils/pendingScan';
 import { TourProvider } from './TourContext.jsx';
 import TourIntroModal from './components/TourIntroModal.jsx';
@@ -321,6 +324,26 @@ function SocialDeepLinkHandler() {
 // once it's done, drop the user straight on its results - instead of the empty
 // upload screen they'd otherwise see. Runs on cold start (leftover marker) and
 // on every native resume.
+/**
+ * The camera belongs to the employee's view.
+ *
+ * An organisation admin and a single point of contact are not asked to
+ * photograph a rack (the owner, 23 September 2026). They each have a toggle on
+ * Home, and shifting it to Employee is how they say that today they are doing
+ * that job. Until they do, Scan is not on their bar, not on their Home, and
+ * not reachable by typing the address either - which is what this is for.
+ */
+function EmployeeOnly({ children }) {
+  const { user } = useAuth();
+  const can = useApprovalsCan();
+  const { view } = useAppView(roleOfUser(user, can));
+  // While the answer is still coming the view reads as the role's own, which
+  // for a technician is Employee - so nobody is bounced off their own camera
+  // on a slow network.
+  if (!canScanIn(view)) return <Navigate to="/" replace />;
+  return children;
+}
+
 function PendingScanResumer() {
   const navigate = useNavigate();
   const { isAuthed } = useAuth();
@@ -444,7 +467,7 @@ export default function App() {
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
             <Route path="/pending" element={<PendingRoute><PendingApprovalPage /></PendingRoute>} />
             <Route path="/scan" element={
-              <ProtectedRoute><ResponsiveLayout withBottomNav><SetupGate><ScanPage /></SetupGate></ResponsiveLayout></ProtectedRoute>
+              <ProtectedRoute><EmployeeOnly><ResponsiveLayout withBottomNav><SetupGate><ScanPage /></SetupGate></ResponsiveLayout></EmployeeOnly></ProtectedRoute>
             } />
             {/* Organization settings. Owners and org admins; the gate above
                 sends them here while a Site still lacks a required item, and
