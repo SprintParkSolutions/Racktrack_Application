@@ -37,9 +37,22 @@ const rows = () => {
     }));
 };
 
-const last = (platform) => rows()
-  .filter((r) => r.platform === platform)
-  .reduce((n, r) => (r.build > n ? r.build : n), 0);
+/* The build this platform shipped LAST, not the highest it has ever shipped.
+ *
+ * It was the highest, and on 23 September 2026 that was wrong in a way that
+ * mattered: iOS had jumped to 83 by accident, the owner put it back on its own
+ * line at 4, and the next build came out as 84 again - the file was still
+ * remembering the accident. The rows are newest first, so the first row for a
+ * platform is what it actually shipped last, and the count follows the line the
+ * owner put it on.
+ *
+ * Nothing is reused by accident: make-ipa.sh and ship-apk.sh take the higher of
+ * this and the number in the project file, so a build made and never shipped
+ * still cannot be minted twice. */
+const last = (platform) => {
+  const mine = rows().filter((r) => r.platform === platform);
+  return mine.length ? mine[0].build : 0;
+};
 
 const HEAD = `# What has shipped
 
@@ -58,9 +71,13 @@ function add(platform, version, build, notes) {
   const when = new Date().toISOString().slice(0, 10);
   const row = `| ${when} | ${platform} | ${version} | ${build} | ${WHERE[platform] || '-'} | ${String(notes || '').replace(/\|/g, '/').replace(/\s+/g, ' ').trim()} |`;
   if (!existsSync(LOG)) { writeFileSync(LOG, `${HEAD + row}\n`); return; }
+  /* Straight under the separator, so the newest row is genuinely the first.
+     It used to skip a line past it and insert SECOND, which left whatever row
+     happened to be at the top pinned there for good - and `last` then read
+     that stale row as the most recent ship (23 September 2026). */
   const text = readFileSync(LOG, 'utf8');
   const at = text.indexOf('| --- |');
-  const end = text.indexOf('\n', text.indexOf('\n', at) + 1);
+  const end = text.indexOf('\n', at);
   writeFileSync(LOG, `${text.slice(0, end + 1) + row}\n${text.slice(end + 1)}`);
 }
 

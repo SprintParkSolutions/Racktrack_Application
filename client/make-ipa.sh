@@ -76,12 +76,19 @@ else
   SHIPPED_NUM="$(node scripts/shipped.mjs last ios 2>/dev/null || echo 0)"
   [ -n "$IOS_NUM" ] || { echo "✖ could not read CURRENT_PROJECT_VERSION from $PBXPROJ"; exit 1; }
   [ -n "$SHIPPED_NUM" ] || SHIPPED_NUM=0
-  BUILD_NUM=$(( (IOS_NUM > SHIPPED_NUM ? IOS_NUM : SHIPPED_NUM) + 1 ))
+  # The LOG governs, not the project file. Taking the higher of the two meant
+  # any number that ever landed in the project file - including one from a
+  # build that was never shipped, or from the day iOS jumped to 83 by accident -
+  # pinned the count above the line the owner actually put it on. What reached a
+  # tester is in SHIPPED.md, and the next build is that plus one
+  # (23 September 2026). Android keeps its own rule: a phone refuses to install
+  # a lower version code over the one it holds.
+  BUILD_NUM=$(( SHIPPED_NUM + 1 ))
   # Snapshot BEFORE the first write so the trap can roll back on any later failure.
   cp "$PBXPROJ" "$PBXPROJ.prebump"
   BUMPED=1
   sed -i '' -E "s/CURRENT_PROJECT_VERSION = [0-9]+;/CURRENT_PROJECT_VERSION = ${BUILD_NUM};/g" "$PBXPROJ"
-  echo "▸ Build:   $BUILD_NUM (iOS was $IOS_NUM, last shipped $SHIPPED_NUM; Android is untouched)"
+  echo "▸ Build:   $BUILD_NUM (last shipped $SHIPPED_NUM; the project file said $IOS_NUM; Android is untouched)"
 fi
 
 echo "▸ Team:    $TEAM"
