@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { apiUrl, authFetch } from '../utils/api';
 import { useAuth } from '../AuthContext';
 import Icon from '../components/Icon.jsx';
+import PageHeader from '../components/PageHeader.jsx';
 import styles from './ContactPage.module.css';
 
 const SUPPORT_EMAIL = 'support@racktrack.ai';
@@ -159,27 +160,18 @@ export default function ContactPage() {
     }
   };
 
+  /* The head of the page is the app's own bar, like every other screen.
+     It was a landing page: a text "Back" link, a purple SUPPORT eyebrow, a
+     display-size title and a black-and-white stock photograph of somebody
+     else's cabinets, and then the form. The owner called it the worst screen
+     in the app on 23 September 2026. None of that told a person anything a
+     support form needs, and none of it looked like the rest of the product. */
   const Intro = (
-    <section className={styles.intro}>
-      <div className={styles.introInner}>
-        <div className={styles.introText}>
-          <button className={styles.back} onClick={() => navigate(-1)}>
-            <Icon name="arrow_back" /> Back
-          </button>
-          <div className={styles.eyebrow}>Support</div>
-          <h1 className={styles.h1}>Contact support</h1>
-          <p className={styles.lede}>
-            Tell us what you are running into. We reply within a few hours.
-          </p>
-        </div>
-        {/* An <img>, not a CSS background: index.css strips background-image
-            from a broad substring allow-list, and a photograph here is content
-            for the page rather than decoration for a box. */}
-        <div className={styles.media} aria-hidden="true">
-          <img src="/hero-rack.jpg" alt="" className={styles.mediaImg} loading="lazy" />
-        </div>
-      </div>
-    </section>
+    <PageHeader
+      title="Contact support"
+      sub="Tell us what you are running into. We reply within a few hours."
+      back={() => navigate(-1)}
+    />
   );
 
   if (status === 'sent') {
@@ -187,7 +179,7 @@ export default function ContactPage() {
       <div className={styles.page}>
         {Intro}
         <div className={styles.wrap}>
-          <div className={styles.done}>
+          <div className={`${styles.block} ${styles.done}`}>
             <span className={styles.doneMark} aria-hidden="true">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
             </span>
@@ -200,7 +192,6 @@ export default function ContactPage() {
             </div>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -212,14 +203,14 @@ export default function ContactPage() {
       <div className={styles.wrap}>
         <div className={styles.cols}>
           {/* ── Form ── */}
-          <form className={styles.form} onSubmit={submit} noValidate>
-            <h2 className={styles.formH}>Send us a message</h2>
+          <form className={`${styles.block} ${styles.form}`} onSubmit={submit} noValidate>
+            <h2 className={styles.blockH}>Send us a message</h2>
             {/* The message box's own placeholder already asks for what happened, what
                 they were doing and any error message. */}
 
             <div className={styles.field}>
               <label className={styles.label} htmlFor="ct-subject">
-                Subject <span className={styles.optional}>Optional</span>
+                Subject
               </label>
               <input
                 id="ct-subject"
@@ -233,7 +224,7 @@ export default function ContactPage() {
             </div>
 
             <div className={styles.field}>
-              <label className={styles.label} htmlFor="ct-message">Message</label>
+              <label className={styles.label} htmlFor="ct-message">Message <span className={styles.req} aria-hidden="true">*</span></label>
               <textarea
                 id="ct-message"
                 className={`${styles.input} ${styles.textarea}`}
@@ -246,7 +237,7 @@ export default function ContactPage() {
 
             <div className={styles.field}>
               <label className={styles.label} htmlFor="contact-attachments">
-                Attachments <span className={styles.optional}>Optional</span>
+                Attachments
               </label>
 
               <input
@@ -328,7 +319,7 @@ export default function ContactPage() {
 
             <div className={styles.actions}>
               <button type="submit" className={styles.send} disabled={!canSend}>
-                {status === 'sending' ? 'Sending…' : 'Send message →'}
+                {status === 'sending' ? 'Sending' : 'Send message'}
               </button>
               {!canSend && status !== 'sending' && (
                 <span className={styles.hint}>Add a message to send.</span>
@@ -378,7 +369,6 @@ export default function ContactPage() {
         </div>
       </div>
 
-      <Footer />
     </div>
   );
 }
@@ -395,23 +385,3 @@ export default function ContactPage() {
 //     { label: 'Security', href: 'https://racktrack.ai/security' },
 //   ];
 const LEGAL = [];
-
-function Footer() {
-  return (
-    <footer className={styles.foot}>
-      <div className={styles.footInner}>
-        <span className={styles.footCopy}>© 2026 RackTrack. All rights reserved.</span>
-        {LEGAL.length > 0 && (
-          <nav className={styles.footLinks}>
-            {LEGAL.map((l, i) => (
-              <span key={l.label} className={styles.footLink}>
-                {i > 0 && <span aria-hidden="true">·</span>}
-                <a href={l.href}>{l.label}</a>
-              </span>
-            ))}
-          </nav>
-        )}
-      </div>
-    </footer>
-  );
-}
