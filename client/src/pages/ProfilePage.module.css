@@ -58,15 +58,10 @@
   border: 1px solid var(--pf-line); border-radius: 12px;
   background: #fff; overflow: hidden;
 }
-/* The aisle photograph is a tall one and this is a band, so what is kept is
-   chosen rather than centred: the doors run down the right of the frame, and
-   58% across / 42% down is the slice where a row of them meets the floor. */
-.banner { height: 148px; background: var(--pf-line-soft); position: relative; }
-.bannerImg {
-  width: 100%; height: 100%;
-  object-fit: cover; object-position: 58% 42%;
-  display: block;
-}
+/* The aisle is drawn to this band's own shape, so nothing is cropped out of
+   anything: it fills the width and keeps its perspective at any of them. */
+.banner { height: 168px; background: #EEF3FA; position: relative; overflow: hidden; }
+.bannerImg { width: 100%; height: 100%; display: block; }
 /* The name sits under the picture, not on it, so nothing is written over the
    photograph - but the foot of the band is still where the avatar overlaps
    it, and a hard edge there reads as two pieces of paper. This softens it. */
@@ -129,10 +124,15 @@
 }
 .copyBtn:hover { background: var(--pf-line-soft); color: var(--pf-ink); }
 .copied { font-size: var(--fs-sub); color: #067647; }
+/* What this person is, and where. A sentence in the page's own voice: it was
+   set in small caps with wide tracking, which on "Member - DC-007 Bengaluru"
+   wrapped onto two shouted lines under the name. */
 .metaLine {
-  margin: 8px 0 0;
-  font-size: var(--fs-label); font-weight: var(--fw-title); letter-spacing: .07em; text-transform: uppercase;
-  color: var(--pf-ink-3);
+  margin: 7px 0 0;
+  font-family: var(--font);
+  font-size: var(--fs-sub); font-weight: var(--fw-label); letter-spacing: -0.005em;
+  line-height: 1.35;
+  color: var(--pf-ink-2);
 }
 
 /* ── Columns ── */

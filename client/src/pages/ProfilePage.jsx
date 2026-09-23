@@ -13,6 +13,7 @@ import { AVATARS, resolveAvatarIndex } from '../utils/avatars';
 import { askToNotify, chime, setNotifyChoice, wantsNotices } from '../utils/notify.js';
 import Icon from '../components/Icon';
 import AssetImg from '../components/AssetImg';
+import AisleArt from '../components/AisleArt.jsx';
 
 function formatJoined(d) {
   if (!d) return null;
@@ -273,15 +274,16 @@ export default function ProfilePage() {
             background-image from a broad substring allow-list, so a background
             here would silently vanish.
 
-            The picture is a lit white aisle with the cabinet doors down one
-            side. It was a near-black photograph of tangled orange and blue
-            patch leads, which is what a datacenter looks like when nobody has
-            tidied it - the owner asked on 23 September 2026 for something
-            professional, and this is the one in the bundle that is. It is
-            also white, which is the app. */}
+            The picture is drawn, not photographed. Three photographs were
+            tried and none of them worked, because a band 148 pixels tall cut
+            out of a tall picture is a stripe of somebody else's room. This is
+            an aisle in one perspective, in the product's own palette, in the
+            same language as the floor on Home - sharp at every width, no
+            request, and ours (the owner, 23 September 2026: realistic,
+            creative, attractive). */}
         <section className={styles.identity}>
           <div className={styles.banner} aria-hidden="true">
-            <img src="/home-aisle.jpg" alt="" className={styles.bannerImg} loading="lazy" />
+            <AisleArt className={styles.bannerImg} />
           </div>
 
           <div className={styles.idRow}>

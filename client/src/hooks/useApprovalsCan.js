@@ -18,12 +18,33 @@ import { apiUrl, authFetch } from '../utils/api';
  */
 let cached = null;      // the promise, so callers that arrive together share one request
 
+/* How long the navigation may wait for this answer.
+ *
+ * Until it arrives the app does not know whether a technician is a SPOC, so
+ * it shows only what belongs to no role: Home, Ask DOT, Contact support,
+ * Profile. That is the right thing for a moment and the wrong thing forever -
+ * an admin on a phone with no signal saw exactly those four and nothing else,
+ * and there was no way back from it, because a request that never settles
+ * never resolves the promise everything is waiting on (the owner,
+ * 23 September 2026).
+ *
+ * So it gives up and answers "nothing extra". A refusal and a timeout are the
+ * same answer here: the account's own role still decides everything an admin
+ * sees, and a technician who is a SPOC gets their Desk on the next load. */
+const PATIENCE = 6000;
+
 export function fetchApprovalsCan() {
   if (cached) return cached;
-  cached = authFetch(apiUrl('/api/approvals/me'))
+  const asked = authFetch(apiUrl('/api/approvals/me'))
     .then((r) => (r.ok ? r.json() : null))
     .then((d) => (d && d.can) || {})
     .catch(() => ({}));
+  let timer = null;
+  const waited = new Promise((resolve) => { timer = setTimeout(() => resolve({}), PATIENCE); });
+  cached = Promise.race([asked, waited]).finally(() => clearTimeout(timer));
+  /* And when the real answer does arrive after the wait ran out, take it:
+     the next thing to ask gets the truth rather than the stand-in. */
+  asked.then((real) => { if (real && Object.keys(real).length) cached = Promise.resolve(real); });
   return cached;
 }
 

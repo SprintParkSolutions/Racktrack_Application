@@ -217,6 +217,32 @@ export default function OrgConsolePage() {
   // Longest scan bar in the org list is normalised against the busiest org.
   const maxScans = Math.max(1, ...orgs.map(o => o.scans || 0));
 
+  /* What the thing named in the header holds. Every figure is one this page
+     has already loaded - the org dashboard's totals inside an organization,
+     the platform totals at the list - and one that has not arrived is left
+     out rather than drawn as a nought. */
+  const orgLabel = user?.organization?.name || 'Your organization';
+  const holds = (() => {
+    const out = [];
+    const put = (n, one, many) => {
+      if (n == null) return;
+      const v = Number(n);
+      if (!Number.isFinite(v)) return;
+      out.push({ n: v, word: v === 1 ? one : many });
+    };
+    if (activeOrg) {
+      put(odash?.totals?.sites ?? (sites.length || null), 'site', 'sites');
+      put(odash?.totals?.users ?? (members.length || null), 'person', 'people');
+      put(odash?.totals?.scans, 'rack read', 'racks read');
+    } else {
+      put(dash?.totals?.organizations, 'organization', 'organizations');
+      put(dash?.totals?.sites, 'site', 'sites');
+      put(dash?.totals?.users, 'person', 'people');
+      put(dash?.totals?.scans, 'rack read', 'racks read');
+    }
+    return out;
+  })();
+
   if (loading) return <div className={styles.scroll}><div className={styles.page}><div className={styles.loading}>Loading…</div></div></div>;
 
   return (
@@ -278,11 +304,31 @@ export default function OrgConsolePage() {
             />
           )
           : <BackButton fallback="/" />}
+        {/* What this place is, and what is in it.
+            It read "ORGANIZATION CONSOLE" over the word "Organizations" - the
+            same word twice, a lone initial floating beside it, and nothing
+            about the organisation itself. The owner asked on 23 September
+            2026 for it to be restructured completely, so it now says the name
+            of the thing you are looking at, and under it what that thing
+            holds, counted from what this page has already loaded. A figure
+            that has not arrived is left out rather than drawn as a nought. */}
         <div>
-          <p className={styles.eyebrow}>{activeOrg ? 'Organization' : 'Organization Console'}</p>
+          <p className={styles.eyebrow}>
+            {activeOrg ? (isOwner ? 'Organization' : orgLabel) : 'Every organization'}
+          </p>
           <h1 className={styles.title}>
-            {activeOrg && isOwner ? activeOrg.name : (activeOrg?.name || 'Organizations')}
+            {activeOrg ? activeOrg.name : 'Organizations'}
           </h1>
+          {holds.length > 0 && (
+            <p className={styles.holds}>
+              {holds.map((h, i) => (
+                <span key={h.word}>
+                  {i > 0 && <span className={styles.holdSep} aria-hidden="true" />}
+                  <b>{h.n}</b> {h.word}
+                </span>
+              ))}
+            </p>
+          )}
         </div>
         {/* One way in to everything this person can do with their account.
             Four buttons and a role pill in the header competed with the
