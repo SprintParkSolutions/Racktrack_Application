@@ -1134,9 +1134,23 @@ function listTickets(filters = {}) {
       where.push(`t.status IN (${keys.join(', ')})`);
     }
   }
-  if (filters.ticketAssigneeUserId != null) {
-    where.push('t.assignee_user_id = @ticketAssigneeUserId');
-    params.ticketAssigneeUserId = Number(filters.ticketAssigneeUserId);
+  /* Whose ticket it is. A ticket raised to somebody the raiser picked out of
+     ServiceNow's own contacts carries their EMAIL and no RackTrack user id,
+     so matching on the id alone hid those tickets from the person they were
+     raised for - their list came back empty while the tickets existed (the
+     owner, 23 September 2026). Either name is the same person, so either
+     matches, and both are still only ever the caller's own. */
+  if (filters.ticketAssigneeUserId != null || filters.ticketAssigneeEmail) {
+    const or = [];
+    if (filters.ticketAssigneeUserId != null) {
+      or.push('t.assignee_user_id = @ticketAssigneeUserId');
+      params.ticketAssigneeUserId = Number(filters.ticketAssigneeUserId);
+    }
+    if (filters.ticketAssigneeEmail) {
+      or.push('LOWER(t.assignee_email) = @ticketAssigneeEmail');
+      params.ticketAssigneeEmail = String(filters.ticketAssigneeEmail).trim().toLowerCase();
+    }
+    where.push(`(${or.join(' OR ')})`);
   }
   if (filters.cursor != null && filters.cursor !== '') {
     where.push('t.id < @cursor');

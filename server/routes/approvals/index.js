@@ -72,6 +72,10 @@ router.get('/my-tasks', wrap(async (req, res) => {
   if (who.id == null) return res.json({ ok: true, tasks: [] });
   const rows = store.listTickets({
     ticketAssigneeUserId: who.id,
+    // And by their email, for a ticket raised to them as a ServiceNow contact
+    // rather than as a RackTrack account: it carries no user id, and matching
+    // on the id alone left the list empty while the tickets existed.
+    ticketAssigneeEmail: who.email || req.user?.email || null,
     ticketStatus: 'open,accepted,in_progress,pending',
     limit: 100,
   }).filter((t) => String(t.itemUid || t.uid || '').startsWith('task:'));
