@@ -32,9 +32,13 @@ export function withTask(path, task) {
   return `${path}${sep}task=${encodeURIComponent(task.raw)}`;
 }
 
-export default function TaskAsk({ search, className = '' }) {
+export default function TaskAsk({ search, rackId = null, className = '' }) {
   const asked = taskParam(search);
   const [task, setTask] = useState(null);
+  /* What the photograph says about the claim, once there is a photograph.
+     The reading is the server's (lib/approvals/claim.js): a phone must not
+     hold a second opinion about what a rack contains. */
+  const [answer, setAnswer] = useState(null);
 
   useEffect(() => {
     if (!asked) { setTask(null); return undefined; }
@@ -53,6 +57,22 @@ export default function TaskAsk({ search, className = '' }) {
     return () => { dropped = true; };
   }, [asked && asked.raw]);
 
+  useEffect(() => {
+    if (!asked || !rackId) { setAnswer(null); return undefined; }
+    let dropped = false;
+    (async () => {
+      try {
+        const r = await authFetch(apiUrl(
+          `/api/scan/${encodeURIComponent(rackId)}/ticket-answer?task=${encodeURIComponent(asked.raw)}`,
+        ));
+        if (!r.ok) return;
+        const d = await r.json();
+        if (!dropped && d && d.found) setAnswer(d);
+      } catch { /* the ask still shows; only the answer is missing */ }
+    })();
+    return () => { dropped = true; };
+  }, [asked && asked.raw, rackId]);
+
   if (!task) return null;
   return (
     <section className={`${styles.ask} ${className}`} aria-label="What the ticket asked">
@@ -64,6 +84,13 @@ export default function TaskAsk({ search, className = '' }) {
         </p>
         <p className={styles.said}>{task.summary || 'Look at this rack'}</p>
         {task.note ? <p className={styles.note}>{task.note}</p> : null}
+        {/* And what the rack in front of them actually shows. */}
+        {answer ? (
+          <div className={`${styles.answer} ${styles[answer.verdict] || ''}`}>
+            {answer.says ? <p className={styles.says}>{answer.says}</p> : null}
+            <p className={styles.found}>{answer.found}</p>
+          </div>
+        ) : null}
       </div>
     </section>
   );

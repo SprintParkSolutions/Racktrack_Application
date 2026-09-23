@@ -35,3 +35,29 @@
   font-family: var(--font); font-size: var(--fs-sub); line-height: 1.5; color: #3A4460;
   overflow-wrap: anywhere;
 }
+
+/* What the photograph says about the claim: the ticket's line, then the
+   rack's. The colour is the verdict and nothing else - green when the rack is
+   as the ticket describes it, amber when it differs, grey when a photograph
+   cannot settle it. */
+.answer {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(16, 32, 60, .08);
+}
+.says {
+  margin: 0;
+  font-family: var(--font); font-size: var(--fs-sub); color: #5B5F6B;
+}
+.found {
+  margin: 3px 0 0;
+  font-family: var(--font); font-size: var(--fs-body); font-weight: var(--fw-label);
+  line-height: 1.45; color: #16224A;
+}
+.agrees { box-shadow: inset 0 0 0 1px rgba(15, 123, 79, .28); }
+.agrees .found { color: #0F5E3D; }
+.differs { box-shadow: inset 0 0 0 1px rgba(180, 105, 14, .3); }
+.differs .found { color: #8A5310; }
+.unsure .found { color: #3A4460; }

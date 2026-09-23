@@ -814,7 +814,7 @@ export default function DriftPage() {
         {/* What the ticket asked, when this check came from one. What the
             photograph found is read against it, which is the whole point of
             the second workflow (23 September 2026). */}
-        <TaskAsk search={search} className={styles.askedFor} />
+        <TaskAsk search={search} rackId={rackId} className={styles.askedFor} />
 
         {plan && !busy && (
           <div className={styles.rack}>
