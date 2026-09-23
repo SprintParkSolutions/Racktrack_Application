@@ -5,7 +5,6 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 PBXPROJ="ios/App/App.xcodeproj/project.pbxproj"
-GRADLE="android/app/build.gradle"
 
 # Accept --no-bump in ANY position (or NO_BUMP=1 in the env); everything that
 # is not the flag is treated positionally as <TEAM_ID> then [api-url]. The old
@@ -40,11 +39,10 @@ BUMPED=0
 _restore_versions() {
   status=$?
   if [ "$status" -ne 0 ] && [ "$BUMPED" = "1" ]; then
-    echo "✖ failed (exit $status) — restoring $PBXPROJ and $GRADLE to their pre-bump state"
+    echo "✖ failed (exit $status) — restoring $PBXPROJ to its pre-bump state"
     [ -f "$PBXPROJ.prebump" ] && mv -f "$PBXPROJ.prebump" "$PBXPROJ"
-    [ -f "$GRADLE.prebump" ]  && mv -f "$GRADLE.prebump"  "$GRADLE"
   else
-    rm -f "$PBXPROJ.prebump" "$GRADLE.prebump"
+    rm -f "$PBXPROJ.prebump"
   fi
 }
 trap _restore_versions EXIT
@@ -67,18 +65,23 @@ if [ "$NO_BUMP" = "1" ]; then
   [ -n "$BUILD_NUM" ] || { echo "✖ could not read CURRENT_PROJECT_VERSION from $PBXPROJ"; exit 1; }
   echo "▸ Build:   $BUILD_NUM (not bumped)"
 else
+  # iOS counts on its own now. It used to take max(iOS, Android) + 1 and write
+  # the answer to BOTH project files, which kept them in step and also let one
+  # platform drag the other: on 23 September 2026 the iOS project had drifted
+  # back to 3 while Android had shipped 81, so TestFlight got 82 out of
+  # nowhere. The last iOS build that actually reached a tester is in
+  # SHIPPED.md, and the next one is that plus one. The project file is taken
+  # into account too, so a build made and never shipped can never be reused.
   IOS_NUM="$(grep -m1 -oE 'CURRENT_PROJECT_VERSION = [0-9]+' "$PBXPROJ" | grep -oE '[0-9]+' || true)"
-  AND_NUM="$(grep -m1 -oE 'versionCode +[0-9]+' "$GRADLE" | grep -oE '[0-9]+' || true)"
+  SHIPPED_NUM="$(node scripts/shipped.mjs last ios 2>/dev/null || echo 0)"
   [ -n "$IOS_NUM" ] || { echo "✖ could not read CURRENT_PROJECT_VERSION from $PBXPROJ"; exit 1; }
-  [ -n "$AND_NUM" ] || { echo "✖ could not read versionCode from $GRADLE"; exit 1; }
-  BUILD_NUM=$(( (IOS_NUM > AND_NUM ? IOS_NUM : AND_NUM) + 1 ))
+  [ -n "$SHIPPED_NUM" ] || SHIPPED_NUM=0
+  BUILD_NUM=$(( (IOS_NUM > SHIPPED_NUM ? IOS_NUM : SHIPPED_NUM) + 1 ))
   # Snapshot BEFORE the first write so the trap can roll back on any later failure.
   cp "$PBXPROJ" "$PBXPROJ.prebump"
-  cp "$GRADLE"  "$GRADLE.prebump"
   BUMPED=1
   sed -i '' -E "s/CURRENT_PROJECT_VERSION = [0-9]+;/CURRENT_PROJECT_VERSION = ${BUILD_NUM};/g" "$PBXPROJ"
-  sed -i '' -E "s/versionCode +[0-9]+/versionCode ${BUILD_NUM}/" "$GRADLE"
-  echo "▸ Build:   $BUILD_NUM (was iOS $IOS_NUM / Android $AND_NUM)"
+  echo "▸ Build:   $BUILD_NUM (iOS was $IOS_NUM, last shipped $SHIPPED_NUM; Android is untouched)"
 fi
 
 echo "▸ Team:    $TEAM"

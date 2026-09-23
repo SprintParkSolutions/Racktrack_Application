@@ -63,5 +63,10 @@ echo "→ setting \"What to Test\" notes…"
 node testflight-notes.mjs "$BUILD_NUM" "$NOTES"
 
 echo ""
+# It went out, so it goes in the record - the same file make-ipa.sh counts
+# the next build from.
+node scripts/shipped.mjs add ios "${MARKETING_VERSION:-1.1}" "$BUILD_NUM" "$NOTES" || true
+
 echo "✔ Shipped ${MARKETING_VERSION:-?} ($BUILD_NUM) to TestFlight with release notes."
+echo "  Written to SHIPPED.md."
 echo "  Testers get it once Apple finishes processing."

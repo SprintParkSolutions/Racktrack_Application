@@ -25,6 +25,30 @@ cd "$(dirname "$0")"
 BACKEND="${VITE_API_BASE:-$(tr -d '[:space:]' < ../BACKEND_URL 2>/dev/null)}"
 [ -n "$BACKEND" ] || { echo "✖ no backend URL — set VITE_API_BASE or fill in BACKEND_URL at the repo root"; exit 1; }
 NOTES="${1:-New RackTrack build}"
+
+# ── The build number ──────────────────────────────────────────────────────
+# This script used to touch versionCode not at all: it built whatever
+# build.gradle happened to say. Two ships in a row therefore sent the SAME
+# number, Firebase took the duplicate without complaining, and testers saw one
+# version twice with no way to tell which they had. Build 81 went out twice on
+# 23 September 2026 that way.
+#
+# Android counts on its own now. The last build that actually reached a tester
+# is in SHIPPED.md; the next is that plus one, and the project file is taken
+# into account too so a build made and never shipped is never reused.
+GRADLE="android/app/build.gradle"
+GRADLE_NUM="$(grep -m1 -oE 'versionCode +[0-9]+' "$GRADLE" | grep -oE '[0-9]+' || true)"
+SHIPPED_NUM="$(node scripts/shipped.mjs last android 2>/dev/null || echo 0)"
+[ -n "$GRADLE_NUM" ] || { echo "✖ could not read versionCode from $GRADLE"; exit 1; }
+[ -n "$SHIPPED_NUM" ] || SHIPPED_NUM=0
+BUILD_NUM=$(( (GRADLE_NUM > SHIPPED_NUM ? GRADLE_NUM : SHIPPED_NUM) + 1 ))
+VERSION_NAME="$(grep -m1 -oE 'versionName +"[^"]+"' "$GRADLE" | sed -E 's/.*"(.*)"/\1/')"
+cp "$GRADLE" "$GRADLE.prebump"
+# Any failure from here on puts the number back: a bumped file with no build
+# behind it is how the two platforms drifted apart in the first place.
+trap 'status=$?; if [ $status -ne 0 ] && [ -f "$GRADLE.prebump" ]; then mv -f "$GRADLE.prebump" "$GRADLE"; echo "✖ failed (exit $status) - versionCode put back"; else rm -f "$GRADLE.prebump"; fi' EXIT
+sed -i '' -E "s/versionCode +[0-9]+/versionCode ${BUILD_NUM}/" "$GRADLE"
+echo "▸ Build:   $BUILD_NUM (was $GRADLE_NUM, last shipped $SHIPPED_NUM)"
 GROUP="${FIREBASE_GROUP:-testers}"
 
 # App ID: env var wins, else the .firebase-app-id file next to this script.
@@ -116,6 +140,12 @@ firebase appdistribution:distribute "$APK" \
   --groups "$GROUP" \
   --release-notes "$NOTES"
 
+# It went out, so it goes in the record. SHIPPED.md is what the next build
+# number is counted from, so a ship that is not written down is a ship that
+# can be sent again under the same number.
+node scripts/shipped.mjs add android "${VERSION_NAME:-1.1}" "$BUILD_NUM" "$NOTES" || true
+
 echo
 echo "════════════════════════════════════════════"
-echo "✔ Shipped. Testers have been notified — no WhatsApp needed."
+echo "✔ Shipped $VERSION_NAME ($BUILD_NUM). Testers have been notified — no WhatsApp needed."
+echo "  Written to SHIPPED.md."
