@@ -5146,34 +5146,6 @@ export default function ResultsPage({ rackId: propRackId = null, embedded: embed
             >
               Look up a port
             </button>
-            {/* And the two things a rack that has already been read is opened
-                for: its report, and its check against the records. They were
-                only reachable through "Analyse the network" - which is a page
-                about switches - so whoever photographed a rack and wanted its
-                report had to guess (the owner, 23 September 2026: a SPOC who
-                uploaded a rack could not see the report or the drift). */}
-            <div className={styles.stepThen}>
-              <button
-                type="button"
-                className={styles.stepQuiet}
-                onClick={() => {
-                  setRackFlow(urlRackId, NETWORK);
-                  navigate(`/results/${encodeURIComponent(urlRackId || rackId)}/report`);
-                }}
-              >
-                See the report
-              </button>
-              <button
-                type="button"
-                className={styles.stepQuiet}
-                onClick={() => {
-                  setRackFlow(urlRackId, NETWORK);
-                  navigate(`/results/${encodeURIComponent(urlRackId || rackId)}/drift`);
-                }}
-              >
-                Check against records
-              </button>
-            </div>
           </div>
         )}
 
