@@ -455,57 +455,6 @@ export function waysFor(role) {
 }
 
 
-/**
- * The three figures over the floor.
- *
- * The owner took a row of counts off the way in on 22 September 2026, and
- * asked for one back on 23 September after showing a screen that leads with
- * three: how much has been read, how much of it matches, and what is still
- * waiting. These are those three. Every one is counted from what the server
- * has already answered, and the page draws none of them until something has
- * been read - a new account is never shown a row of noughts.
- */
-export function figuresFor({ racks = 0, checked = 0, matched = 0, waiting = 0,
-  triage = 0, sites = 0, role = 'tech' }) {
-  const out = [
-    {
-      key: 'read',
-      label: 'Racks read',
-      value: String(racks),
-      meta: sites > 1 ? `across ${sites} sites` : 'in your site',
-    },
-    {
-      key: 'match',
-      label: 'Match rate',
-      value: checked ? `${Math.round((matched / checked) * 100)}%` : 'None yet',
-      meta: checked === 1 ? 'of one rack checked' : checked ? `of ${checked} racks checked` : 'no rack checked yet',
-      tone: checked && matched === checked ? 'good' : checked ? 'warn' : null,
-    },
-  ];
-  /* The labels are short on purpose: three of them share a phone's width,
-     and "Waiting on you" came back from the first drawing cut off in the
-     middle of the word. */
-  if (role === 'admin' || role === 'manager') {
-    out.push({
-      key: 'nobody',
-      label: 'Unassigned',
-      value: String(triage),
-      meta: triage === 1 ? 'check without a SPOC'
-        : triage ? 'checks without a SPOC' : 'every check has somebody',
-      tone: triage ? 'warn' : 'good',
-    });
-  } else {
-    out.push({
-      key: 'waiting',
-      label: 'Waiting',
-      value: String(waiting),
-      meta: waiting === 1 ? 'check with you' : waiting ? 'checks with you' : 'nothing to read',
-      tone: waiting ? 'warn' : 'good',
-    });
-  }
-  return out;
-}
-
 export default function HomePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -714,22 +663,6 @@ export default function HomePage() {
 
   const { lead, alt } = actionsFor({ role: role.key, waiting: needs.length });
 
-  /* What the figures are counted from: every rack this person has read, not
-     the one Site the floor happens to be showing. The floor is a picture of
-     one place and the picker changes it; the figures must not move with it. */
-  const matched = racks.filter((r) => r.state.key === 'matched' || r.state.key === 'written').length;
-  const checked = racks.filter((r) => r.state.key !== 'unchecked').length;
-
-  const figures = figuresFor({
-    racks: racks.length,
-    checked,
-    matched,
-    waiting: needs.length,
-    triage,
-    sites: (sites || []).length,
-    role: role.key,
-  });
-
   // Everything that is waiting: the checks this person holds first, and for
   // an admin the ones that have nobody at all, which is their own part.
   const waitingOn = useMemo(() => {
@@ -781,10 +714,11 @@ export default function HomePage() {
           </button>
         </header>
 
-        {/* ── The lead: what this person is here for, the three figures, and
-               the one thing to press. On a brand-new account the drawn rack
-               stands where the figures would be, because a row of noughts is
-               not a way in. ── */}
+        {/* ── The lead: what this person is here for, the drawn rack, and
+               the one thing to press. The three figures that stood here for a
+               day came off again on 23 September 2026 - the owner does not
+               want counts on the way in, and every one of them is said where
+               it can be acted on. ── */}
         <section className={styles.lead} aria-labelledby="home-lead">
           <div className={styles.banner}>
             <div className={styles.bannerText}>
@@ -799,21 +733,6 @@ export default function HomePage() {
             <RackArt className={styles.bannerArt} />
           </div>
 
-          {/* How much has been read, how much of it matches, and what is
-              still waiting. The owner asked for these three back on 23 Sep
-              2026, after the screen they showed that leads with them. */}
-          {racks.length > 0 && (
-            <div className={styles.figures}>
-              {figures.map((f) => (
-                <div key={f.key} className={styles.figure}>
-                  <p className={styles.figureLabel}>{f.label}</p>
-                  <p className={`${styles.figureValue} ${f.tone ? styles[f.tone] : ''}`}>{f.value}</p>
-                  <p className={styles.figureMeta}>{f.meta}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
           {/* One filled control, one quiet one. Which is which is the role's. */}
           <div className={styles.act}>
             <button type="button" className={styles.go} onClick={() => navigate(lead.to)}>
@@ -827,6 +746,18 @@ export default function HomePage() {
             )}
           </div>
         </section>
+
+        {/* The four ways on. No heading and no container round them: four
+            marks with their words are already objects, and the owner asked on
+            23 Sep 2026 for four and nothing framing them. */}
+        <nav className={styles.ways} aria-label="Ways on">
+          {ways.map((w) => (
+            <button key={w.key} type="button" className={styles.way} onClick={() => navigate(w.to)}>
+              <span className={styles.wayGlyph} aria-hidden="true"><Icon name={w.icon} /></span>
+              <span className={styles.wayLabel}>{w.label}</span>
+            </button>
+          ))}
+        </nav>
 
         {/* ── The floor. Every cabinet is a rack the server knows, in the
                colour of its own newest check, and it opens its own page. ── */}
@@ -862,18 +793,6 @@ export default function HomePage() {
             />
           </section>
         )}
-
-        {/* The four ways on. No heading and no container round them: four
-            marks with their words are already objects, and the owner asked on
-            23 Sep 2026 for four and nothing framing them. */}
-        <nav className={styles.ways} aria-label="Ways on">
-          {ways.map((w) => (
-            <button key={w.key} type="button" className={styles.way} onClick={() => navigate(w.to)}>
-              <span className={styles.wayGlyph} aria-hidden="true"><Icon name={w.icon} /></span>
-              <span className={styles.wayLabel}>{w.label}</span>
-            </button>
-          ))}
-        </nav>
 
         {/* Anything an admin or a SPOC has put on this person: the app's own
             notices, the same ones the Scan screen shows. It draws nothing when

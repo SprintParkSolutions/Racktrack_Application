@@ -57,7 +57,7 @@ vi.mock('../AuthContext.jsx', () => ({ useAuth: () => ({ user: user.current }) }
 
 import { forgetApprovalsCan } from '../hooks/useApprovalsCan.js';
 import HomePage, {
-  roleOf, actionsFor, bannerFor, waysFor, figuresFor,
+  roleOf, actionsFor, bannerFor, waysFor,
   greetingAt, placeLine, stateOf,
 } from './HomePage.jsx';
 
@@ -489,38 +489,16 @@ describe('<HomePage> by role', () => {
    about the work. These are the parts that answer "how do things stand" and
    "what else can I do". */
 describe('<HomePage> beyond the racks', () => {
-  /* The owner took a row of counts off the way in on 22 September 2026 and
-     asked for three back on 23 September, after the screen they showed that
-     leads with them. Every one is counted from what the server has already
-     answered, and none is a figure the page cannot back. */
-  test('the three figures are counted from what the server answered', async () => {
+  /* No row of counts on the way in. Three figures stood in the lead card for
+     a day; the owner took them off again on 23 September 2026, as they took
+     the first row off on 22 September. Every one of them is still said where
+     it can be acted on: what is waiting, and the state of each rack. */
+  test('no row of counts on the way in', async () => {
     mount();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Your racks' })).toBeTruthy());
-    // Five scans came back.
-    expect(screen.getByText('Racks read')).toBeTruthy();
-    expect(screen.getByText('5')).toBeTruthy();
-    expect(screen.getByText('in your site')).toBeTruthy();
-    /* Every one of the five carries a check: one written, one that matches
-       its records, and three that do not. The figures count the racks this
-       person has read, not the one Site the floor is showing - the picker
-       must not move them. */
-    expect(screen.getByText('Match rate')).toBeTruthy();
-    expect(screen.getByText('40%')).toBeTruthy();
-    expect(screen.getByText('of 5 racks checked')).toBeTruthy();
-    // And four checks are with this person.
-    expect(screen.getByText('Waiting')).toBeTruthy();
-    expect(screen.getByText('checks with you')).toBeTruthy();
-  });
-
-  test('the figures are the counting, not a number the page invented', () => {
-    expect(figuresFor({ racks: 5, checked: 4, matched: 3, waiting: 2, sites: 1 })
-      .map((f) => f.value)).toEqual(['5', '75%', '2']);
-    // Nothing checked is said in words, never as a nought per cent.
-    expect(figuresFor({ racks: 2, checked: 0, matched: 0, waiting: 0, sites: 1 })[1])
-      .toMatchObject({ value: 'None yet', meta: 'no rack checked yet' });
-    // An admin's third figure is their own part of the work.
-    expect(figuresFor({ racks: 5, checked: 5, matched: 5, triage: 2, role: 'admin' })[2])
-      .toMatchObject({ label: 'Unassigned', value: '2' });
+    for (const word of ['Racks read', 'Match rate', 'Waiting', 'Unassigned', 'Sites', 'Site']) {
+      expect(screen.queryByText(word)).toBeNull();
+    }
   });
 
   /* The floor: every cabinet is a rack the server named, and one that has

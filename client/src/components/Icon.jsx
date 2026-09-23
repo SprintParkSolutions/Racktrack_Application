@@ -107,6 +107,14 @@ const P = {
     <circle cx="12" cy="10" r="2.5" />
   </>,
 
+  /* A gear, for the settings of a thing. Drawn as eight teeth on a ring
+     rather than the twelve-tooth cog every icon set has, because at 20px the
+     twelve merge into a blur. */
+  settings: <>
+    <circle cx="12" cy="12" r="3.2" />
+    <path d="M12 2.6v2.2M12 19.2v2.2M21.4 12h-2.2M4.8 12H2.6M18.6 5.4l-1.6 1.6M7 17l-1.6 1.6M18.6 18.6L17 17M7 7L5.4 5.4" />
+  </>,
+
   person: <>
     <circle cx="12" cy="8" r="3.7" />
     <path d="M4.8 20c0-3.7 3.2-5.8 7.2-5.8s7.2 2.1 7.2 5.8" />

@@ -284,16 +284,38 @@ export default function OrgConsolePage() {
             {activeOrg && isOwner ? activeOrg.name : (activeOrg?.name || 'Organizations')}
           </h1>
         </div>
+        {/* The controls of this console: one row of objects built from the
+            same parts as everything else on the page - white with light down
+            the fill, a hairline ring, a shadow - each with a mark so it is
+            read at a glance rather than by reading four labels. Signing out
+            is the last of them and the only one that is not ink, because it
+            is the only one that ends something (the owner, 23 Sep 2026).
+            The role is not a control, so it is a quiet chip, not a black
+            pill sitting among the buttons. */}
         <div className={styles.headActions}>
           <span className={styles.roleBadge}>{roleLabel(user?.role)}</span>
-          {/* Organisation setup: where the racks are, who decides, rules. The
-              gate sends a new admin there; this is how they come back. */}
-          <button className={styles.ghostBtn} onClick={() => navigate('/setup')}>Organization settings</button>
-          {isOwner && (
-            <button className={styles.ghostBtn} onClick={() => navigate('/dashboard')}>Console</button>
-          )}
-          <button className={styles.ghostBtn} onClick={() => navigate('/')}>App</button>
-          <button className={styles.ghostBtn} onClick={logout}>Sign out</button>
+          <div className={styles.headBtns}>
+            {/* Organisation setup: where the racks are, who decides, rules.
+                The gate sends a new admin there; this is how they come back. */}
+            <button className={styles.headBtn} onClick={() => navigate('/setup')}>
+              <Icon name="settings" className={styles.headIcon} />
+              <span>Settings</span>
+            </button>
+            {isOwner && (
+              <button className={styles.headBtn} onClick={() => navigate('/dashboard')}>
+                <Icon name="space_dashboard" className={styles.headIcon} />
+                <span>Console</span>
+              </button>
+            )}
+            <button className={styles.headBtn} onClick={() => navigate('/')}>
+              <Icon name="rack" className={styles.headIcon} />
+              <span>App</span>
+            </button>
+            <button className={`${styles.headBtn} ${styles.headOut}`} onClick={logout}>
+              <Icon name="logout" className={styles.headIcon} />
+              <span>Sign out</span>
+            </button>
+          </div>
         </div>
       </header>
       )}
