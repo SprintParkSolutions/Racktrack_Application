@@ -373,7 +373,7 @@ test('the drift workflow holds its rules at every route', async (t) => {
 
   // ---- 4. Nothing is assigned from this door any more.
   const GOES_TO_THE_SPOC = 'A check goes to the site SPOC when it is sent. '
-    + 'An organization admin reassigns it in Drift Desk.';
+    + 'An organization admin reassigns it in RackTrack Control.';
   for (const body of [
     { decisions: [{ uid: DEV, decision: 'ticketed', assignee: 'Sam Patel', assigneeId: 9 }] },
     { decisions: [{ uid: '*', decision: 'ticketed', assignee: MEERA.name, note: 'please check all of it' }] },

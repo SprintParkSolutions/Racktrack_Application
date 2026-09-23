@@ -1262,13 +1262,43 @@ function confirmedHere(base, sws, scope, scanId) {
 // A read, and the Report screen asks for it beside the report itself, so a
 // technician may have it too. Saving a matching or confirming a switch is the
 // POST below, and that stays with admins.
-router.get('/:id/reconcile', gates.technician, (req, res) => {
+/**
+ * The rack as the customer's record holds it, for the rung that joins the two.
+ *
+ * Once the rack is identified, every row NetBox holds for it carries a shelf, a
+ * serial and a management address - the same two identities a switch states
+ * about itself. lib/netbox/switch_record.js does the join; this fetches the one
+ * side of it, scoped to that rack and nothing wider.
+ *
+ * Never fails the caller. No NetBox, an unidentified rack or an instance that
+ * will not answer all mean the same thing here: no record rows, and the
+ * matching falls back to what it always did.
+ */
+async function recordRowsFor(req, scan) {
+  try {
+    /* The scan's own Site, the way scopeForScan reads it, falling back to the
+       caller's. A rack is looked up inside one site and never across the
+       instance (lib/netbox/find.js). */
+    const tenantId = scan.payload?.tenantId ?? req.user?.tenant_id ?? null;
+    if (tenantId == null) return [];
+    const bound = require('../../lib/rack_identity').confirmedRack(tenantId, scan.rackId);
+    const rackId = bound && bound.netboxRackId;
+    if (!rackId) return [];
+    const client = clientForUser(req.user);
+    if (!client) return [];
+    const answer = await client.get('/api/dcim/devices/', { rack_id: rackId, limit: 200 });
+    return reconcile.recordsFrom(answer && answer.results);
+  } catch { return []; }
+}
+
+router.get('/:id/reconcile', gates.technician, async (req, res) => {
   const scan = scanFor(req, res);
   if (!scan) return undefined;
   const base = scan.payload && scan.payload.snapshot;
   if (!base) return res.status(409).json({ error: 'this scan has no detection result yet' });
+  const records = await recordRowsFor(req, scan);
   return res.json(reconcile.view(base, scan.rackId, scan.payload.matches || null,
-    { scope: scopeForScan(scan), scanId: scan.id }));
+    { scope: scopeForScan(scan), scanId: scan.id, records }));
 });
 
 /**

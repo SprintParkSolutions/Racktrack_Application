@@ -29,6 +29,7 @@ const switches = require('./switches');
 const identity = require('./identity');
 const fingerprint = require('./fingerprint');
 const bindings = require('./bindings');
+const switchRecord = require('./switch_record');
 
 const slug = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-')
   .replace(/^-+|-+$/g, '') || 'x';
@@ -469,6 +470,11 @@ function suggest(snapshot, sws, opts = {}) {
       ports: portsOf(sw),
       vendor: sw.reading?.system?.vendor || sw.reading?.identity?.manufacturer || null,
       model: sw.reading?.identity?.model || null,
+      // The two handles the customer's record is joined on (switch_record.js):
+      // what the switch says it is, and where it answered.
+      serial: sw.reading?.identity?.serial || null,
+      host: sw.record.host || null,
+      sysName: sw.reading?.system?.sysName || null,
       // The corroborated member count, not the row count. See stackSizeOf.
       members: stack.members,
       chassisRows: stack.rows,
@@ -578,7 +584,35 @@ function suggest(snapshot, sws, opts = {}) {
     });
   }
 
-  // ── 2. scoring ─────────────────────────────────────────────────────────────
+  /* ── 2. the record ─────────────────────────────────────────────────────────
+     The customer's own record for this rack holds both halves of the answer:
+     which serial and which management address sit on which shelf. A switch
+     that answers with that serial, or at that address, IS the device on that
+     shelf - and the photograph drew a box there. That is rank 3, `modelled`:
+     below a person standing at the rack, above every score in section 3.
+
+     Given only when the caller has fetched the record for the rack this scan
+     was bound to (opts.records). Without it this rung does nothing and the
+     scoring below runs exactly as it always did. */
+  const fromRecord = switchRecord.placeByRecord({
+    devices,
+    facts: [...facts.values()].filter((f) => f.read).map((f) => ({
+      id: f.id, label: f.label, serial: f.serial, host: f.host, sysName: f.sysName,
+    })),
+    records: opts.records || [],
+    taken: new Set(claimedBy.keys()),
+  });
+  for (const [id, line] of fromRecord.notes) for (const l of line) addNote(id, l);
+  for (const [id, proposal] of fromRecord.placed) {
+    if (proposals.has(id) || reasons[id]) continue;   // a person outranks the record
+    claimedBy.set(proposal.deviceUid, id);
+    proposals.set(id, {
+      devUid: proposal.deviceUid,
+      reason: { ...proposal, notes: notes.get(id) || [] },
+    });
+  }
+
+  // ── 3. scoring ─────────────────────────────────────────────────────────────
   for (const sw of order) {
     const f = facts.get(sw.record.id);
     if (proposals.has(f.id) || reasons[f.id]) continue;
@@ -1041,7 +1075,7 @@ function rackImageUrl(base, rackId) {
 
 function view(base, rackId, storedMatches, opts = {}) {
   const sws = gatherSwitches(rackId);
-  const auto = suggest(base, sws, opts);
+  const auto = suggest(base, sws, opts);   // opts.records, when the caller has them
   const matches = { ...(storedMatches || auto.matches) };
   // A person standing at the rack outranks a saved matching, always. Without
   // this the two stores drift apart: a plain save could point a switch at one box
@@ -1096,6 +1130,9 @@ function view(base, rackId, storedMatches, opts = {}) {
 // match onto a patch panel or a PDU: one list, in one place.
 module.exports = {
   gatherSwitches, cameraDevices, suggest, reconcile, view, slug,
+  // The record rung, exported so a route can read the rack's rows once and
+  // hand them in, and so it can be tested on its own.
+  placeByRecord: switchRecord.placeByRecord, recordsFrom: switchRecord.recordsFrom,
   levelsFor, snapshotStamp, printOf, isPassive, PASSIVE_CLASS,
   spanByUid,
 };
