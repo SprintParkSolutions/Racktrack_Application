@@ -208,7 +208,7 @@ describe('<HomePage> with work behind it', () => {
     answers.current['/api/approvals/plans'] = 'refused';
     mount();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Your racks' })).toBeTruthy());
-    expect(screen.getByText('Nothing is waiting for you right now.')).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Waiting for you' })).toBeNull();
     expect(screen.getByRole('heading', { name: 'Ready to scan a rack' })).toBeTruthy();
   });
 
@@ -286,20 +286,17 @@ describe('<HomePage> with work behind it', () => {
     };
     mount();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Your racks' })).toBeTruthy());
-    // The section stays and says so: one that vanishes leaves a person
-    // wondering whether they missed it (the owner, 23 Sep 2026).
-    expect(screen.getByRole('heading', { name: 'Waiting for you' })).toBeTruthy();
-    expect(screen.getByText('Nothing is waiting for you right now.')).toBeTruthy();
+    // The section appears only when something is in it (the owner,
+    // 23 September 2026, reversing the morning's call).
+    expect(screen.queryByRole('heading', { name: 'Waiting for you' })).toBeNull();
   });
 
   test('a rack with no check of its own says it has not been checked', async () => {
     answers.current['/api/approvals/plans'] = { ok: true, plans: [] };
     mount();
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Your racks' })).toBeTruthy());
-    // Three racks in the row, the floor's key, and the room label over a
-    // floor where nothing has been checked: the same words every time.
-    expect(screen.getAllByText('Not checked').length).toBeGreaterThanOrEqual(3);
-    expect(screen.getByText('Nothing is waiting for you right now.')).toBeTruthy();
+    expect(screen.getAllByText('Not checked')).toHaveLength(3);
+    expect(screen.queryByRole('heading', { name: 'Waiting for you' })).toBeNull();
   });
 });
 
@@ -332,7 +329,7 @@ describe('<HomePage> on a new account', () => {
     // no row of noughts: the three figures are not drawn until something has
     // been read.
     expect(screen.queryByRole('heading', { name: 'Your racks' })).toBeNull();
-    expect(screen.getByText('Nothing is waiting for you right now.')).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Waiting for you' })).toBeNull();
     expect(screen.queryByText('Racks read')).toBeNull();
     expect(screen.queryByText('Match rate')).toBeNull();
     expect(screen.queryByText('0')).toBeNull();
@@ -504,22 +501,12 @@ describe('<HomePage> beyond the racks', () => {
     }
   });
 
-  /* The floor: every cabinet is a rack the server named, and one that has
-     been photographed opens its own page. */
-  test('the floor draws the site and a rack on it opens', async () => {
+  test('there is no floor on Home, for anybody', async () => {
+    // Drawn on 23 September 2026 and taken off the same day, for every role:
+    // the owner's call. The racks a person has read are the list below.
     mount();
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Your datacenter' })).toBeTruthy());
-    const floor = within(screen.getByRole('heading', { name: 'Your datacenter' }).closest('section'));
-    fireEvent.click(floor.getByRole('button', { name: /SP-HYB-RM01-R01-R2/ }));
-    expect(screen.getByTestId('where').textContent).toBe('/results/RK-A31AE2E7');
-  });
-
-  test('a rack set up but never photographed is drawn and does not open', async () => {
-    mount();
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Your datacenter' })).toBeTruthy());
-    // RK-0000BBBB was scanned; the Site's fourth rack is the one with no scan
-    // behind it, and it is not offered as something to press.
-    expect(screen.queryByRole('button', { name: /never/ })).toBeNull();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Your racks' })).toBeTruthy());
+    expect(screen.queryByRole('heading', { name: 'Your datacenter' })).toBeNull();
   });
 
 });

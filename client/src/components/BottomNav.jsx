@@ -218,7 +218,12 @@ export default function BottomNav() {
         </div>
       </nav>
 
-      {moreOpen && <MoreSheet links={overflow} onClose={() => setMoreOpen(false)} />}
+      {/* The Menu lists everything, the bar's own tabs included. It used to
+          list only what the bar had no room for, so the Menu and the bar were
+          two halves of one list and a person had to know which half held
+          what. The owner asked on 23 September 2026 for the whole list there,
+          duplicates and all. */}
+      {moreOpen && <MoreSheet links={links} onClose={() => setMoreOpen(false)} />}
     </>
   );
 }

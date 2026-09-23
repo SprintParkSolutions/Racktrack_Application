@@ -8,7 +8,6 @@ import { apiUrl, authFetch } from '../utils/api';
 import { openApprovals } from '../utils/approvals';
 import AssignedNotice from '../components/AssignedNotice.jsx';
 import AssetImg from '../components/AssetImg.jsx';
-import EstateMap from '../components/EstateMap.jsx';
 import NoticesSheet, { useNotices } from '../components/NoticesSheet.jsx';
 import Icon from '../components/Icon';
 import styles from './HomePage.module.css';
@@ -480,8 +479,6 @@ export default function HomePage() {
   const [scansFailed, setScansFailed] = useState(false);
   const [plans, setPlans] = useState(null);
   const [can, setCan] = useState(null);          // what the server says this account may do
-  // Which Site's floor is drawn. Empty means the first one the server named.
-  const [floorSite, setFloorSite] = useState('');
   /* What has arrived for this person, and whether they are looking at it.
      The owner asked on 23 September 2026 for a bell beside the account mark
      and for the notices to be there rather than on a screen of their own. */
@@ -549,84 +546,6 @@ export default function HomePage() {
       image: s.image || null,
     };
   }), [scans, places, byRack]);
-
-  /* ── The floor ──────────────────────────────────────────────────────
-     Which Site is drawn, and the cabinets standing on it. A Site's own setup
-     is the truth about what is in it - the racks bolted in, the rooms they
-     stand in - so the floor is built from that, and each cabinet takes the
-     state of its own newest check. An organisation with no setup yet falls
-     back to what has actually been photographed, so somebody who has scanned
-     still sees their own floor. */
-  const site = useMemo(() => {
-    const list = sites || [];
-    if (!list.length) return null;
-    const chosen = list.find((s) => String(s.id) === String(floorSite));
-    if (chosen) return chosen;
-    /* Nothing chosen yet: the Site this person belongs to, not whichever one
-       the server named first. An admin of two Sites opened on the other one,
-       while the line under their name said they were at this one. */
-    const own = user?.tenant?.id;
-    return list.find((s) => own != null && String(s.id) === String(own)) || list[0];
-  }, [sites, floorSite, user]);
-
-  const floor = useMemo(() => {
-    const rooms = new Map((site?.spaces || []).map((sp) => [String(sp.id), sp.name]));
-    // A cabinet opens its own page only if that rack has actually been read.
-    // A rack bolted in during setup and never photographed has no page yet.
-    const seen = new Set((scans || []).map((s) => String(s.rackId)));
-    const taken = new Set();
-    const out = [];
-
-    // What the Site's own setup says stands in it.
-    (site?.racks || []).forEach((r, i) => {
-      const plan = r.rackId ? byRack.get(r.rackId) : null;
-      const st = stateOf(plan);
-      const name = String(r.name || '').trim();
-      if (r.rackId) taken.add(String(r.rackId));
-      out.push({
-        key: `s${r.id ?? i}`,
-        rackId: r.rackId || null,
-        name: name && !UNNAMED.test(name) ? name : null,
-        room: rooms.get(String(r.spaceId)) || null,
-        state: st.key,
-        word: st.label,
-        open: seen.has(String(r.rackId)),
-      });
-    });
-
-    /* And the racks photographed into this Site that its setup does not list.
-       On the demo estate a Site had one rack registered and a dozen
-       photographed, and a floor drawn from the setup alone showed one
-       cabinet where the person had read twelve. */
-    if (site) {
-      for (const r of racks) {
-        if (!r.rackId || taken.has(String(r.rackId))) continue;
-        if (!r.where || !site.name || r.where !== site.name) continue;
-        taken.add(String(r.rackId));
-        out.push({
-          key: `r${r.rackId}`,
-          rackId: r.rackId,
-          name: r.name,
-          room: null,
-          state: r.state.key,
-          word: r.state.label,
-          open: true,
-        });
-      }
-      return out;
-    }
-
-    // No estate set up at all: what this person has photographed is the floor.
-    return racks.map((r, i) => ({
-      key: `r${r.rackId || i}`,
-      rackId: r.rackId,
-      name: r.name,
-      room: r.where,
-      state: r.state.key,
-      word: r.state.label,
-      open: true,
-    }));
-  }, [site, byRack, racks, scans]);
 
   // The checks that are with this person. `holder` is a username and
   // usernames are unique, so this is the same set the server's holder=me
@@ -802,41 +721,6 @@ export default function HomePage() {
           ))}
         </nav>
 
-        {/* ── The floor. Every cabinet is a rack the server knows, in the
-               colour of its own newest check, and it opens its own page. ── */}
-        {floor.length > 0 && (
-          <section className={`${styles.sect} ${styles.floorSect}`} aria-labelledby="home-floor">
-            <div className={styles.sectTop}>
-              <h2 className={styles.sectTitle} id="home-floor">Your datacenter</h2>
-              {/* The Site's name, unless the picker under it is already
-                  saying which one is drawn. */}
-              {site && (sites || []).length <= 1 && <span className={styles.open}>{site.name}</span>}
-            </div>
-            {/* More than one Site, and the floor is one of them at a time. */}
-            {(sites || []).length > 1 && (
-              <div className={styles.sitePick} role="tablist" aria-label="Which site to draw">
-                {sites.map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={site && String(s.id) === String(site.id)}
-                    className={`${styles.siteOne} ${site && String(s.id) === String(site.id) ? styles.siteOn : ''}`}
-                    onClick={() => setFloorSite(String(s.id))}
-                  >
-                    {s.name}
-                  </button>
-                ))}
-              </div>
-            )}
-            <EstateMap
-              racks={floor}
-              where={site ? site.name : where}
-              onRack={(rackId) => navigate(`/results/${encodeURIComponent(rackId)}`)}
-            />
-          </section>
-        )}
-
         {/* Anything an admin or a SPOC has put on this person: the app's own
             notices, the same ones the Scan screen shows. It draws nothing when
             there is nothing, so it never leaves a gap. */}
@@ -844,19 +728,16 @@ export default function HomePage() {
           <AssignedNotice />
         </div>
 
-        {/* ── Waiting for you. A standing section: when nothing is waiting it
-               says so, because a section that vanishes leaves a person
-               wondering whether they missed it. ── */}
+        {/* ── Waiting for you. Only when something is: the owner asked on 23
+               September 2026 for the section to appear when there is
+               something in it and not otherwise. ── */}
+        {waitingOn.length > 0 && (
         <section className={styles.sect} aria-labelledby="home-waiting">
           <div className={styles.sectTop}>
             <h2 className={styles.sectTitle} id="home-waiting">Waiting for you</h2>
-            {waitingOn.length > 0 && <span className={styles.count}>{waitingOn.length}</span>}
+            <span className={styles.count}>{waitingOn.length}</span>
           </div>
-          {waitingOn.length === 0 ? (
-            <p className={styles.nothing}>
-              {loading ? 'Reading what is waiting.' : 'Nothing is waiting for you right now.'}
-            </p>
-          ) : (
+          {(
             <ul className={styles.rows}>
               {waitingOn.slice(0, NEEDS_SHOWN).map(({ plan: p, why }) => {
                 const named = p.rackName && !UNNAMED.test(p.rackName) ? String(p.rackName) : null;
@@ -887,6 +768,7 @@ export default function HomePage() {
             <p className={styles.rest}>and {waitingOn.length - NEEDS_SHOWN} more waiting</p>
           )}
         </section>
+        )}
 
         {/* ── Your racks, as the photographs themselves. A row you push
                through rather than three rows and a See all, because the
