@@ -197,7 +197,7 @@
   background: #2349C4;
   color: #ffffff;
   font-family: var(--font);
-  font-size: 10px;
+  font-size: var(--fs-micro);
   font-weight: var(--fw-title);
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -647,7 +647,9 @@
    phone. */
 .ways {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* As many columns as there are tiles: a role with three ways on gets three
+     of equal width, not three and a hole (23 September 2026). */
+  grid-template-columns: repeat(var(--ways, 4), minmax(0, 1fr));
   gap: 9px;
   /* No card round these: four marks with their words are already objects,
      and a container round them would be a box inside a box. */
@@ -658,25 +660,31 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 13px 4px 11px;
-  border: 0;
-  border-radius: 18px;
-  /* Each one a small object of its own, the way the lists and the lead card
-     are. Four words floating on the paper read as leftovers. */
-  background: linear-gradient(180deg, #FFFFFF 0%, #F9FBFD 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .9),
-    0 0 0 1px rgba(16, 32, 60, .05),
-    0 12px 22px -18px rgba(16, 32, 60, .6);
+  padding: 12px 4px 10px;
+  /* A button, not a card. These were white panels lifted off the paper on a
+     soft shadow, which is the shape this app uses for things you READ - the
+     lists, the lead. Nobody taps a card, so they now carry a button's edge: a
+     drawn border, a tinted face and a press that moves (the owner,
+     23 September 2026). */
+  border: 1px solid rgba(35, 73, 196, .18);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F3F7FE 100%);
+  box-shadow: 0 1px 0 rgba(16, 32, 60, .04);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   min-width: 0;
-  transition: transform var(--dur-fast, 150ms) var(--ease-out);
+  transition: transform var(--dur-fast, 150ms) var(--ease-out),
+              background var(--dur-fast, 150ms) var(--ease-out);
 }
-.way:active { transform: scale(0.97); }
+.way:hover { background: linear-gradient(180deg, #FFFFFF 0%, #EAF1FD 100%); }
+.way:active {
+  transform: translateY(1px) scale(0.985);
+  background: #E7EEFB;
+  box-shadow: inset 0 2px 4px rgba(16, 32, 60, .1);
+}
 .way:focus-visible { outline: 2px solid var(--hm-ink); outline-offset: 2px; }
 .wayGlyph {
-  width: 44px; height: 44px;
+  width: 40px; height: 40px;
   display: inline-flex; align-items: center; justify-content: center;
   border-radius: 15px;
   background: var(--hm-tray);
@@ -709,7 +717,8 @@
 .wayLabel {
   font-family: var(--font);
   font-size: var(--fs-label);
-  font-weight: var(--fw-label);
+  /* A button's word carries a button's weight. */
+  font-weight: var(--fw-title);
   line-height: 1.25;
   text-align: center;
   color: var(--hm-ink);

@@ -46,7 +46,18 @@ function set(rackId, name) {
   return clean || null;
 }
 
-/** The name to show for a rack: the person's, else the id itself. */
-const display = (rackId) => get(rackId) || String(rackId || '');
+/**
+ * The name to show for a rack: the one typed here, else the one the estate
+ * holds, else the id itself.
+ *
+ * The estate's name is the one a person confirmed the scan against, and it has
+ * to be looked at here too: nobody types a name into this file when they pick
+ * the rack from a list, so the drift page and the report were headed by the
+ * hash while the confirmation said SP-HYB-RM01-R01-R1 (the owner, 23 September
+ * 2026).
+ */
+const display = (rackId) => get(rackId)
+  || require('../rack_name').rackNameFor(rackId)
+  || String(rackId || '');
 
 module.exports = { get, set, display, FILE };

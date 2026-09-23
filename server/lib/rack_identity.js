@@ -1184,6 +1184,28 @@ async function confirm(rackId, { tenantId, userId = null, knownRackId, netboxRac
  * gets the one Site they can see that holds the scan; when two do, the one
  * where the scan is tied to a space, else they have to say which.
  */
+/**
+ * The rack somebody confirmed this scan is of, without being told the site.
+ *
+ * A confirmation is one row per site and scan, and a scan id is minted for one
+ * rack, so the row finds itself. This exists for the readers that hold a scan
+ * and nothing else - the report a photograph builds knows the rack it is of and
+ * nothing about the estate around it, and it was heading its page "Unidentified
+ * rack" while a person had confirmed the rack two days earlier (the owner,
+ * 23 September 2026). Where the caller knows the site, confirmedRack() above is
+ * the one to use.
+ */
+function confirmedRackAnywhere(rackId) {
+  if (!rackId) return null;
+  let bound;
+  try {
+    bound = db.prepare('SELECT * FROM rack_identity WHERE rack_id = ? ORDER BY confirmed_at DESC LIMIT 1')
+      .get(String(rackId));
+  } catch { return null; }
+  if (!bound) return null;
+  return confirmedRack(bound.tenant_id, rackId);
+}
+
 function tenantForRack(user, rackId, asked = null) {
   if (!user || !rackId) return null;
   const own = Number(user.tenant_id ?? user.tenantId ?? 0);
@@ -1210,6 +1232,7 @@ module.exports = {
   applyLocation,
   confirm,
   confirmedRack,
+  confirmedRackAnywhere,
   tenantForRack,
   io,
   // Exported for the tests and for anyone who needs text in the same shape.

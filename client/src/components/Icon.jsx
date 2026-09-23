@@ -30,6 +30,15 @@ const P = {
 
   close: <path d="M6 6l12 12M18 6L6 18" />,
 
+  /* A photograph: the frame, the sun in it, and the hill across it. Drawn for
+     the profile picker, where somebody brings their own face out of the
+     phone's gallery (23 September 2026). */
+  image: <>
+    <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
+    <circle cx="9" cy="10" r="1.8" />
+    <path d="M4.5 17.5l4.6-4.6 3.3 3.3 2.4-2.3 4.7 4.6" />
+  </>,
+
   history: <>
     <path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1" />
     <path d="M3 4v4h4" />

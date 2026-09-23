@@ -10,59 +10,86 @@ import { AVATARS, resolveAvatarIndex, avatarInitial } from '../utils/avatars';
  *
  * `user` picks their chosen (or auto-assigned) slot; `index` forces one,
  * which is what the picker previews use.
+ *
+ * A person who chose a photograph of their own out of the phone's gallery has
+ * it on the account (users.avatar_photo), and it wins: the drawn portraits are
+ * what the product offers when somebody has not brought their own face. The
+ * photograph is a small square thumbnail, so it is set as the disc's own
+ * background and cropped to fill it rather than squeezed into it.
  */
 
 const HEAD = { cx: 50, cy: 43, r: 18.5 };
 
-/* The hair, over the head, by cut. Each is drawn in the same 100x100 space
-   as the head above, so they interchange. */
+/* The hair, over the head, by cut.
+ *
+ * Every cut is built on ONE cap, because the fault they all had was the same:
+ * each silhouette was drawn free-hand and none of them was symmetric, so the
+ * head - a circle of radius 18.5 at (50,43) - came out from under the hair on
+ * the right of every face, which reads as a bald patch (the owner, 23
+ * September 2026, "hair is not covering complete head").
+ *
+ * So the cap is an arc of radius 20.5 about the same centre: two units proud
+ * of the skull the whole way round, ear to ear, with the hairline across the
+ * forehead. A cut then adds only what makes it that cut - a bun, curls, waves,
+ * a curtain down each side - and can never uncover the head again.
+ */
+const CAP = 'M29.5 43A20.5 20.5 0 0 1 70.5 43L70.5 48.6C69.6 38.7 65.6 35.3 58.6 35.3'
+  + ' 54.6 35.3 52.8 33.7 50 33.7 47.2 33.7 45.4 35.3 41.4 35.3 34.4 35.3 30.4 38.7 29.5 48.6Z';
+
 function Hair({ cut, colour }) {
   const c = { fill: colour };
   switch (cut) {
     case 'bun':
       return (
         <g {...c}>
-          <circle cx="50" cy="19.5" r="6.2" />
-          <path d="M50 24.5c-10.4 0-18.8 8-18.8 17.9 0 1.6.2 3.1.6 4.6 1-7.9 3.9-11.2 8.7-12 4.1-.7 6.2 1.2 9.5 1.2 6.8 0 10.2 2.7 10.7 10.8.4-1.5.6-3 .6-4.6 0-9.9-8.4-17.9-18.8-17.9z" />
+          <circle cx="50" cy="18.6" r="6.4" />
+          <path d="M50 22.6c-4.6 0-8.3 2.6-8.3 5.8h16.6c0-3.2-3.7-5.8-8.3-5.8z" />
+          <path d={CAP} />
         </g>
       );
     case 'wavy':
       return (
         <g {...c}>
-          <path d="M50 23c-11 0-19.8 8.3-19.8 18.6 0 2 .3 3.9.9 5.7.6-8.4 3.8-11.9 8.9-12.7 4.3-.7 6.5 1.3 9.9 1.3 7.2 0 10.8 2.9 11.3 11.4.6-1.8.9-3.7.9-5.7C62.1 31.3 61 23 50 23z" />
-          <path d="M30.6 41c-2.4 2.6-3.4 6.3-2.7 9.8.5 2.5 1.9 4.4 3.6 5.2-1.2-4.6-1.4-9.8-.9-15zM69.4 41c2.4 2.6 3.4 6.3 2.7 9.8-.5 2.5-1.9 4.4-3.6 5.2 1.2-4.6 1.4-9.8.9-15z" />
+          <path d={CAP} />
+          {/* the waves, one each side, in the same place on both */}
+          <path d="M29.6 44.2c-2.5 2.7-3.5 6.5-2.8 10 .5 2.5 1.9 4.4 3.6 5.2-1.2-4.6-1.4-9.9-.8-15.2z" />
+          <path d="M70.4 44.2c2.5 2.7 3.5 6.5 2.8 10-.5 2.5-1.9 4.4-3.6 5.2 1.2-4.6 1.4-9.9.8-15.2z" />
         </g>
       );
     case 'curls':
       return (
         <g {...c}>
-          <circle cx="36" cy="30" r="7" /><circle cx="50" cy="25.5" r="7.6" />
-          <circle cx="64" cy="30" r="7" /><circle cx="31.5" cy="39.5" r="6" />
-          <circle cx="68.5" cy="39.5" r="6" />
-          <path d="M50 26c-9.8 0-17.8 7-17.8 15.6 0 1.4.2 2.8.5 4.1 1-7 3.7-9.9 8.2-10.6 3.9-.6 5.9 1 9.1 1 6.5 0 9.7 2.4 10.2 9.6.3-1.3.5-2.7.5-4.1C60.7 33 59.8 26 50 26z" />
+          <circle cx="50" cy="23.6" r="8" />
+          <circle cx="36.6" cy="28.4" r="7.4" />
+          <circle cx="63.4" cy="28.4" r="7.4" />
+          <circle cx="30.4" cy="38.6" r="6.6" />
+          <circle cx="69.6" cy="38.6" r="6.6" />
+          <path d={CAP} />
         </g>
       );
     case 'long':
       return (
         <g {...c}>
-          <path d="M29 44c0-11.6 9.4-21 21-21s21 9.4 21 21v22c0 2-1.6 3.6-3.6 3.6h-2.6V44c0-3.5-1.4-5.7-4.2-6.9-3.3-1.4-6.4.4-10.6.4-5.3 0-8.1-1.6-11.4-.1-2.9 1.3-4.3 3.5-4.3 6.6v25.6h-1.7c-2 0-3.6-1.6-3.6-3.6z" />
+          <path d={CAP} />
+          {/* the curtains: the same length and width on both sides */}
+          <path d="M29.5 43h5.6v27h-2.6a3 3 0 0 1-3-3z" />
+          <path d="M70.5 43h-5.6v27h2.6a3 3 0 0 0 3-3z" />
         </g>
       );
     case 'short':
     default:
-      return (
-        <path
-          {...c}
-          d="M50 23c-11.2 0-20.3 8.5-20.3 19 0 2.1.4 4.2 1.1 6.1.6-8.7 3.9-12.3 9.1-13.1 4.4-.7 6.7 1.3 10.1 1.3 7.4 0 11 2.9 11.6 11.8.7-1.9 1.1-4 1.1-6.1 0-10.5-9.1-19-20.3-19z"
-        />
-      );
+      return <path {...c} d={CAP} />;
   }
 }
 
 export default function Avatar({
   user, index, initial, size = 96, ring = false, style, className, onClick, title,
+  photo = null,
 }) {
   const idx = Number.isInteger(index) ? index : resolveAvatarIndex(user);
+  /* Their own photograph, where there is one and no slot was forced (a picker
+     preview forces a slot, and must keep showing that slot). */
+  const shot = photo || (!Number.isInteger(index) && user && user.avatarPhoto) || null;
   const a = AVATARS[idx] || AVATARS[0];
   // Kept for the callers that still pass one, and for the label a screen
   // reader hears: a drawn face is not a name.
@@ -85,6 +112,13 @@ export default function Avatar({
         ...style,
       }}
     >
+      {shot ? (
+        <img
+          src={shot}
+          alt={`Profile picture ${who}`}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+        />
+      ) : (
       <svg viewBox="0 0 100 100" width="100%" height="100%" role="img" aria-label={`Profile picture ${who}`}>
         {/* the shoulders */}
         <path d="M50 62c-14.9 0-27 10.6-27 23.7V100h54V85.7C77 72.6 64.9 62 50 62z" fill={a.shirt} />
@@ -107,6 +141,7 @@ export default function Avatar({
           </g>
         ) : null}
       </svg>
+      )}
     </div>
   );
 }

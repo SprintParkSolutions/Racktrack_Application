@@ -159,8 +159,12 @@ export function usePrimaryNav() {
     // "Track this check" gives them. Deciding by `can.spoc` rather than by
     // role is the point: a technician who is a Site's contact does hold
     // checks, and does get the Desk.
+    /* Your checks is in the Menu, not on the bar. A single point of contact's
+       bar is Home, Drift and Menu - three things (the owner, 23 September
+       2026) - because the Desk is where the checks are read and a second tab
+       into the same work is a second door to one room. */
     ...(runsTheEstate && isSpoc ? [{ group: 'work', to: '/my-checks', label: 'Your checks',
-      icon: <InboxIcon />, end: false, inBar: true, barLabel: 'Checks',
+      icon: <InboxIcon />, end: false,
       hint: 'The checks waiting on you' }] : []),
     ...(runsTheEstate ? [{ group: 'work', href: APPROVALS_URL, label: 'Drift Desk', icon: <InboxIcon />,
       inBar: true, barLabel: 'Drift',

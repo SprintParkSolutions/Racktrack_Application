@@ -346,6 +346,12 @@ function assignPublicId(userId, role) {
   // Profile avatar: index into the client's preset-avatar set (0-based). Null
   // means "not chosen yet" — the client auto-assigns one from the initial.
   _ensureColumn('users', 'avatar', 'avatar INTEGER');
+  // Or a photograph of their own, chosen from the phone's gallery: one small
+  // square JPEG held as a data URL, because it is a profile picture and not a
+  // file the product owns (the owner asked for the gallery on 23 September
+  // 2026). The photograph wins over the preset while it is there, and choosing
+  // a preset clears it.
+  _ensureColumn('users', 'avatar_photo', 'avatar_photo TEXT');
   // Stable per-user public ID (member number), role-prefixed (OWN/ADM/USR).
   // Assigned once and never renumbered. Backfill existing users in id order.
   _ensureColumn('users', 'public_id', 'public_id TEXT');
@@ -910,6 +916,7 @@ function publicUser(user, tenant = null) {
     role: user.role || 'member',
     organization_id: user.organization_id || null,
     avatar: (user.avatar === null || user.avatar === undefined) ? null : Number(user.avatar),
+    avatarPhoto: user.avatar_photo || null,
   };
   if (tenant) {
     out.tenant = { id: tenant.id, slug: tenant.slug, name: tenant.name };
@@ -1796,7 +1803,35 @@ function registerRoutes(app) {
     if (!Number.isInteger(idx) || idx < 0 || idx > 23) {
       return res.status(400).json({ error: 'avatar must be a preset index (0-23)' });
     }
-    db.prepare('UPDATE users SET avatar = ? WHERE id = ?').run(idx, req.user.id);
+    // A preset replaces a photograph: two pictures cannot both be the one.
+    db.prepare('UPDATE users SET avatar = ?, avatar_photo = NULL WHERE id = ?').run(idx, req.user.id);
+    const fresh = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+    res.json({ ok: true, user: publicUser(fresh) });
+  });
+
+  /* Their own photograph, from the phone's gallery.
+   *
+   * It arrives as a data URL the browser made: the client draws the chosen
+   * file onto a 256px square canvas and exports a JPEG, so what is stored is
+   * a thumbnail and never the 4MB original. Checked here all the same - the
+   * client is not the guard - and null clears it, which puts the preset back.
+   */
+  const PHOTO_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/;
+  const PHOTO_MAX = 200_000;
+  app.post('/api/auth/avatar-photo', requireAuth, (req, res) => {
+    const photo = req.body?.photo;
+    if (photo === null || photo === undefined || photo === '') {
+      db.prepare('UPDATE users SET avatar_photo = NULL WHERE id = ?').run(req.user.id);
+      const cleared = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+      return res.json({ ok: true, user: publicUser(cleared) });
+    }
+    if (typeof photo !== 'string' || !PHOTO_RE.test(photo)) {
+      return res.status(400).json({ error: 'The photo must be a JPEG, PNG or WEBP data URL' });
+    }
+    if (photo.length > PHOTO_MAX) {
+      return res.status(413).json({ error: 'That photo is too large. Choose a smaller one.' });
+    }
+    db.prepare('UPDATE users SET avatar_photo = ? WHERE id = ?').run(photo, req.user.id);
     const fresh = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
     res.json({ ok: true, user: publicUser(fresh) });
   });

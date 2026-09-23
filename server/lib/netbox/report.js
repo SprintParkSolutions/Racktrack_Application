@@ -188,7 +188,10 @@ function build(scan) {
 
   return {
     rackId: scan.rackId,
-    rackName: p.rackName || scan.rackId,
+    // The name, from the scan if it was filed with one and from the estate if
+    // it was bound to a rack later (lib/rack_name.js). The hash goes through
+    // when there is no name at all, and the reader says so in words.
+    rackName: require('../rack_name').rackNameFor(scan.rackId, { given: p.rackName }) || scan.rackId,
     siteName: p.siteName || '',
     scannedAt: scan.createdAt,
     changeNote: p.changeNote || null,

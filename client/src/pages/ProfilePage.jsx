@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import styles from './ProfilePage.module.css';
@@ -53,6 +53,8 @@ export default function ProfilePage() {
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [savingAvatar, setSavingAvatar] = useState(false);
+  const [photoError, setPhotoError] = useState('');
+  const photoInput = useRef(null);
   const [copied, setCopied] = useState(false);
   const [revoking, setRevoking] = useState(false);
   const [confirmingRevoke, setConfirmingRevoke] = useState(false);
@@ -68,6 +70,70 @@ export default function ProfilePage() {
       });
       if (r.ok) { await refreshUser?.(); setPickerOpen(false); }
     } catch (_) { /* keep the sheet open so they can retry */ }
+    finally { setSavingAvatar(false); }
+  };
+
+  /* A photograph of their own, out of the phone's gallery.
+   *
+   * What is stored is a thumbnail, not the photograph: a phone's picture is
+   * several megabytes and this is drawn at 104px. So the chosen file is drawn
+   * onto a 256px square canvas - centre-cropped, so a portrait is not squeezed
+   * into a circle - and exported as a JPEG. The picking itself is a hidden file
+   * input, the same way the Scan screen takes an image, which is what opens the
+   * gallery on both phones (the owner, 23 September 2026). */
+  const squareJpeg = (file, side = 256) => new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const cut = Math.min(img.naturalWidth, img.naturalHeight);
+        const canvas = document.createElement('canvas');
+        canvas.width = side; canvas.height = side;
+        const g = canvas.getContext('2d');
+        g.drawImage(img,
+          (img.naturalWidth - cut) / 2, (img.naturalHeight - cut) / 2, cut, cut,
+          0, 0, side, side);
+        resolve(canvas.toDataURL('image/jpeg', 0.82));
+      } catch (e) { reject(e); } finally { URL.revokeObjectURL(url); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('That file is not a picture.')); };
+    img.src = url;
+  });
+
+  const savePhoto = async (file) => {
+    if (!file) return;
+    setSavingAvatar(true); setPhotoError('');
+    try {
+      const photo = await squareJpeg(file);
+      const r = await authFetch(apiUrl('/api/auth/avatar-photo'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photo }),
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        throw new Error(d.error || 'That photo could not be saved.');
+      }
+      await refreshUser?.();
+      setPickerOpen(false);
+    } catch (e) {
+      setPhotoError(e.message || 'That photo could not be saved.');
+    } finally {
+      setSavingAvatar(false);
+      if (photoInput.current) photoInput.current.value = '';
+    }
+  };
+
+  const clearPhoto = async () => {
+    setSavingAvatar(true); setPhotoError('');
+    try {
+      await authFetch(apiUrl('/api/auth/avatar-photo'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photo: null }),
+      });
+      await refreshUser?.();
+    } catch (_) { setPhotoError('The photo could not be removed.'); }
     finally { setSavingAvatar(false); }
   };
 
@@ -478,37 +544,70 @@ export default function ProfilePage() {
           z-index this carried (23 September 2026). */}
       {pickerOpen && createPortal(
         <div
+          className={styles.sheetWrap}
           onClick={() => !savingAvatar && setPickerOpen(false)}
-          style={{ position: 'fixed', inset: 0, zIndex: 1200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-            background: 'rgba(0, 0, 0,.55)', backdropFilter: 'blur(4px)' }}
         >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{ width: '100%', maxWidth: 440, background: 'var(--md-background, #fff)', color: 'var(--md-on-surface, #171717)',
-              borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: '20px 22px calc(24px + env(safe-area-inset-bottom))',
-              boxShadow: '0 -10px 40px rgba(0,0,0,.28)' }}
-          >
-            <div style={{ width: 38, height: 4, borderRadius: 2, background: 'rgba(128,128,128,.35)', margin: '0 auto 16px' }} />
-            <h3 style={{ margin: '0 0 4px', fontSize: 'var(--fs-head)', fontWeight: 'var(--fw-title)', textAlign: 'center' }}>Choose your picture</h3>
-            <p style={{ margin: '0 0 18px', fontSize: 'var(--fs-body)', opacity: .6, textAlign: 'center' }}>Pick a look - tap to save.</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, justifyItems: 'center' }}>
+          <div className={styles.sheet} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.sheetGrab} />
+            <h3 className={styles.sheetTitle}>Your picture</h3>
+            <p className={styles.sheetSub}>Tap a face to use it, or bring your own.</p>
+
+            {/* Their own photograph first: it is the one most people want, and
+                a row of drawn faces above it reads as the only choice. */}
+            <div className={styles.photoRow}>
+              <button
+                type="button"
+                className={styles.photoPick}
+                disabled={savingAvatar}
+                onClick={() => photoInput.current && photoInput.current.click()}
+              >
+                <span className={styles.photoMark}><Icon name="image" /></span>
+                <span className={styles.photoWords}>
+                  <b>Choose from your gallery</b>
+                  <span>A photo from this phone</span>
+                </span>
+                <Icon name="chevron_right" className={styles.photoGo} />
+              </button>
+              {user?.avatarPhoto ? (
+                <button
+                  type="button"
+                  className={styles.photoDrop}
+                  disabled={savingAvatar}
+                  onClick={clearPhoto}
+                >
+                  Remove the photo
+                </button>
+              ) : null}
+              {photoError ? <p className={styles.photoBad}>{photoError}</p> : null}
+              <input
+                ref={photoInput}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                style={{ display: 'none' }}
+                onChange={(e) => savePhoto(e.target.files && e.target.files[0])}
+              />
+            </div>
+
+            <p className={styles.sheetLabel}>Or one of ours</p>
+            <div className={styles.avatarGrid}>
               {AVATARS.map((_, idx) => (
                 <Avatar
                   key={idx}
                   index={idx}
                   initial={(user?.username || user?.email || '?').charAt(0).toUpperCase()}
                   size={64}
-                  ring={idx === currentAvatar}
+                  ring={!user?.avatarPhoto && idx === currentAvatar}
                   title={idx === currentAvatar ? 'Current' : 'Select'}
                   onClick={() => !savingAvatar && chooseAvatar(idx)}
                   style={savingAvatar ? { opacity: .5, pointerEvents: 'none' } : undefined}
                 />
               ))}
             </div>
+
             <button
+              type="button"
+              className={styles.sheetClose}
               onClick={() => !savingAvatar && setPickerOpen(false)}
-              style={{ width: '100%', marginTop: 22, padding: '13px', borderRadius: 13, border: '1px solid rgba(128,128,128,.28)',
-                background: 'transparent', color: 'inherit', fontSize: 'var(--fs-section)', fontWeight: 'var(--fw-title)', cursor: 'pointer' }}
             >
               {savingAvatar ? 'Saving…' : 'Close'}
             </button>

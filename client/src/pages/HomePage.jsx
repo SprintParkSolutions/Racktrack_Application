@@ -429,13 +429,17 @@ export function waysFor(role) {
 
      None of them repeats the bottom bar. */
   if (role === 'spoc') {
+    /* Three, not four. The estate was the third - "Your sites", which opens the
+       organization's own screens - and a single point of contact does not run
+       the estate: they decide the checks for their site. A tile that leaves
+       their work is worse than a gap, so there is no gap: the row is three
+       wide (the owner, 23 September 2026). */
     return [
       // Not the clock: scan history is a clock with an arrow round it, and two
       // tiles in the same row read as the same thing. A check arrives for this
       // person and waits to be read, so it is the envelope.
       { key: 'mine', label: 'Your checks', icon: 'mail', to: '/my-checks' },
       { key: 'dot', label: 'Ask DOT', icon: 'chat', to: '/help' },
-      { key: 'sites', label: 'Your sites', icon: 'location_on', to: '/organizations' },
       { key: 'you', label: 'Your account', icon: 'person_check', to: '/profile' },
     ];
   }
@@ -776,7 +780,11 @@ export default function HomePage() {
         {/* The four ways on. No heading and no container round them: four
             marks with their words are already objects, and the owner asked on
             23 Sep 2026 for four and nothing framing them. */}
-        <nav className={styles.ways} aria-label="Ways on">
+        <nav
+          className={styles.ways}
+          style={{ '--ways': ways.length }}
+          aria-label="Ways on"
+        >
           {ways.map((w) => (
             <button key={w.key} type="button" className={styles.way} onClick={() => navigate(w.to)}>
               <span className={styles.wayGlyph} aria-hidden="true"><Icon name={w.icon} /></span>

@@ -60,8 +60,12 @@ describe('the phone bar', () => {
   test('a technician who is a Site contact is a SPOC, and gets the Desk', () => {
     can.current = { spoc: true };
     expect(labels()).toContain('Drift Desk');
-    // Their own list of checks leads, then the Desk. No camera, no history.
-    expect(inBar()).toEqual(['Home', 'Checks', 'Drift']);
+    // Home, the Desk, and the Menu the bar draws itself: three (the owner,
+    // 23 September 2026). Their own list of checks is in the Menu - the Desk
+    // is where checks are read, and a second tab to the same work is a second
+    // door to one room.
+    expect(inBar()).toEqual(['Home', 'Drift']);
+    expect(labels()).toContain('Your checks');
     expect(labels()).not.toContain('Scan a rack');
   });
 

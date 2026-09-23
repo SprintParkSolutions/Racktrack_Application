@@ -404,6 +404,23 @@ function getRackByRackId(tenantId, rackId) {
 }
 
 /**
+ * The rack this scan id belongs to, whichever site it is at.
+ *
+ * A rack id is a hash minted for one rack, so it needs no site to be found.
+ * The site-scoped lookup above is the one to use wherever the caller knows the
+ * site; this one is for the readers that do not - a photograph's report knows
+ * the rack it is of and nothing about the estate around it, and a report headed
+ * "Unidentified rack" whose every device carries the rack's name is what sent
+ * me looking (the owner, 23 September 2026).
+ */
+function findRackByRackId(rackId) {
+  _prep();
+  if (!rackId) return null;
+  return db.prepare('SELECT * FROM racks_known WHERE rack_id = ? ORDER BY id LIMIT 1')
+    .get(String(rackId)) || null;
+}
+
+/**
  * Upsert by rack_id. A rack the tenant already knows is updated in place —
  * only the fields given are changed, so a scan binding (which knows no name)
  * never erases a name the admin typed. Returns { rack, created }.
@@ -753,6 +770,7 @@ module.exports = {
   deleteSpace,
   listRacks,
   getRackByRackId,
+  findRackByRackId,
   upsertRack,
   getApprover,
   setApprover,
