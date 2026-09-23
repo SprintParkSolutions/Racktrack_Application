@@ -59,7 +59,9 @@ describe('<ApprovalsMovedPage>', () => {
     await settle();
     expect(fetched.calls).toHaveLength(1);
     expect(fetched.calls[0].url).toBe('/api/auth/handoff');
-    expect(fetched.calls[0].body).toEqual({ to: URL });
+    // The hand-over carries `in=app`, which tells the Desk it was opened from
+    // inside the application and to write its name once rather than twice.
+    expect(fetched.calls[0].body).toEqual({ to: `${URL}?in=app` });
     expect(openedWindows).toEqual(['/api/auth/handoff/KEY']);
     expect(open).not.toHaveBeenCalled();
     expect(site.open).not.toHaveBeenCalled();
@@ -70,7 +72,9 @@ describe('<ApprovalsMovedPage>', () => {
     render(<ApprovalsMovedPage />);
     fireEvent.click(screen.getByRole('link', { name: 'Open Drift Desk' }));
     await settle();
-    expect(fetched.calls[0].body).toEqual({ to: URL });
+    // The hand-over carries `in=app`, which tells the Desk it was opened from
+    // inside the application and to write its name once rather than twice.
+    expect(fetched.calls[0].body).toEqual({ to: `${URL}?in=app` });
     // Our view: the page's name, a Close button, and no address anywhere. The
     // paths that close it are the ones that mean "take me back to RackTrack".
     expect(site.open).toHaveBeenCalledWith({

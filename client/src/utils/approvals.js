@@ -71,12 +71,19 @@ function pathOf(url) {
  * open the page anyway rather than leaving the button dead.
  */
 export async function openApprovals(path = '/approvals/') {
-  const plain = `${APPROVALS_BASE.replace(/\/approvals$/, '')}${path}`;
+  /* Say who is opening it. The Desk draws its own name and menu at the top,
+     which is right in a browser tab and is one title too many inside the
+     app's own browser sheet, where "RackTrack Drift Desk" is already written
+     above it (23 September 2026). The Desk reads `in=app` and drops its
+     wordmark; anything that ignores the flag is unaffected. */
+  const withFlag = path.includes('in=app') ? path
+    : `${path}${path.includes('?') ? '&' : '?'}in=app`;
+  const plain = `${APPROVALS_BASE.replace(/\/approvals$/, '')}${withFlag}`;
   try {
     const r = await authFetch(apiUrl('/api/auth/handoff'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to: path }),
+      body: JSON.stringify({ to: withFlag }),
     });
     if (r.ok) {
       const { url } = await r.json();
