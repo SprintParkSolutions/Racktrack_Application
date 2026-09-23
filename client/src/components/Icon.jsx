@@ -165,6 +165,12 @@ const P = {
     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
   </>,
 
+  /* What is waiting to be read. */
+  bell: <>
+    <path d="M6.2 16.4V10.8a5.8 5.8 0 1 1 11.6 0v5.6l1.5 2.1H4.7z" />
+    <path d="M9.9 21a2.3 2.3 0 0 0 4.2 0" />
+  </>,
+
   check: <path d="M20 6L9 17l-5-5" />,
 };
 

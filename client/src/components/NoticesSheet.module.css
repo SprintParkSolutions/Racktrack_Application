@@ -1,0 +1,167 @@
+/* The notices, over Home.
+ *
+ * The owner asked on 23 September 2026 for a bell beside the account mark and
+ * for the notices to be there. A sheet, then, not a page: it comes up over
+ * what a person was looking at and leaves them where they were.
+ *
+ * Built from the same parts as the rest of Home - white with light down the
+ * fill, a hairline, a shadow with reach - so it belongs to the page it opens
+ * over.
+ *
+ * The panel is called `tray`, not `sheet`. index.css strips background-image
+ * from every class whose name contains card / tile / panel / sheet / header /
+ * badge, and a gradient compiles to background-image: the first draft of this
+ * was called `sheet` and came up with no background at all, the page showing
+ * straight through the words. It also carries a flat background-color under
+ * the gradient, so it is still a white panel even if that rule ever reaches
+ * it again.
+ */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(11, 21, 36, .46);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  animation: nx-in 160ms ease-out;
+}
+@keyframes nx-in { from { opacity: 0; } to { opacity: 1; } }
+
+.tray {
+  width: 100%;
+  max-width: 560px;
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 0 calc(14px + env(safe-area-inset-bottom));
+  border-radius: 24px 24px 0 0;
+  background-color: #FFFFFF;
+  background-image: linear-gradient(180deg, #FFFFFF 0%, #FCFDFF 60%, #F7FAFD 100%);
+  box-shadow: 0 -12px 44px -12px rgba(16, 32, 60, .55);
+  animation: nx-up 220ms cubic-bezier(.4, 0, .2, 1);
+}
+@keyframes nx-up { from { transform: translateY(14px); } to { transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .backdrop, .tray { animation: none; }
+}
+
+.grab {
+  width: 38px; height: 4px;
+  margin: 0 auto 12px;
+  border-radius: 2px;
+  background: rgba(16, 32, 60, .18);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 18px 12px;
+}
+.title {
+  flex: 1 1 auto;
+  margin: 0;
+  font-family: var(--font);
+  font-size: var(--fs-head);
+  font-weight: var(--fw-title);
+  letter-spacing: -0.02em;
+  color: #0B0B0C;
+}
+.all {
+  border: 0;
+  border-radius: 11px;
+  padding: 7px 12px;
+  background: #F6F6F8;
+  color: #0B0B0C;
+  font-family: var(--font);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-label);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8), inset 0 0 0 1px rgba(16, 32, 60, .05);
+}
+.all:disabled { opacity: .5; }
+.shut {
+  flex: 0 0 auto;
+  width: 34px; height: 34px;
+  display: inline-grid; place-items: center;
+  border: 0; border-radius: 11px;
+  background: #F6F6F8;
+  color: #5B5F6B;
+  font-size: var(--fs-item);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.all:focus-visible, .shut:focus-visible { outline: 2px solid #0B0B0C; outline-offset: 2px; }
+
+.quiet {
+  margin: 0;
+  padding: 6px 18px 18px;
+  font-family: var(--font);
+  font-size: var(--fs-body);
+  color: #8A8F99;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0 8px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.item + .item { border-top: 1px solid #F0F1F4; }
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  width: 100%;
+  padding: 13px 10px 14px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.row:active { background: #F6F6F8; }
+.row:focus-visible { outline: 2px solid #0B0B0C; outline-offset: -2px; }
+
+.dot {
+  flex: 0 0 auto;
+  width: 8px; height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: transparent;
+}
+.unread .dot { background: #2349C4; }
+
+.text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.head { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+.subject {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--font);
+  font-size: var(--fs-item);
+  font-weight: var(--fw-label);
+  color: #5B5F6B;
+  overflow-wrap: anywhere;
+}
+.unread .subject { font-weight: var(--fw-title); color: #0B0B0C; }
+.when {
+  flex: 0 0 auto;
+  font-family: var(--font);
+  font-size: var(--fs-micro);
+  color: #BCC0C8;
+  font-variant-numeric: tabular-nums;
+}
+.line {
+  font-family: var(--font);
+  font-size: var(--fs-sub);
+  line-height: 1.45;
+  color: #8A8F99;
+  overflow-wrap: anywhere;
+}
+.chev { flex: none; margin-top: 3px; color: #BCC0C8; font-size: var(--fs-head); }

@@ -197,6 +197,7 @@ describe('<HomePage> with work behind it', () => {
     // the page with the rest of the counts.
     expect(asked.paths).toEqual([
       '/api/scan-sites',
+      '/api/approvals/notifications?limit=30',
       '/api/scans',
       '/api/approvals/plans?limit=100',
       '/api/approvals/me',
@@ -346,6 +347,8 @@ describe('<HomePage> on a new account', () => {
       'Scan a rack', 'Tickets for you', 'Ask DOT', 'Scan history', 'Your account',
     ]);
     expect(screen.getByRole('button', { name: 'Your profile' })).toBeTruthy();
+    // The bell sits beside it and says nothing when nothing is waiting.
+    expect(screen.getByRole('button', { name: 'Notifications' })).toBeTruthy();
   });
 
   test('a scan list that could not be loaded says so rather than claiming none', async () => {

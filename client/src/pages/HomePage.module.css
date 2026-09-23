@@ -168,6 +168,7 @@
   align-items: center;
   justify-content: center;
   border: 0;
+  position: relative;
   border-radius: 15px;
   background: linear-gradient(180deg, #FFFFFF 0%, #F6F9FC 100%);
   color: var(--hm-ink-2);
@@ -181,6 +182,27 @@
   transition: transform var(--dur-fast, 150ms) var(--ease-out);
 }
 .profile:active { transform: scale(0.94); }
+/* Two marks in the corner now, the bell and the account. */
+.line .profile + .profile { margin-left: -4px; }
+/* How many notices are waiting, on the bell itself. A count, not a dot: how
+   many is the thing worth knowing before you press it. */
+.waiting {
+  position: absolute;
+  top: -3px; right: -3px;
+  min-width: 17px; height: 17px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 9px;
+  background: #2349C4;
+  color: #ffffff;
+  font-family: var(--font);
+  font-size: 10px;
+  font-weight: var(--fw-title);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 0 0 2px #EDF2F8;
+}
 .profile:focus-visible { outline: 2px solid var(--hm-ink); outline-offset: 3px; }
 
 /* ── The view toggle ────────────────────────────────────────────────
