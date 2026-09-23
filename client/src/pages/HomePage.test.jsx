@@ -420,9 +420,10 @@ describe('<HomePage> by role', () => {
     expect(screen.getByRole('tab', { name: 'Admin' }).getAttribute('aria-selected')).toBe('true');
     fireEvent.click(screen.getByRole('tab', { name: 'Employee' }));
     await waitFor(() => expect(screen.getByRole('button', { name: /Scan a rack/ })).toBeTruthy());
+    // And with it the employee's own ways on, the scan history among them.
+    expect(screen.getByRole('button', { name: /Scan history/ })).toBeTruthy();
     // The line under the name says which view they are in, beside the Site.
     expect(screen.getByText('Employee · DC-007 Bengaluru')).toBeTruthy();
-    expect(screen.getByRole('tab', { name: 'Employee' }).getAttribute('aria-selected')).toBe('true');
   });
 
   test('a technician is offered no toggle: there is nothing to shift to', async () => {
@@ -489,13 +490,18 @@ describe('<HomePage> beyond the racks', () => {
   /* Four tiles in one order for everybody, and only the first changes with
      the role: what this person's own work is, the assistant, their racks,
      their account. */
-  test('the ways on are four, in order, and only the first is the role', () => {
+  test('the ways on are four, in order, and they fit the job', () => {
     expect(waysFor('tech').map((w) => w.to))
       .toEqual(['/switch-info', '/help', '/history', '/profile']);
+    // Nobody who runs the estate is offered a history of their own scans:
+    // they never took one (the owner, 23 Sep 2026).
     expect(waysFor('spoc').map((w) => w.to))
-      .toEqual(['/my-checks', '/help', '/history', '/profile']);
+      .toEqual(['/my-checks', '/help', '/organizations', '/profile']);
     expect(waysFor('admin').map((w) => w.to))
-      .toEqual(['/organizations', '/help', '/history', '/profile']);
+      .toEqual(['/organizations', '/help', '/connections', '/profile']);
+    for (const role of ['admin', 'spoc']) {
+      expect(waysFor(role).map((w) => w.to)).not.toContain('/history');
+    }
     // A SPOC's first way on is their own checks, in professional words.
     expect(waysFor('spoc')[0].label).toBe('Your checks');
     // And none of them repeats the bar's own raised control.

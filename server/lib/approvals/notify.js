@@ -65,9 +65,14 @@ const TABLE = {
   verification_failed: { to: ['assignee', 'admin'], channels: ['inapp', 'email'] },
   approval_requested: { to: ['approver'], channels: ['inapp', 'email'] },
   approval_overdue: { to: ['approver', 'owner'], channels: ['inapp', 'email'] },
-  approved: { to: ['sender'], channels: ['inapp', 'email'] },
-  rejected: { to: ['sender'], channels: ['inapp', 'email'] },
-  completed: { to: ['sender'], channels: ['inapp', 'email'] },
+  /* A decision is news to three people, not one (the owner, 23 September 2026):
+     the employee who sent the check and is waiting to hear, the single point
+     of contact who took the decision and should see it landed, and the admin
+     who answers for the estate. One row each, worded for whoever is reading
+     it - see LINES below, which knows who it is writing to. */
+  approved: { to: ['sender', 'assignee', 'admin'], channels: ['inapp', 'email'] },
+  rejected: { to: ['sender', 'assignee', 'admin'], channels: ['inapp', 'email'] },
+  completed: { to: ['sender', 'assignee', 'admin'], channels: ['inapp', 'email'] },
   write_failed: { to: ['admin', 'holder'], channels: ['inapp', 'email'], always: true },
 };
 
@@ -170,7 +175,10 @@ function recipientsFor(event, plan, payload) {
       const key = p.userId != null ? `u:${p.userId}` : `e:${String(p.email || '').toLowerCase()}`;
       if (key === 'e:' || seen.has(key)) continue;
       seen.add(key);
-      out.push(p);
+      // Which word put them here - sender, assignee, admin. A decision says a
+      // different true thing to each of them, and without this the sentence
+      // written for the person who sent the check went to the admin too.
+      out.push({ ...p, as: word });
     }
   }
   return out;
@@ -326,21 +334,50 @@ const LINES = {
     ? `A drift check on ${rackOf(plan, p)} has its first approval from ${actorName(p, 'its SPOC')} and is waiting for a second.`
     : `A drift check on ${where(plan)} is waiting for approval.`],
   approval_overdue: (plan) => [`A drift check on ${where(plan)} has been waiting for approval too long.`],
-  approved: (plan, p) => [`${actorName(p, 'The SPOC')} approved your drift check on ${rackOf(plan, p)}. `
-    + 'It is being written to NetBox now.'],
-  rejected: (plan, p) => {
+  approved: (plan, p, to) => {
     const who = actorName(p, 'The SPOC');
-    const said = p.comment ? `: "${p.comment}"` : '.';
-    return [p.to === 'rework'
-      ? `${who} sent your drift check on ${rackOf(plan, p)} back to be checked again${said}`
-      : `${who} rejected your drift check on ${rackOf(plan, p)}`
-        + `${p.reason ? ` (${REASON_WORDS[p.reason] || String(p.reason).replace(/_/g, ' ')})` : ''}${said}`];
+    const rack = rackOf(plan, p);
+    const sentBy = plan.submittedBy || plan.createdBy || 'a technician';
+    if (!to || to.as === 'sender') {
+      return [`${who} approved your drift check on ${rack}. It is being written to NetBox now.`];
+    }
+    if (to.as === 'assignee') {
+      return [`You approved the drift check on ${rack}, sent by ${sentBy}. `
+        + 'It is being written to NetBox now.'];
+    }
+    return [`${who} approved the drift check on ${rack}, sent by ${sentBy}. `
+      + 'It is being written to NetBox now.'];
   },
-  completed: (plan, p) => {
+  rejected: (plan, p, to) => {
+    const who = actorName(p, 'The SPOC');
+    const rack = rackOf(plan, p);
+    const said = p.comment ? `: "${p.comment}"` : '.';
+    const why = p.reason ? ` (${REASON_WORDS[p.reason] || String(p.reason).replace(/_/g, ' ')})` : '';
+    const sentBy = plan.submittedBy || plan.createdBy || 'a technician';
+    const back = p.to === 'rework';
+    if (!to || to.as === 'sender') {
+      return [back
+        ? `${who} sent your drift check on ${rack} back to be checked again${said}`
+        : `${who} rejected your drift check on ${rack}${why}${said}`];
+    }
+    if (to.as === 'assignee') {
+      return [back
+        ? `You sent the drift check on ${rack} back to ${sentBy} to be checked again${said}`
+        : `You rejected the drift check on ${rack}, sent by ${sentBy}${why}${said}`];
+    }
+    return [back
+      ? `${who} sent the drift check on ${rack} back to ${sentBy} to be checked again${said}`
+      : `${who} rejected the drift check on ${rack}, sent by ${sentBy}${why}${said}`];
+  },
+  completed: (plan, p, to) => {
     const n = writtenCount(plan);
-    return [`Your drift check on ${rackOf(plan, p)} is done. ` + (n
+    const rack = rackOf(plan, p);
+    const sentBy = plan.submittedBy || plan.createdBy || 'a technician';
+    const what = n
       ? `${n} change${n === 1 ? ' was' : 's were'} written to NetBox and it now matches what was approved.`
-      : 'Nothing needed to be written.')];
+      : 'Nothing needed to be written.';
+    if (!to || to.as === 'sender') return [`Your drift check on ${rack} is done. ${what}`];
+    return [`The drift check on ${rack}, sent by ${sentBy}, is done. ${what}`];
   },
   // Name every object NetBox refused, because "part of it" tells an admin
   // nothing they can act on. This is the only email a failed write sends.
@@ -407,7 +444,7 @@ const KINDS = { assigned: 'assigned', reassigned: 'reassigned', reassign_needed:
  * incident and a `kind`, null where unknown, plus the few extras an event has.
  * The rack's name is left null while it is only the hash of a photograph.
  */
-function dataFor(event, plan, payload = {}) {
+function dataFor(event, plan, payload = {}, to = null) {
   const inc = incidentIn(plan, payload) || {};
   const name = payload.rackName || plan.rackName || null;
   const data = {
@@ -415,6 +452,11 @@ function dataFor(event, plan, payload = {}) {
     rackName: name && !/^RK-[0-9A-F]{6,}$/i.test(String(name)) ? name : null,
     siteName: siteOf(plan, payload), incidentNumber: inc.number || null, incidentUrl: inc.url || null,
     kind: event === 'rejected' ? (payload.to === 'rework' ? 'rework' : 'rejected') : (KINDS[event] || event),
+    // Which part the person reading this played: they sent the check, they
+    // decided it, or they answer for the estate. A heading that says "your
+    // check" is only true for the first of the three.
+    part: to ? (to.as || null) : null,
+    sentBy: plan.submittedBy || plan.createdBy || null,
   };
   if (event === 'reassign_needed') data.why = payload.why || null;
   if (event === 'incident_failed') data.problem = payload.problem || 'raise_failed';
@@ -425,7 +467,7 @@ function dataFor(event, plan, payload = {}) {
 /** The subject and the body one person reads. */
 function wordsFor(event, plan, payload, to) {
   const subject = (SUBJECTS[event] || ((p) => `RackTrack: ${event} on ${where(p)}`))(plan, payload || {});
-  const lines = (LINES[event] || (() => [`${event} on ${where(plan)}.`]))(plan, payload || {});
+  const lines = (LINES[event] || (() => [`${event} on ${where(plan)}.`]))(plan, payload || {}, to);
   const body = [
     `Hello ${to.name || 'there'},`,
     '',
@@ -519,8 +561,8 @@ function send(event, payload = {}) {
   const people = recipientsFor(event, fresh, payload);
   const rows = [];
   const emails = [];
-  const data = dataFor(event, fresh, payload);
   for (const to of people) {
+    const data = dataFor(event, fresh, payload, to);
     const prefs = prefsFor(fresh.orgId, to.userId);
     for (const channel of rule.channels) {
       if (!CHANNELS.includes(channel)) continue;

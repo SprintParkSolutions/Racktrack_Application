@@ -140,7 +140,11 @@ describe('the contract\'s table decides who hears', () => {
     assert.doesNotMatch(sent[0].text, /\u2013|\u2014/, 'a plain hyphen only');
     assert.deepEqual(out.rows[0].data, { planId: plan.id, rackId: plan.rackId, rackName: null,
       siteName: 'Chennai', incidentNumber: 'INC0010042', incidentUrl: 'https://sn.test/inc/42',
-      kind: 'assigned' }, 'a rack known only by its photograph has no name to show');
+      kind: 'assigned',
+      // Which part this person plays, and who sent the check: a screen words
+      // its heading from these rather than assuming the reader sent it.
+      part: 'holder', sentBy: 'ravi',
+    }, 'a rack known only by its photograph has no name to show');
     assert.deepEqual(store.notificationsFor(6)[0].data.kind, 'assigned', 'and the data is on the stored row');
 
     // An admin's hand-over says who gave it, and the old holder hears it has gone.
@@ -165,34 +169,55 @@ describe('the contract\'s table decides who hears', () => {
     assert.deepEqual(namesOf(out.rows), ['sam@example.test']);
   });
 
-  it('tells the sender, and only the sender, how it ended - in the app and by email', async () => {
+  /* A decision is news to three people, not one - the owner's direction on
+     23 September 2026. The employee who sent the check is waiting to hear;
+     the single point of contact who decided it should see it landed; the
+     admin answers for the estate. Each one gets a sentence written for them,
+     and nobody gets somebody else's. */
+  it('tells the sender, the SPOC who decided and the admins - each in their own words', async () => {
     const plan = heldPlan({ status: 'completed' });
     const done = store.updatePlan(plan.id, { result: { written: 1, writtenUids: ['dev:t7:5:u12'] } });
     const out = notify.send('completed', { plan: done });
     await out.sent;
-    assert.deepEqual(namesOf(out.rows), ['ravi@example.test']);
-    assert.deepEqual(out.rows.map((r) => r.channel).sort(), ['email', 'inapp']);
-    assert.match(sent[0].subject, /your check on .* is written/);
-    assert.match(sent[0].text, /1 change was written to NetBox and it now matches what was approved\./);
-    assert.equal(out.rows[0].data.kind, 'written');
-    assert.equal(out.rows[0].data.changes, 1);
+    assert.deepEqual(namesOf(out.rows),
+      ['meera@example.test', 'owner@example.test', 'ravi@example.test', 'sam@example.test']);
+    const mine = out.rows.filter((r) => r.recipientEmail === 'ravi@example.test');
+    assert.deepEqual(mine.map((r) => r.channel).sort(), ['email', 'inapp']);
+    assert.match(mine[0].body, /Your drift check on .* is done\./);
+    assert.match(mine[0].body, /1 change was written to NetBox and it now matches what was approved\./);
+    assert.equal(mine[0].data.kind, 'written');
+    assert.equal(mine[0].data.changes, 1);
+    assert.equal(mine[0].data.part, 'sender');
+    // The admin is told whose check it was, because it is not theirs.
+    const hers = out.rows.find((r) => r.recipientEmail === 'meera@example.test');
+    assert.match(hers.body, /The drift check on .*, sent by ravi, is done\./);
+    assert.equal(hers.data.part, 'admin');
 
     const approved = notify.send('approved', { plan: heldPlan({ status: 'approved' }), actor: { username: 'sam' } });
     await approved.sent;
-    assert.deepEqual(namesOf(approved.rows), ['ravi@example.test']);
-    assert.match(approved.rows[0].body, /sam approved your drift check/);
+    const toRavi = approved.rows.find((r) => r.recipientEmail === 'ravi@example.test');
+    const toSam = approved.rows.find((r) => r.recipientEmail === 'sam@example.test');
+    const toMeera = approved.rows.find((r) => r.recipientEmail === 'meera@example.test');
+    assert.match(toRavi.body, /sam approved your drift check/);
+    assert.match(toSam.body, /You approved the drift check on .*, sent by ravi/);
+    assert.match(toMeera.body, /sam approved the drift check on .*, sent by ravi/);
 
     const back = notify.send('rejected', { plan: heldPlan({ status: 'rework' }), to: 'rework',
       actor: { username: 'sam' }, reason: 'insufficient_evidence', comment: 'the photo is blurred' });
     await back.sent;
-    assert.match(back.rows[0].subject, /was sent back/);
-    assert.match(back.rows[0].body, /sam sent your drift check on .* back to be checked again: "the photo is blurred"/);
-    assert.equal(back.rows[0].data.kind, 'rework');
+    const backToRavi = back.rows.find((r) => r.recipientEmail === 'ravi@example.test');
+    assert.match(backToRavi.subject, /was sent back/);
+    assert.match(backToRavi.body, /sam sent your drift check on .* back to be checked again: "the photo is blurred"/);
+    assert.equal(backToRavi.data.kind, 'rework');
+    assert.match(back.rows.find((r) => r.recipientEmail === 'sam@example.test').body,
+      /You sent the drift check on .* back to ravi to be checked again/);
+
     const no = notify.send('rejected', { plan: heldPlan({ status: 'rejected' }), to: 'rejected',
       actor: { username: 'sam' }, reason: 'wrong_asset', comment: 'not this rack' });
     await no.sent;
-    assert.match(no.rows[0].body, /sam rejected your drift check on .* \(the wrong device\): "not this rack"/);
-    assert.equal(no.rows[0].data.kind, 'rejected');
+    const noToRavi = no.rows.find((r) => r.recipientEmail === 'ravi@example.test');
+    assert.match(noToRavi.body, /sam rejected your drift check on .* \(the wrong device\): "not this rack"/);
+    assert.equal(noToRavi.data.kind, 'rejected');
   });
 
   it('asks for a second signature from nobody who sent it or signed first', async () => {

@@ -32,27 +32,33 @@ export function roleOfUser(user, can) {
  * 'rt-view' event and in another tab through 'storage'.
  */
 export function useAppView(role = 'tech') {
-  const [view, setLocal] = useState(() => viewFor(role));
+  /* The view is WORKED OUT WHILE RENDERING, not kept in state and corrected
+     by an effect. Until the server answers, every account reads as a
+     technician, whose only view is Employee; an effect that fixed that
+     afterwards meant an admin's first paint showed the toggle with Employee
+     lit, and anything that looked at the screen in that moment - a person or
+     a test - saw the wrong thing.
 
-  // The role arrives after the server answers, so the allowed set can change
-  // under a view that was chosen before it did.
-  useEffect(() => { setLocal(viewFor(role)); }, [role]);
+     `tick` exists only to re-render when the choice moves, here or in
+     another tab. The answer itself always comes from viewFor(). */
+  const [, tick] = useState(0);
+  const bump = useCallback(() => tick((n) => n + 1), []);
 
   useEffect(() => {
-    const onMove = () => setLocal(viewFor(role));
-    window.addEventListener('rt-view', onMove);
-    window.addEventListener('storage', onMove);
+    window.addEventListener('rt-view', bump);
+    window.addEventListener('storage', bump);
     return () => {
-      window.removeEventListener('rt-view', onMove);
-      window.removeEventListener('storage', onMove);
+      window.removeEventListener('rt-view', bump);
+      window.removeEventListener('storage', bump);
     };
-  }, [role]);
+  }, [bump]);
 
   const shift = useCallback((next) => {
     if (!viewsFor(role).includes(next)) return;
-    writeView(next);
-    setLocal(next);
-  }, [role]);
+    writeView(next);       // dispatches 'rt-view', which bumps every listener
+    bump();
+  }, [role, bump]);
 
-  return { view, views: viewsFor(role), role, shift };
+  return { view: viewFor(role), views: viewsFor(role), role, shift };
 }
+

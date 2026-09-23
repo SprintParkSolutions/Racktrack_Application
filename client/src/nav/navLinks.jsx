@@ -12,6 +12,7 @@
  */
 import { useAuth } from '../AuthContext.jsx';
 import { useApprovalsCan } from '../hooks/useApprovalsCan.js';
+import { useAppView, roleOfUser } from '../hooks/useAppView.js';
 import { APPROVALS_URL } from '../utils/approvals.js';
 
 /* ── icons ─────────────────────────────────────────────────────────────
@@ -97,7 +98,17 @@ export function usePrimaryNav() {
   // Whether this account is the single point of contact of a Site, which is
   // the server's answer and not something a role implies.
   const can = useApprovalsCan();
-  const isSpoc = Boolean(can && can.spoc);
+  /* What this person is doing today, not only what they are. An admin or a
+     single point of contact who has shifted the toggle on Home to Employee is
+     given the employee's app - the camera, two racks, their scan history -
+     because that is the job they said they are doing. In their own view none
+     of that appears: an admin's app is the organisation, the Desk and their
+     data sources, which is what the owner asked for on 23 September 2026 -
+     "keep it admin level, not employee or technician level".  */
+  const { view } = useAppView(roleOfUser(user, can));
+  const asEmployee = view === 'employee';
+  const isSpoc = Boolean(can && can.spoc) && !asEmployee;
+  const runsTheEstate = (isAdmin || Boolean(can && can.spoc)) && !asEmployee;
 
   return [
     // ── Rack work. Home is first: "/" is the app's landing screen again, so
@@ -110,7 +121,7 @@ export function usePrimaryNav() {
       inBar: true, barLabel: 'Home' },
     // Scan is the bar's raised centre action (BottomNav), so it takes no slot
     // in the row of four beside it.
-    { group: 'work', to: '/scan', label: 'Scan a rack', icon: <ScanIcon />, end: false },
+    ...(runsTheEstate ? [] : [{ group: 'work', to: '/scan', label: 'Scan a rack', icon: <ScanIcon />, end: false }]),
     // The bar carries four tabs around the raised Scan: two on each side. An
     // odd number leaves the centre off-centre, which is what a technician had
     // once the Desk came off their bar - the owner's words on 22 Sep 2026,
@@ -120,17 +131,17 @@ export function usePrimaryNav() {
     // the Desk (below); everybody else gets their own racks, which is what a
     // technician opens next most often. Two racks as one job is a rarer piece
     // of work and waits in the Menu for them.
-    ...(isAdmin || isSpoc
-      ? [{ group: 'work', to: '/multi-rack/new', label: 'Two racks', icon: <TwoRackIcon />, end: false,
-        inBar: true, barLabel: '2 Racks', hint: 'Two racks as one job' }]
-      : [{ group: 'work', to: '/multi-rack/new', label: 'Two racks', icon: <TwoRackIcon />, end: false,
-        hint: 'Two racks as one job' }]),
-    { group: 'work', to: '/history', label: 'Scan history', icon: <HistoryIcon />, end: false,
-      ...(isAdmin || isSpoc ? {} : { inBar: true, barLabel: 'Racks' }) },
+    // Two racks as one job, and the history of what this person scanned, are
+    // both the employee's work. Neither is offered to somebody running the
+    // estate: they did not take those photographs.
+    ...(runsTheEstate ? [] : [{ group: 'work', to: '/multi-rack/new', label: 'Two racks',
+      icon: <TwoRackIcon />, end: false, hint: 'Two racks as one job' }]),
+    ...(runsTheEstate ? [] : [{ group: 'work', to: '/history', label: 'Scan history',
+      icon: <HistoryIcon />, end: false, inBar: true, barLabel: 'Racks' }]),
     // The technician's fourth tab. A person who has just checked a rack looks
     // a port up next more often than they do anything else, and for somebody
     // who decides that slot is the Desk instead.
-    ...(isAdmin || isSpoc ? [] : [{ group: 'work', to: '/port-history', label: 'Port history',
+    ...(runsTheEstate ? [] : [{ group: 'work', to: '/port-history', label: 'Port history',
       icon: <PortsIcon />, end: false, inBar: true, barLabel: 'Ports',
       hint: 'What changed on a port' }]),
     // Approvals is its own application on its own address, so this entry
@@ -144,16 +155,21 @@ export function usePrimaryNav() {
     // "Track this check" gives them. Deciding by `can.spoc` rather than by
     // role is the point: a technician who is a Site's contact does hold
     // checks, and does get the Desk.
-    ...(isAdmin || isSpoc ? [{ group: 'work', href: APPROVALS_URL, label: 'Drift Desk', icon: <InboxIcon />,
+    ...(runsTheEstate && isSpoc ? [{ group: 'work', to: '/my-checks', label: 'Your checks',
+      icon: <InboxIcon />, end: false, inBar: true, barLabel: 'Checks',
+      hint: 'The checks waiting on you' }] : []),
+    ...(runsTheEstate ? [{ group: 'work', href: APPROVALS_URL, label: 'Drift Desk', icon: <InboxIcon />,
       inBar: true, barLabel: 'Drift',
       hint: isAdmin ? 'Opens RackTrack Drift Desk' : 'The checks that are with you' }] : []),
 
     // ── Organization: owners and organisation admins.
     ...(isAdmin ? [{ group: 'org', to: '/organizations', label: 'Organizations', icon: <OrgIcon />, end: false,
+      ...(runsTheEstate ? { inBar: true, barLabel: 'Org' } : {}),
       hint: 'Sites, members, invites' }] : []),
     // Organization settings (sites, their SPOCs, the rules) is reached from the
     // Profile page and the organisation console, not from the rail.
     ...(isAdmin ? [{ group: 'org', to: '/connections', label: 'Data sources', icon: <DataSourcesIcon />, end: false,
+      ...(runsTheEstate && !isSpoc ? { inBar: true, barLabel: 'Sources' } : {}),
       hint: 'NetBox and ServiceNow' }] : []),
     // Marketplace and Lab are not linked from anywhere for now, on the
     // owner's direction of 22 Sep 2026. Their routes and their screens are

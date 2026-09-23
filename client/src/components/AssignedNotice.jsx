@@ -68,6 +68,20 @@ const LABEL = {
   incident: 'ServiceNow needs a look',
   reassigned: 'Given to somebody else',
 };
+/* A decision now reaches three people: whoever sent the check, the single
+   point of contact who decided it, and the admin (the owner, 23 Sep 2026).
+   "Your check was approved" is true for exactly one of them, so the heading
+   follows the part the server says this person played (`data.part`). */
+const LABEL_BY_PART = {
+  assignee: { approved: 'You approved a check', rejected: 'You rejected a check',
+    rework: 'You sent a check back', written: 'Written to NetBox' },
+  admin: { approved: 'A check was approved', rejected: 'A check was rejected',
+    rework: 'A check was sent back', written: 'Written to NetBox' },
+};
+/** The heading for one notice: by what it is about, and who is reading it. */
+export function headingFor(kind, part) {
+  return (LABEL_BY_PART[part] && LABEL_BY_PART[part][kind]) || LABEL[kind] || 'A check';
+}
 // Where "Open the check" goes. Somebody who has to act on a check does that in
 // Drift Desk; the person who sent it follows it on their own Drift check screen.
 const IN_DESK = new Set(['assigned', 'needs_admin', 'write_failed', 'incident']);
@@ -202,10 +216,12 @@ export default function AssignedNotice() {
     Browser.open({ url: incidentUrl }).catch(() => {});
   };
 
+  const heading = headingFor(kind, (dataOf(top) || {}).part);
+
   return (
-    <section className={styles.notice} aria-label={LABEL[kind]}>
+    <section className={styles.notice} aria-label={heading}>
       <div className={styles.top}>
-        <span className={styles.label}>{LABEL[kind]}</span>
+        <span className={styles.label}>{heading}</span>
         {rows.length > 1 && <span className={styles.more}>and {rows.length - 1} more</span>}
       </div>
       <h2 className={styles.title}>{inWords(top.subject).replace(/^(Assigned to you|RackTrack):\s*/i, '').replace(/^./, (c) => c.toUpperCase())}</h2>

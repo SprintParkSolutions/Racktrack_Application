@@ -414,29 +414,45 @@ export function bannerFor({ role, racks = 0, waiting = 0, triage = 0,
  * change with the role.
  */
 export function waysFor(role) {
-  /* Four, in one order for everybody: what this person's own work is, the
-     assistant, their racks, their account. The owner set it on 22 Sep 2026 -
-     second place is the assistant, third the scan history, fourth the
-     account - and only the first changes with the role, because only the
-     first is about what a person does here.
+  /* Four, in one order: what this person's own work is, the assistant, the
+     racks or the estate, their account. The owner set the order on 22 Sep
+     2026 - second the assistant, fourth the account.
 
-     None of them repeats the bottom bar: scanning is its raised control, and
-     the Desk is a row on it for whoever works there. */
-  const first = role === 'spoc'
-    // Not the clock: scan history is a clock with an arrow round it, and two
-    // tiles in the same row read as the same thing. A check arrives for this
-    // person and waits to be read, so it is the envelope.
-    ? { key: 'mine', label: 'Your checks', icon: 'mail', to: '/my-checks' }
-    : role === 'admin'
-      ? { key: 'org', label: 'Organization', icon: 'apartment', to: '/organizations' }
-      : { key: 'switches', label: 'Switches', icon: 'dns', to: '/switch-info' };
+     What fills the first and third places is the job, not the person's rank.
+     An employee's third is their scan history; an admin's is the estate's own
+     records, because an admin never took a photograph and a history of their
+     scans is an empty page (the owner, 23 Sep 2026). An admin or SPOC who
+     shifts the toggle to Employee is called with 'tech' here and gets the
+     employee's four.
+
+     None of them repeats the bottom bar. */
+  if (role === 'spoc') {
+    return [
+      // Not the clock: scan history is a clock with an arrow round it, and two
+      // tiles in the same row read as the same thing. A check arrives for this
+      // person and waits to be read, so it is the envelope.
+      { key: 'mine', label: 'Your checks', icon: 'mail', to: '/my-checks' },
+      { key: 'dot', label: 'Ask DOT', icon: 'chat', to: '/help' },
+      { key: 'sites', label: 'Your sites', icon: 'location_on', to: '/organizations' },
+      { key: 'you', label: 'Your account', icon: 'person_check', to: '/profile' },
+    ];
+  }
+  if (role === 'admin' || role === 'manager') {
+    return [
+      { key: 'org', label: 'Organization', icon: 'apartment', to: '/organizations' },
+      { key: 'dot', label: 'Ask DOT', icon: 'chat', to: '/help' },
+      { key: 'sources', label: 'Data sources', icon: 'dns', to: '/connections' },
+      { key: 'you', label: 'Your account', icon: 'person_check', to: '/profile' },
+    ];
+  }
   return [
-    first,
+    { key: 'switches', label: 'Switches', icon: 'dns', to: '/switch-info' },
     { key: 'dot', label: 'Ask DOT', icon: 'chat', to: '/help' },
     { key: 'racks', label: 'Scan history', icon: 'history', to: '/history' },
     { key: 'you', label: 'Your account', icon: 'person_check', to: '/profile' },
   ];
 }
+
 
 export default function HomePage() {
   const navigate = useNavigate();
