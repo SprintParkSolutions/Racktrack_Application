@@ -38,6 +38,14 @@
             </intent-filter>
         </activity>
 
+        <!-- RackTrack Drift Desk inside the app: its name, a Close button and
+             no address. Declared here or startActivity throws at runtime. -->
+        <activity
+            android:name=".InAppSiteActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
