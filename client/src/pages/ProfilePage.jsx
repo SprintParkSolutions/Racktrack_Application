@@ -74,8 +74,6 @@ export default function ProfilePage() {
     } finally { setNoticeBusy(false); }
   };
   const [copied, setCopied] = useState(false);
-  const [revoking, setRevoking] = useState(false);
-  const [confirmingRevoke, setConfirmingRevoke] = useState(false);
 
   const currentAvatar = resolveAvatarIndex(user);
   const chooseAvatar = async (idx) => {
@@ -198,27 +196,6 @@ export default function ProfilePage() {
   const onSignOut = () => {
     logout();
     navigate('/', { replace: true });
-  };
-
-  // Sign out everywhere. The endpoint bumps token_version and revokes every
-  // refresh row, which invalidates THIS session too - so the only correct
-  // follow-up is to drop the local session and land on the sign-in page.
-  // Treating a failure as success would leave someone believing a stolen
-  // laptop had been locked out when it had not.
-  const revokeEverywhere = async () => {
-    setRevoking(true);
-    try {
-      const r = await authFetch(apiUrl('/api/auth/logout-all'), { method: 'POST' });
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok || !data.ok) throw new Error(data.error || 'Could not sign out everywhere. Try again.');
-      logout();
-      navigate('/', { replace: true });
-    } catch (err) {
-      setScansError(err.message);
-      setConfirmingRevoke(false);
-    } finally {
-      setRevoking(false);
-    }
   };
 
   const copyEmail = async () => {
@@ -524,17 +501,20 @@ export default function ProfilePage() {
             <section className={styles.block}>
               <h3 className={styles.blockH}>Account actions</h3>
               <div className={styles.actionWrap}>
+                {/* "Sign out from all devices" asked a person to think about
+                    sessions on hardware they are not holding, which is not
+                    their language and not their problem (the owner,
+                    23 September 2026). One control, called what it does. */}
                 <button
                   type="button"
                   className={styles.danger}
-                  onClick={() => setConfirmingRevoke(true)}
-                  disabled={revoking}
+                  onClick={() => setConfirmingSignOut(true)}
                 >
                   <Icon name="logout" className={styles.dangerIcon} />
-                  {revoking ? 'Signing out…' : 'Sign out from all devices'}
+                  Sign out
                 </button>
                 <p className={styles.actionNote}>
-                  Ends every session, including this one.
+                  You will need to sign in again.
                 </p>
               </div>
             </section>
@@ -542,40 +522,17 @@ export default function ProfilePage() {
         </div>
       </main>
 
-      {/* ── Sign-out confirm ── */}
+      {/* ── Sign-out confirm ──
+          One question, two answers. */}
       {confirmingSignOut && (
         <div className={styles.confirmBackdrop}>
           <div className={styles.confirmModal}>
             <div className={styles.confirmIcon}><Icon name="logout" /></div>
-            <h3 className={styles.confirmTitle}>Sign out?</h3>
-            <p className={styles.confirmMsg}>You&apos;ll need to sign in again to scan racks.</p>
+            <h3 className={styles.confirmTitle}>Are you sure?</h3>
+            <p className={styles.confirmMsg}>You will need to sign in again.</p>
             <div className={styles.confirmActions}>
               <button className={styles.confirmCancel} onClick={() => setConfirmingSignOut(false)}>Cancel</button>
-              <button className={styles.confirmGo} onClick={onSignOut}>Sign out</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Sign-out-everywhere confirm ──
-          Separate from the ordinary sign-out prompt on purpose: this one also
-          ends sessions on devices the person is not holding, and that is not
-          something to discover after the fact. */}
-      {confirmingRevoke && (
-        <div className={styles.confirmBackdrop}>
-          <div className={styles.confirmModal}>
-            <div className={styles.confirmIcon}><Icon name="logout" /></div>
-            <h3 className={styles.confirmTitle}>Sign out from all devices?</h3>
-            <p className={styles.confirmMsg}>
-              Signs out every device using <strong>{user?.username}</strong>, including this one.
-            </p>
-            <div className={styles.confirmActions}>
-              <button className={styles.confirmCancel} onClick={() => setConfirmingRevoke(false)} disabled={revoking}>
-                Cancel
-              </button>
-              <button className={styles.confirmGo} onClick={revokeEverywhere} disabled={revoking}>
-                {revoking ? 'Signing out…' : 'Sign out everywhere'}
-              </button>
+              <button className={styles.confirmGo} onClick={onSignOut}>Yes</button>
             </div>
           </div>
         </div>
