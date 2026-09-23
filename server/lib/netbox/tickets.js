@@ -531,6 +531,74 @@ function toCheckIncident({ plan, items, rackName, siteName, holder, sender, note
   };
 }
 
+/**
+ * A ticket an admin raises by hand, and gives to somebody.
+ *
+ * The check's own incident (toCheckIncident) is raised by RackTrack when a
+ * drift is sent, and it says what the photograph and the records disagree
+ * about. This is the other kind: an admin looking at a check decides a person
+ * should go and look at something, writes what they want done, and hands it
+ * over. The owner asked for it on 23 September 2026 - "raise a ticket from
+ * RackTrack to their ticketing tool, assign it to a technician or a SPOC, and
+ * they will look into it".
+ *
+ * It carries the rack and the check it came from, so whoever opens it in
+ * ServiceNow can find their way back.
+ */
+function toTaskIncident({ summary, note, rackName, siteName, planId, raisedBy, appUrl, key }) {
+  const named = norm(rackName) && !PHOTO_HASH.test(norm(rackName)) ? norm(rackName) : null;
+  const where = [named || 'Unidentified rack', siteName].filter(Boolean).join(', ');
+  const body = [
+    [
+      `Rack: ${where}`,
+      planId ? `From RackTrack check ${planId}` : '',
+      raisedBy ? `Raised by: ${raisedBy}` : '',
+    ].filter(Boolean).join('\n'),
+    norm(note) || '',
+    appUrl ? `Open the check in RackTrack: ${appUrl}` : '',
+  ].filter(Boolean).join('\n\n');
+
+  return {
+    // Its own correlation, so raising two tasks on one check does not make
+    // the second a duplicate of the first.
+    correlation_id: `racktrack-task-${key}`,
+    correlation_display: 'RackTrack',
+    short_description: `${norm(summary) || 'Look at this rack'} - ${where}`,
+    description: body,
+    category: 'inquiry',
+    urgency: 3,
+    impact: 3,
+    contact_type: 'integration',
+  };
+}
+
+/**
+ * Raise that ticket and give it to one person.
+ *
+ * The person is made on the instance if they are not there yet, the same way
+ * a check's holder is: a ticket assigned to nobody is a ticket nobody works.
+ */
+async function raiseTask(cfg, ctx, fetchImpl = req) {
+  try {
+    const fields = toTaskIncident(ctx);
+    const to = ctx.assignee || null;
+    const users = await findUsers(cfg, [to && to.email], fetchImpl);
+    const { user, why } = await resolveUser(cfg, users, to, fetchImpl);
+    const made = await raise(cfg, { ...fields, ...(user ? { assigned_to: user.sysId } : {}) }, fetchImpl);
+    if (!made.ok) return made;
+    return {
+      ok: true,
+      sysId: made.sysId, number: made.number, url: made.url,
+      state: made.state || 'new',
+      assigned: Boolean(user),
+      assignedTo: user ? { sysId: user.sysId, name: user.name } : null,
+      assignWarning: user ? null : why,
+    };
+  } catch (err) {
+    return unreachable(err);
+  }
+}
+
 /** What ServiceNow said, as one line a person can be shown. */
 function refusal(r) {
   const said = r && r.body && r.body.error && (r.body.error.message || r.body.error.detail);
@@ -955,6 +1023,7 @@ module.exports = {
   raise, statusOf, findExisting, login,
   STATE, CLOSED_STATES,
   correlationForCheck, toCheckIncident, appUrlFor, findUsers, makeUser, resolveUser, raiseCheck,
+  toTaskIncident, raiseTask,
   update, setState, workNote, reassign,
   choices, pickCloseCode, pickHoldReason, attach,
   STATE_CODE,

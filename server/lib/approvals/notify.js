@@ -74,6 +74,10 @@ const TABLE = {
   rejected: { to: ['sender', 'assignee', 'admin'], channels: ['inapp', 'email'] },
   completed: { to: ['sender', 'assignee', 'admin'], channels: ['inapp', 'email'] },
   write_failed: { to: ['admin', 'holder'], channels: ['inapp', 'email'], always: true },
+  /* A ticket an admin raised by hand and gave to somebody. It reaches that
+     person whatever their inbox rules say: they have been asked to go and
+     look at something, and nobody else is going to (23 September 2026). */
+  task_raised: { to: ['task_assignee'], channels: ['inapp', 'email'], always: true },
 };
 
 const EVENTS = Object.keys(TABLE);
@@ -141,6 +145,11 @@ function peopleFor(word, plan, payload) {
     // who run it are then its admins, and an escalation that reaches nobody
     // is worse than one that reaches them.
     return owners.length ? owners : all.filter((u) => u.role === 'org_admin').map(person);
+  }
+  if (word === 'task_assignee') {
+    const to = payload && payload.assignee;
+    return to ? [{ userId: to.userId ?? null, email: to.email || null,
+      name: to.username || to.name || null, role: 'task_assignee' }] : [];
   }
   if (word === 'creator') return creatorOf(plan);
   if (word === 'sender') return senderOf(plan);
@@ -334,6 +343,11 @@ const LINES = {
     ? `A drift check on ${rackOf(plan, p)} has its first approval from ${actorName(p, 'its SPOC')} and is waiting for a second.`
     : `A drift check on ${where(plan)} is waiting for approval.`],
   approval_overdue: (plan) => [`A drift check on ${where(plan)} has been waiting for approval too long.`],
+  task_raised: (plan, p) => [
+    `${p.raisedBy || 'An administrator'} has asked you to look at ${rackOf(plan, p)}.`,
+    p.summary ? `What they asked: ${p.summary}` : '',
+    p.number ? `It is ticket ${p.number} in ServiceNow.` : '',
+  ],
   approved: (plan, p, to) => {
     const who = actorName(p, 'The SPOC');
     const rack = rackOf(plan, p);
@@ -423,6 +437,7 @@ const SUBJECTS = {
   verification_failed: (plan) => `RackTrack: the verification scan of ${where(plan)} failed`,
   approval_requested: (plan) => `RackTrack: ${where(plan)} is waiting for approval`,
   approval_overdue: (plan) => `RackTrack: ${where(plan)} has been waiting for approval`,
+  task_raised: (plan, p) => `RackTrack: please look at ${rackOf(plan, p)}${p.number ? ` (${p.number})` : ''}`,
   approved: (plan, p) => `RackTrack: your check on ${rackOf(plan, p)} was approved`,
   rejected: (plan, p) => `RackTrack: your check on ${rackOf(plan, p)} was ${p.to === 'rework' ? 'sent back' : 'rejected'}`,
   completed: (plan, p) => `RackTrack: your check on ${rackOf(plan, p)} is written`,
@@ -436,7 +451,7 @@ const writtenCount = (plan) => {
 };
 
 /** What a row is about, as the one word a screen switches on. */
-const KINDS = { assigned: 'assigned', reassigned: 'reassigned', reassign_needed: 'needs_admin',
+const KINDS = { assigned: 'assigned', reassigned: 'reassigned', reassign_needed: 'needs_admin', task_raised: 'task',
   incident_failed: 'incident', approved: 'approved', completed: 'written', write_failed: 'write_failed' };
 
 /**

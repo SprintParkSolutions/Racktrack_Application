@@ -20,6 +20,7 @@
 const express = require('express');
 
 const service = require('../../lib/approvals/service');
+const store = require('../../lib/approvals/store');
 const incidents = require('../../lib/approvals/incidents');
 const write = require('../../lib/approvals/write');
 const scans = require('../../lib/netbox/store');
@@ -163,6 +164,58 @@ router.post('/:planId/assign', ADMIN_GATE, wrap(async (req, res) => {
       error: 'Send { userId, reason }. A check goes to one person as a whole.' });
   }
   return answer(res, await service.assign(idOf(req), body, { actor: req.user, req }));
+}));
+
+/**
+ * Who an admin may give a ticket to, on this check.
+ *
+ * Everybody in the organization who works racks: the technicians, the site
+ * managers, and the single point of contact of this check's site. An admin is
+ * choosing a person to go and look at something, so the list is people, not
+ * roles, and each one carries the address the ticket will reach them at.
+ */
+router.get('/:planId/people', ADMIN_GATE, wrap(async (req, res) => {
+  const plan = store.getPlan(idOf(req), { heavy: false });
+  if (!plan) return res.status(404).json({ code: 'not_found', error: 'No such check.' });
+  const people = store.usersOfOrg(plan.orgId)
+    .filter((u) => u && u.active !== 0 && (u.email || u.username))
+    .map((u) => ({
+      userId: u.id, username: u.username, email: u.email || null, role: u.role || null,
+      site: u.tenantId != null ? (store.tenantById(u.tenantId) || {}).name || null : null,
+      isSpocHere: Number(u.id) === Number(plan.spocUserId || 0),
+    }))
+    .sort((a, b) => Number(b.isSpocHere) - Number(a.isSpocHere) || String(a.username).localeCompare(String(b.username)));
+  return res.json({ ok: true, people });
+}));
+
+/**
+ * Raise a ticket on this check and give it to somebody:
+ * { userId, summary, note }.
+ *
+ * The owner asked for this on 23 September 2026: an admin reading a check
+ * decides a person should go and look at something, writes what they want
+ * done, and hands it over. RackTrack raises it in the organization's own
+ * ticketing tool, records it on the check, and tells the person.
+ */
+router.post('/:planId/raise', ADMIN_GATE, wrap(async (req, res) => {
+  const plan = store.getPlan(idOf(req), { heavy: false });
+  if (!plan) return res.status(404).json({ code: 'not_found', error: 'No such check.' });
+  const body = bodyOf(req);
+  const summary = String(body.summary || '').trim();
+  if (!summary) return res.status(400).json({ code: 'bad_request', error: 'Say what you want done.' });
+  const who = body.userId != null ? store.userById(body.userId) : null;
+  if (!who) return res.status(400).json({ code: 'bad_request', error: 'Choose who the ticket goes to.' });
+  if (Number(who.organizationId ?? who.orgId) !== Number(plan.orgId)) {
+    return res.status(400).json({ code: 'bad_request', error: 'That person is not in this organization.' });
+  }
+  const r = await incidents.raiseTaskFor(plan, {
+    assignee: { userId: who.id, username: who.username, email: who.email || null },
+    summary,
+    note: String(body.note || '').trim() || null,
+    raisedBy: req.user && (req.user.username || req.user.name) ? (req.user.username || req.user.name) : null,
+  });
+  if (!r.ok) return res.status(502).json({ code: 'servicenow', error: r.error });
+  return res.json({ ok: true, ...r });
 }));
 
 /**

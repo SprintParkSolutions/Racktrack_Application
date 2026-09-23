@@ -833,9 +833,56 @@ function subscribe() {
   });
 }
 
+/**
+ * A ticket an admin raises by hand on a check, and gives to somebody.
+ *
+ * Not the check's own incident: that one is raised when the drift is sent and
+ * carries every difference. This is an admin saying "somebody go and look at
+ * this", with their own words, to a person they choose - a technician or the
+ * site's SPOC. It is recorded on the plan as a ticket so the drift page shows
+ * it, and the person is told (the owner, 23 September 2026).
+ *
+ * Returns { ok, ticket } or { ok: false, error } - and never throws, because
+ * the screen that called it has to say what happened.
+ */
+async function raiseTaskFor(plan, { assignee, summary, note, raisedBy }, { fetchImpl } = {}) {
+  if (!plan || !plan.id) return { ok: false, error: 'There is no check to raise a ticket on.' };
+  if (!assignee || (!assignee.email && assignee.userId == null)) {
+    return { ok: false, error: 'Choose who the ticket goes to.' };
+  }
+  const cfg = cfgFor(plan);
+  if (!cfg) return { ok: false, error: 'This organization has no ServiceNow connection.' };
+
+  const { rackName, siteName } = contextFor(plan);
+  // One key per ticket on this check, so two tickets are two incidents.
+  const already = store.ticketsOf(plan.id).filter((t) => String(t.uid || '').startsWith('task:')).length;
+  const key = `${plan.id}-${already + 1}`;
+  const r = await tickets.raiseTask(cfg, {
+    summary, note, rackName, siteName, planId: plan.id, raisedBy,
+    appUrl: tickets.appUrlFor(plan.id), key,
+    assignee: { email: assignee.email || null, username: assignee.username || assignee.name || null,
+      name: assignee.name || assignee.username || null, userId: assignee.userId ?? null },
+  }, sender(fetchImpl));
+
+  if (!r.ok) return { ok: false, error: r.error || 'ServiceNow did not take the ticket.' };
+
+  const uid = `task:${r.number || key}`;
+  store.putTicket(plan.id, uid, {
+    system: 'servicenow', number: r.number || null, url: r.url || null, sysId: r.sysId || null,
+    status: 'open', kind: 'task', summary: summary || null, note: note || null,
+    assignee: assignee.username || assignee.name || null,
+    assigneeEmail: assignee.email || null, assigneeUserId: assignee.userId ?? null,
+    raisedBy: raisedBy || null, raisedAt: store.nowIso(),
+  });
+  bus.emit('task_raised', { plan, ticketUid: uid, assignee, summary: summary || null,
+    number: r.number || null, url: r.url || null, raisedBy: raisedBy || null });
+  return { ok: true, ticket: { uid, number: r.number || null, url: r.url || null,
+    assigned: Boolean(r.assigned), assignWarning: r.assignWarning || null } };
+}
+
 module.exports = {
   STATES, DEFAULTS, NO_SERVICENOW, MAX_TRIES,
   raiseFor, stamp, attachEvidence, note, reassign, pushOutcome, answerFor, outcomeFor,
-  applyState, retryPending, sync, subscribe, contextFor, within,
+  applyState, retryPending, sync, subscribe, contextFor, within, raiseTaskFor,
   _setDeps,
 };
