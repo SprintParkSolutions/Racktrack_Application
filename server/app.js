@@ -7022,6 +7022,7 @@ app.get('/api/racks', auth.requireAuth, (req, res) => {
 // device/unit counts and the timestamp of the latest port identification.
 // Used by the Profile page's history list.
 app.get('/api/scans', auth.requireAuth, (req, res) => {
+  const { rackNameFor } = require('./lib/rack_name');
   const userId = req.user.id;
   const tenantId = req.user.tenant_id;
   const role = req.user.role;
@@ -7087,6 +7088,12 @@ app.get('/api/scans', auth.requireAuth, (req, res) => {
         const image = imageName ? `/outputs/${rackId}/${imageName}` : null;
         return {
           rackId,
+          // What a person calls this rack, where anybody has said: the name on
+          // the scan, the rack a person confirmed it is, or the rack that
+          // carries this scan's id (lib/rack_name.js). Without it every rack on
+          // Home read "Unidentified rack" while the rack's own page named it
+          // (the owner, 23 September 2026).
+          rackName: rackNameFor(rackId, { tenantId }),
           timestamp: meta.timestamp || null,
           deviceCount,
           unitCount,

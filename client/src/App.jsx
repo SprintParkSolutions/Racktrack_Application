@@ -67,6 +67,7 @@ import OrgConsolePage from './pages/OrgConsolePage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import CheckPage from './pages/CheckPage.jsx';
 import MyChecksPage from './pages/MyChecksPage.jsx';
+import MyIncidentsPage from './pages/MyIncidentsPage.jsx';
 import TasksPage from './pages/TasksPage.jsx';
 import MultiRackNewPage from './pages/MultiRackNewPage.jsx';
 import { ShutterProvider } from './ShutterContext.jsx';
@@ -614,6 +615,10 @@ export default function App() {
                 person to go and look at (23 September 2026). */}
             <Route path="/tasks" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><TasksPage /></ResponsiveLayout></ProtectedRoute>
+            } />
+            {/* What this person raised, and what became of it (23 Sep 2026). */}
+            <Route path="/my-incidents" element={
+              <ProtectedRoute><ResponsiveLayout withBottomNav><MyIncidentsPage /></ResponsiveLayout></ProtectedRoute>
             } />
             <Route path="/my-checks" element={
               <ProtectedRoute><ResponsiveLayout withBottomNav><MyChecksPage /></ResponsiveLayout></ProtectedRoute>

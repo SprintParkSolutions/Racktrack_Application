@@ -164,6 +164,11 @@ export function usePrimaryNav() {
     // The technician's fourth tab. A person who has just checked a rack looks
     // a port up next more often than they do anything else, and for somebody
     // who decides that slot is the Desk instead.
+    /* What this person raised, and what became of it. The other half of a
+       technician's own work: Tickets for you is what is coming towards them,
+       this is what they sent (the owner, 23 September 2026). */
+    ...(employeeWork ? [{ group: 'work', to: '/my-incidents', label: 'Incidents you raised',
+      icon: <InboxIcon />, end: false, hint: 'What you sent, and where it stands' }] : []),
     ...(employeeWork ? [{ group: 'work', to: '/port-history', label: 'Port history',
       icon: <PortsIcon />, end: false, hint: 'What changed on a port' }] : []),
     // Approvals is its own application on its own address, so this entry
