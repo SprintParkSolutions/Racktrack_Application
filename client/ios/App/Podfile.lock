@@ -8,7 +8,11 @@ PODS:
   - CapacitorCamera (6.1.0):
     - Capacitor
   - CapacitorCordova (6.2.1)
+  - CapacitorFilesystem (6.0.4):
+    - Capacitor
   - CapacitorKeyboard (6.0.4):
+    - Capacitor
+  - CapacitorShare (6.0.4):
     - Capacitor
 
 DEPENDENCIES:
@@ -17,7 +21,9 @@ DEPENDENCIES:
   - "CapacitorBrowser (from `../../node_modules/@capacitor/browser`)"
   - "CapacitorCamera (from `../../node_modules/@capacitor/camera`)"
   - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
+  - "CapacitorFilesystem (from `../../node_modules/@capacitor/filesystem`)"
   - "CapacitorKeyboard (from `../../node_modules/@capacitor/keyboard`)"
+  - "CapacitorShare (from `../../node_modules/@capacitor/share`)"
 
 EXTERNAL SOURCES:
   Capacitor:
@@ -30,8 +36,12 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/camera"
   CapacitorCordova:
     :path: "../../node_modules/@capacitor/ios"
+  CapacitorFilesystem:
+    :path: "../../node_modules/@capacitor/filesystem"
   CapacitorKeyboard:
     :path: "../../node_modules/@capacitor/keyboard"
+  CapacitorShare:
+    :path: "../../node_modules/@capacitor/share"
 
 SPEC CHECKSUMS:
   Capacitor: 1e0d0e7330dea9f983b50da737d8918abcf273f8
@@ -39,8 +49,10 @@ SPEC CHECKSUMS:
   CapacitorBrowser: 9e9a268445f9472b04b68320930c59bdc4d360fa
   CapacitorCamera: 81ce64062cd82b82cc75a79616fda4bd09d7f643
   CapacitorCordova: 8d93e14982f440181be7304aa9559ca631d77fff
+  CapacitorFilesystem: 45e086a4396be03456c3d53d34b17c89169dd8cd
   CapacitorKeyboard: 5ce1e52b8b86ade4995f926a8ac736212d5102fa
+  CapacitorShare: 44c43f74b95500ba7399c2ac21f0d55efc1a931e
 
-PODFILE CHECKSUM: b79a728a0372f24a272fb0a86c3df559a02eda63
+PODFILE CHECKSUM: c48ae6c1784b7f5ea2226b8ff3b27863c8d4a9d8
 
 COCOAPODS: 1.16.2
