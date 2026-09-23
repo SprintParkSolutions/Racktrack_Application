@@ -110,6 +110,21 @@ export function healthView(h) {
  * Returns the note to show, or null when the person dismissed the share sheet
  * themselves (that is not an error and should not read as one).
  */
+/**
+ * Put a file where the person can get at it.
+ *
+ * A browser downloads it. A packaged app cannot: the WebView ignores blob:
+ * URLs and <a download> entirely, and `navigator.share` in it will not take
+ * files - so the app used to tell people "this phone cannot save files from
+ * inside the app, open RackTrack on a computer", which is what the owner hit
+ * on 23 September 2026 trying to download a report.
+ *
+ * It can, though. The file is written into the app's own documents with
+ * Capacitor's Filesystem and then handed to the system share sheet by its
+ * URI, which is how a phone saves to Files, mails it or sends it on. The
+ * clipboard and the old message are the last resorts, for a device where even
+ * that is refused.
+ */
 export async function saveBlob(blob, name, kind) {
   const native = Capacitor.isNativePlatform();
 
@@ -125,8 +140,26 @@ export async function saveBlob(blob, name, kind) {
     return { tone: 'good', text: `Saved ${name}.` };
   }
 
-  // Packaged app: hand the file to the share sheet when the WebView has one.
-  // The WebView ignores blob: URLs and <a download> entirely.
+  // The file itself, written where the app may write, then shared by its URI.
+  try {
+    const { Filesystem, Directory } = await import('@capacitor/filesystem');
+    const { Share } = await import('@capacitor/share');
+    const data = await asBase64(blob);
+    const write = await Filesystem.writeFile({
+      path: name, data, directory: Directory.Documents, recursive: true,
+    });
+    try {
+      await Share.share({ title: name, url: write.uri, dialogTitle: `Save ${name}` });
+      return { tone: 'good', text: `${name} is ready - save it to Files or send it on.` };
+    } catch (e) {
+      // They closed the share sheet. The file is still written, and saying so
+      // is better than saying nothing happened.
+      if (e && /cancel/i.test(e.message || '')) return { tone: 'good', text: `${name} is saved in the app's Documents.` };
+      return { tone: 'good', text: `${name} is saved in the app's Documents.` };
+    }
+  } catch { /* the plugins are not in this build - try what the WebView offers */ }
+
+  // Older builds: the share sheet, if this WebView will take a file at all.
   try {
     const file = new File([blob], name, { type: blob.type || 'application/octet-stream' });
     if (typeof navigator.share === 'function' && navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -142,13 +175,26 @@ export async function saveBlob(blob, name, kind) {
   if (kind === 'json') {
     try {
       await navigator.clipboard.writeText(await blob.text());
-      return { tone: 'good', text: 'This phone cannot save files from inside the app, so the JSON was copied to your clipboard instead.' };
+      return { tone: 'good', text: 'This phone would not save the file, so the JSON was copied to your clipboard instead.' };
     } catch { /* clipboard refused too */ }
   }
   return {
     tone: 'bad',
-    text: 'This phone cannot save files from inside the app. Open RackTrack in a browser on a computer and download it from there - the same button is there.',
+    text: 'This phone would not save the file. Open RackTrack in a browser on a computer and download it from there - the same button is there.',
   };
+}
+
+/** A blob as base64, which is what Filesystem.writeFile takes. */
+function asBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onerror = () => reject(r.error || new Error('The file could not be read.'));
+    r.onload = () => {
+      const out = String(r.result || '');
+      resolve(out.slice(out.indexOf(',') + 1));
+    };
+    r.readAsDataURL(blob);
+  });
 }
 
 /** Ask the server for one of the export files and hand it over. */

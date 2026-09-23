@@ -58,11 +58,23 @@
   border: 1px solid var(--pf-line); border-radius: 12px;
   background: #fff; overflow: hidden;
 }
-.banner { height: 132px; background: var(--pf-line-soft); }
+/* The aisle photograph is a tall one and this is a band, so what is kept is
+   chosen rather than centred: the doors run down the right of the frame, and
+   58% across / 42% down is the slice where a row of them meets the floor. */
+.banner { height: 148px; background: var(--pf-line-soft); position: relative; }
 .bannerImg {
   width: 100%; height: 100%;
-  object-fit: cover; object-position: 50% 55%;
+  object-fit: cover; object-position: 58% 42%;
   display: block;
+}
+/* The name sits under the picture, not on it, so nothing is written over the
+   photograph - but the foot of the band is still where the avatar overlaps
+   it, and a hard edge there reads as two pieces of paper. This softens it. */
+.banner::after {
+  content: '';
+  position: absolute; left: 0; right: 0; bottom: 0; height: 46px;
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.72) 100%);
+  pointer-events: none;
 }
 
 /* Only the AVATAR overlaps the banner - the lift lives on it, not on the row.
@@ -83,13 +95,17 @@
   -webkit-tap-highlight-color: transparent;
 }
 .avatarBtn:focus-visible { outline: 2px solid var(--pf-ink); outline-offset: 3px; }
+/* The mark that says the picture can be changed. Its glyph was set at the
+   section size inside a 30px round with a 3px border, which left a pencil
+   bigger than the space it was in and read as a black blob with a line
+   through it. */
 .avatarEdit {
   position: absolute; right: 2px; bottom: 2px;
   width: 30px; height: 30px; border-radius: 50%;
   display: grid; place-items: center;
   background: #121212; color: #fff;
   border: 3px solid #fff;
-  font-size: var(--fs-section);
+  font-size: 14px;
 }
 
 .idText { min-width: 0; }
@@ -318,4 +334,12 @@
    worse than a single column. */
 @media (min-width: 1120px) {
   .cols { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+
+/* A rack nobody has named: said in words, and in the page's own face rather
+   than the monospace one an identifier is printed in. */
+.rowTitleNone {
+  font-family: var(--font);
+  font-weight: var(--fw-body);
+  color: var(--pf-ink-3);
 }

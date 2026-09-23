@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import styles from './ProfilePage.module.css';
 import PageHeader from '../components/PageHeader.jsx';
 import { useAuth } from '../AuthContext.jsx';
 import { useConnections } from '../ConnectionsContext.jsx';
+import { useScanSite } from '../hooks/useScanSite.js';
 import { TYPE_INFO } from '../utils/connectionsApi';
 import { apiUrl, authFetch } from '../utils/api';
 import Avatar from '../components/Avatar.jsx';
@@ -33,10 +35,18 @@ function formatRelative(d) {
 }
 const titleCase = (s) => (s ? String(s).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '-');
 
+/* A rack nobody has named is known only by the hash of its photograph, which
+   is not something to print at a person. The same test Home and the report
+   page use. */
+const UNNAMED = /^RK-[0-9A-F]{6,}$/i;
+const NO_NAME = 'Rack not identified yet';
+
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { user, logout, refreshUser } = useAuth();
   const { active: activeConnection } = useConnections();
+  // The only thing that knows a rack's name and the Site it stands in.
+  const { sites } = useScanSite();
   const [scans, setScans] = useState([]);
   const [scansLoading, setScansLoading] = useState(true);
   const [scansError, setScansError] = useState(null);
@@ -82,6 +92,20 @@ export default function ProfilePage() {
   }, [copied]);
 
   const joined = useMemo(() => formatJoined(user?.created_at), [user]);
+  /* rack id -> the name it was given when it was set up. Without this the
+     list printed the hash of the photograph, which says nothing to anybody
+     and is not a name. */
+  const rackNames = useMemo(() => {
+    const out = new Map();
+    for (const site of sites || []) {
+      for (const r of site.racks || []) {
+        if (!r || r.rackId == null) continue;
+        const name = String(r.name || '').trim();
+        if (name && !UNNAMED.test(name)) out.set(String(r.rackId), name);
+      }
+    }
+    return out;
+  }, [sites]);
   // Profile shows the 5 most recent only; the rest live on /history.
   const recent = useMemo(() => scans.slice(0, 5), [scans]);
   const orgName = user?.organization?.name || user?.tenant?.name || 'DEFAULT';
@@ -164,10 +188,17 @@ export default function ProfilePage() {
         {/* ── Identity ──
             An <img> banner rather than a CSS background: index.css strips
             background-image from a broad substring allow-list, so a background
-            here would silently vanish. */}
+            here would silently vanish.
+
+            The picture is a lit white aisle with the cabinet doors down one
+            side. It was a near-black photograph of tangled orange and blue
+            patch leads, which is what a datacenter looks like when nobody has
+            tidied it - the owner asked on 23 September 2026 for something
+            professional, and this is the one in the bundle that is. It is
+            also white, which is the app. */}
         <section className={styles.identity}>
           <div className={styles.banner} aria-hidden="true">
-            <img src="/datacenter.jpg" alt="" className={styles.bannerImg} loading="lazy" />
+            <img src="/home-aisle.jpg" alt="" className={styles.bannerImg} loading="lazy" />
           </div>
 
           <div className={styles.idRow}>
@@ -197,8 +228,11 @@ export default function ProfilePage() {
                   {copied && <span className={styles.copied}>Copied</span>}
                 </p>
               )}
+              {/* What this person is, and where. The organisation, the Site
+                  and the join date are all rows in Profile details now, so
+                  this line says the one thing the name does not. */}
               <p className={styles.metaLine}>
-                {orgName}{joined && <> · Since {joined}</>}
+                {[titleCase(user?.role), user?.tenant?.name || orgName].filter(Boolean).join(' · ')}
               </p>
             </div>
           </div>
@@ -276,7 +310,9 @@ export default function ProfilePage() {
                             : <Icon name="terminal" />}
                         </span>
                         <span className={styles.rowMain}>
-                          <span className={`${styles.rowTitle} ${styles.rowTitleMono}`}>{s.rackId}</span>
+                          <span className={`${styles.rowTitle} ${styles.rowTitleMono} ${rackNames.get(String(s.rackId)) ? '' : styles.rowTitleNone}`}>
+                            {rackNames.get(String(s.rackId)) || NO_NAME}
+                          </span>
                           <span className={styles.rowMeta}>
                             {s.deviceCount} device{s.deviceCount === 1 ? '' : 's'}
                           </span>
@@ -335,13 +371,42 @@ export default function ProfilePage() {
 
             <section className={styles.block}>
               <h3 className={styles.blockH}>Profile details</h3>
-              {/* Email, organisation and the join date are all in the identity
-                  block at the top of this same screen. Role is the one fact that
-                  is not, so it is the one row here. */}
+              {/* It was one row saying Role, under a heading, in a card of its
+                  own: a container three times the height of what it held. The
+                  owner asked on 23 September 2026 for this page to be worth
+                  opening, so it says what the account actually is. Every line
+                  comes from the signed-in account and one that is not there is
+                  left out rather than printed as a dash. */}
               <dl className={styles.details}>
                 <div className={styles.detail}>
                   <dt className={styles.dt}>Role</dt>
                   <dd className={styles.dd}>{titleCase(user?.role)}</dd>
+                </div>
+                <div className={styles.detail}>
+                  <dt className={styles.dt}>Username</dt>
+                  <dd className={styles.dd}>{user?.username || '-'}</dd>
+                </div>
+                {user?.tenant?.name && (
+                  <div className={styles.detail}>
+                    <dt className={styles.dt}>Site</dt>
+                    <dd className={styles.dd}>{user.tenant.name}</dd>
+                  </div>
+                )}
+                {user?.organization?.name && (
+                  <div className={styles.detail}>
+                    <dt className={styles.dt}>Organization</dt>
+                    <dd className={styles.dd}>{user.organization.name}</dd>
+                  </div>
+                )}
+                {joined && (
+                  <div className={styles.detail}>
+                    <dt className={styles.dt}>Member since</dt>
+                    <dd className={styles.dd}>{joined}</dd>
+                  </div>
+                )}
+                <div className={styles.detail}>
+                  <dt className={styles.dt}>Racks read</dt>
+                  <dd className={styles.dd}>{scansLoading ? '-' : scans.length}</dd>
                 </div>
               </dl>
             </section>
@@ -407,10 +472,14 @@ export default function ProfilePage() {
       )}
 
       {/* ── Avatar picker ── */}
-      {pickerOpen && (
+      {/* The sheet is drawn on the document itself, not inside the page. The
+          phone's floating bar sits in a stacking context of its own and was
+          painted over the last row of pictures and the Close button whatever
+          z-index this carried (23 September 2026). */}
+      {pickerOpen && createPortal(
         <div
           onClick={() => !savingAvatar && setPickerOpen(false)}
-          style={{ position: 'fixed', inset: 0, zIndex: 400, display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          style={{ position: 'fixed', inset: 0, zIndex: 1200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
             background: 'rgba(0, 0, 0,.55)', backdropFilter: 'blur(4px)' }}
         >
           <div
@@ -444,7 +513,8 @@ export default function ProfilePage() {
               {savingAvatar ? 'Saving…' : 'Close'}
             </button>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

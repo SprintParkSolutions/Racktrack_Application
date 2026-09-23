@@ -8,7 +8,7 @@ import { apiUrl, authFetch } from '../utils/api';
 import ExportSheet from '../components/ExportSheet.jsx';
 import ShareSheet from '../components/ShareSheet.jsx';
 import ReportViewer from '../components/ReportViewer.jsx';
-import { downloadExport } from '../utils/exportApi';
+import { downloadExport, saveBlob } from '../utils/exportApi';
 import { setCached } from '../utils/scanPrefetch';
 import { getJSON } from '../utils/safeStorage';
 import { matchIsTrusted, serverReportsConfirmations } from '../utils/matchEvidence';
@@ -295,6 +295,30 @@ export default function ReportPage() {
   const [fileBusy, setFileBusy] = useState(null);   // 'csv' | 'json' | 'share'
   const [note, setNote] = useState(null);           // { tone, text }
 
+  /* The report on this screen, as a file.
+   *
+   * The same document the printed view shows, fetched with the same one-shot
+   * token, and handed to saveBlob - which writes it into the app's documents
+   * and opens the share sheet on a phone, and downloads it in a browser. */
+  const saveReport = async () => {
+    setFileBusy('report'); setNote(null);
+    try {
+      const r = await authFetch(apiUrl(`/api/scan/${encodeURIComponent(rackId)}/report-token`));
+      if (!r.ok) throw new Error('The server would not authorise the report.');
+      const { token } = await r.json();
+      const at = apiUrl(`/api/scan/${encodeURIComponent(rackId)}/report?format=pdf&download=1&t=${encodeURIComponent(token)}`);
+      const file = await fetch(at);
+      if (!file.ok) throw new Error('The report could not be made.');
+      const blob = await file.blob();
+      const name = `${String(rackId).replace(/[^A-Za-z0-9_-]/g, '_')}-${flow === PORT ? 'port' : 'rack'}-report.pdf`;
+      setNote(await saveBlob(blob, name, 'pdf'));
+    } catch (e) {
+      setNote({ tone: 'bad', text: e.message || 'The report could not be downloaded.' });
+    } finally {
+      setFileBusy(null);
+    }
+  };
+
   const getFile = async (kind) => {
     setFileBusy(kind); setNote(null);
     try { setNote(await downloadExport(scanId, rackId, kind)); }
@@ -407,11 +431,24 @@ export default function ReportPage() {
             Drift check
           </button>
         )}
+        {/* One control, one file: the report on this screen. It was a menu of
+            CSV, JSON and PDF, of which the first two are the NetBox export -
+            a different document - so pressing Download handed people a report
+            they were not reading (the owner, 23 September 2026). The NetBox
+            files keep their own control beside it. */}
+        <button
+          type="button"
+          className={styles.quiet}
+          disabled={!doc || fileBusy === 'report'}
+          onClick={saveReport}
+        >
+          <IconDownload />
+          {fileBusy === 'report' ? 'Preparing' : 'Download'}
+        </button>
         {[
-          ['download', 'Download', <IconDownload key="i" />, [
-            ['CSV', () => getFile('csv'), fileBusy === 'csv'],
-            ['JSON', () => getFile('json'), fileBusy === 'json'],
-            ['PDF', openPrinted, fileBusy === 'pdf'],
+          ['netbox', 'NetBox files', <IconExport key="i" />, [
+            ['CSV for NetBox', () => getFile('csv'), fileBusy === 'csv'],
+            ['JSON bundle', () => getFile('json'), fileBusy === 'json'],
           ]],
           ['share', 'Share', <IconSend key="i" />, [
             ['Teams', () => setSharing('teams'), false],

@@ -10,32 +10,37 @@ import { describe, test, expect } from 'vitest';
 import { AVATARS, autoAvatarIndex, resolveAvatarIndex, avatarInitial } from './avatars';
 
 describe('the AVATARS table', () => {
-  test('is append-only: existing entries keep their index', () => {
+  test('is append-only: no entry may move out of the slot it is stored under', () => {
     // If you are here because this failed: adding to the END is fine, and this
-    // assertion just needs the new entries appended too. Anything else has
-    // already changed what a stored index means.
+    // assertion just needs the new entries counted. Anything else has already
+    // changed what a stored users.avatar index means, and there is no way to
+    // detect that after the fact.
     //
-    // The palette was re-toned from a colour ramp to a graphite one when the
-    // app moved to white + white-shades with subtle black accents, and re-toned
-    // again when the neutrals were flattened to TRUE greyscale (the graphite
-    // ramp above was blue-tinted: #3A3F47 is not R=G=B). Both are VALUE
-    // changes, not shape changes: there are still eight entries in the same
-    // eight slots, so every stored users.avatar index still resolves to the
-    // slot it always did - those users simply render monochrome now.
-    expect(AVATARS.slice(0, 8)).toEqual([
-      { from: '#3f3f3f', to: '#171717' },
-      { from: '#4f4f4f', to: '#262626' },
-      { from: '#2f2f2f', to: '#000000' },
-      { from: '#606060', to: '#323232' },
-      { from: '#474747', to: '#1c1c1c' },
-      { from: '#6a6a6a', to: '#3d3d3d' },
-      { from: '#373737', to: '#121212' },
-      { from: '#595959', to: '#2c2c2c' },
-    ]);
+    // What a slot LOOKS like has changed twice and may change again: a colour
+    // ramp, then a graphite ramp, and on 23 September 2026 a drawn portrait
+    // per slot, because eight grey discs carrying the same initial were not a
+    // choice. Every one of those was a VALUE change in the same eight slots,
+    // so every stored index still resolves to the slot it always did.
+    expect(AVATARS).toHaveLength(8);
+    // Each slot says how its portrait is drawn, and every one of them says it:
+    // a slot missing a field renders as a hole rather than a person.
+    for (const a of AVATARS) {
+      expect(a).toEqual(expect.objectContaining({
+        ground: expect.stringMatching(/^#[0-9A-Fa-f]{6}$/),
+        skin: expect.stringMatching(/^#[0-9A-Fa-f]{6}$/),
+        hair: expect.stringMatching(/^#[0-9A-Fa-f]{6}$/),
+        shirt: expect.stringMatching(/^#[0-9A-Fa-f]{6}$/),
+        cut: expect.stringMatching(/^(short|bun|wavy|curls|long)$/),
+      }));
+    }
   });
 
-  test('keeps its length, so no stored index can fall out of range', () => {
-    expect(AVATARS).toHaveLength(8);
+  test('is eight people and not one repeated', () => {
+    // The complaint that started this: the picker offered eight things that
+    // looked the same. Two slots sharing a ground AND a cut would be that
+    // again.
+    const seen = new Set(AVATARS.map((a) => `${a.ground}|${a.cut}|${a.skin}`));
+    expect(seen.size).toBe(AVATARS.length);
   });
 });
 
@@ -87,8 +92,8 @@ describe('avatarInitial', () => {
   });
 
   test('never renders as empty', () => {
-    // The monogram is drawn on a gradient tile; an empty string leaves a
-    // blank chip that reads as a broken image.
+    // The portrait carries no letter now, but this is still what a screen
+    // reader is given for it, and an empty label reads as nothing at all.
     expect(avatarInitial(null)).toBe('?');
     expect(avatarInitial({})).toBe('?');
     expect(avatarInitial({ username: '   ' })).toBe('?');
